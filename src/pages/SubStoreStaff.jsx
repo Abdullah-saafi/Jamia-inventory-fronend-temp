@@ -5,7 +5,7 @@ import {
   createRequest,
   getRequests,
   getRequestById,
-  submitGRN
+  submitGRN,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import GRNModal from "../components/GRNModal";
@@ -17,13 +17,12 @@ import StoreFilters from "../components/StoreFilters";
 import Pagination from "../components/Pagination";
 import CreateRequestModal from "../components/CreateRequestModal";
 import PendingRequestIndicator from "../components/PendingRequestIndicator";
-import DateTimeCell from "../components/DateTimeCell"
+import DateTimeCell from "../components/DateTimeCell";
 import TypeBadge from "../components/TypeBadge";
 import RequestRow from "../components/RequestRow";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
 // import DetailPanel from "../components/DetailPanel"
-
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -33,7 +32,7 @@ const EMPTY_LINE = {
   item_name: "",
   item_uom: "",
   requested_qty: 1,
-  item_type: "abc"
+  item_type: "abc",
 };
 
 const EMPTY_FORM = {
@@ -70,7 +69,7 @@ export default function SubStore() {
   const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
 
   const { auth } = useAuth();
-  const pageType = "subStore"
+  const pageType = "subStore";
 
   // ─── Load ─────────────────────────────────────────────────────────────────
   const load = async () => {
@@ -91,7 +90,7 @@ export default function SubStore() {
       setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
       setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
       if (!filterStatus) {
-        setAllRequests(rRes.data.data)
+        setAllRequests(rRes.data.data);
       }
       setRequests(rRes.data.data);
     } catch {
@@ -104,7 +103,6 @@ export default function SubStore() {
   useEffect(() => {
     setTimeout(() => setToast(null), 7000);
   }, [toast]);
-
 
   useEffect(() => {
     if (auth.store_id || auth.role === "super admin") load();
@@ -130,11 +128,10 @@ export default function SubStore() {
       } catch {
         setStoreItems([]);
         setReuseableItems([]);
-        setToast({ message: "Failed to fetch items", type: "error" })
+        setToast({ message: "Failed to fetch items", type: "error" });
       }
-      
-    }
-    fetchStoreData()
+    };
+    fetchStoreData();
   }, [itemForm.to_store_id]);
 
   useEffect(() => {
@@ -145,10 +142,9 @@ export default function SubStore() {
 
   // ─── Detail ───────────────────────────────────────────────────────────────
   const openDetail = async (r) => {
-    console.log("detail",detail);
-    console.log("r is here",r);
+    console.log("detail", detail);
+    console.log("r is here", r);
 
-    
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
       return;
@@ -188,12 +184,18 @@ export default function SubStore() {
           : payload.grn_status === "DISPUTED"
             ? "Issues reported — request marked DISPUTED"
             : "Delivery rejected — main store notified";
-      setToast({ message: label, type: payload.grn_status === "RECEIVED" ? "success" : "warn", });
+      setToast({
+        message: label,
+        type: payload.grn_status === "RECEIVED" ? "success" : "warn",
+      });
       setGrnRequest(null);
       setDetail(null);
       load();
     } catch (e) {
-      setToast({ message: e.response?.data?.message || "Failed to submit GRN", type: "error" });
+      setToast({
+        message: e.response?.data?.message || "Failed to submit GRN",
+        type: "error",
+      });
     } finally {
       setGrnSubmitting(false);
     }
@@ -202,7 +204,7 @@ export default function SubStore() {
   // ─── Form helpers ─────────────────────────────────────────────────────────
   const addLine = () =>
     setItemForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_LINE }] }));
-  
+
   const removeLine = (idx) =>
     setItemForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
 
@@ -211,15 +213,18 @@ export default function SubStore() {
       const items = [...f.items];
       items[idx] = { ...items[idx], [field]: value };
       if (field === "selected_item_no") {
-          const found = storeItems.find((i) => i.item_no === value);
-          if (found) {
-            items[idx].item_no = found.item_no;
-            items[idx].item_name = found.item_name;
-            items[idx].item_uom = found.item_uom;
-            items[idx].item_type = found.item_type
-          } else {
-            items[idx].item_no = items[idx].item_name = items[idx].item_uom = items[idx].item_type;
-          }
+        const found = storeItems.find((i) => i.item_no === value);
+        if (found) {
+          items[idx].item_no = found.item_no;
+          items[idx].item_name = found.item_name;
+          items[idx].item_uom = found.item_uom;
+          items[idx].item_type = found.item_type;
+        } else {
+          items[idx].item_no =
+            items[idx].item_name =
+            items[idx].item_uom =
+              items[idx].item_type;
+        }
       }
       return { ...f, items };
     });
@@ -251,16 +256,22 @@ export default function SubStore() {
       requested_assets = [],
     } = itemForm;
 
-    const isUOMMissing = items.item_type === "USEABLE" && !item_uom
+    const isUOMMissing = items.item_type === "USEABLE" && !item_uom;
     const itemLines = items.filter((i) => i.item_no);
     const hasItems = itemLines.length > 0;
 
-    console.log("items",items);
+    console.log("items", items);
 
     if (!from_store_id || !to_store_id || !requested_by_name)
-      return setToast({ message: "Please fill all required fields", type: "error" });
+      return setToast({
+        message: "Please fill all required fields",
+        type: "error",
+      });
     if (!hasItems && !hasAssets)
-      return setToast({ message: "Add at least one item or one asset", type: "error" });
+      return setToast({
+        message: "Add at least one item or one asset",
+        type: "error",
+      });
     if (
       itemLines.some((i) => !i.item_name || isUOMMissing || i.requested_qty < 1)
     )
@@ -286,7 +297,10 @@ export default function SubStore() {
       setItemForm({ ...EMPTY_FORM });
       load();
     } catch (e) {
-      setToast({ message: e.response?.data?.message || "Failed to submit", type: "error" });
+      setToast({
+        message: e.response?.data?.message || "Failed to submit",
+        type: "error",
+      });
     } finally {
       setCreating(false);
     }
@@ -308,7 +322,9 @@ export default function SubStore() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
-          <span className="text-gray-500 text-xs mt-0.5 bg-gray-200 rounded p-1">{auth.storeName || "loading..."}</span>
+          <span className="text-gray-500 text-xs mt-0.5 bg-gray-200 rounded p-1">
+            {auth.storeName || "loading..."}
+          </span>
           <p className="text-gray-500 text-sm mt-0.5">
             Manage requests, track inventory, and Request from Main Store.
           </p>
@@ -318,10 +334,11 @@ export default function SubStore() {
             const nextItemNo = getNextItemNo(storeItems);
             setItemForm({
               from_store_id: auth.store_id || "",
-              to_store_id: mainStores.length === 1 ? mainStores[0].store_id : "",
+              to_store_id:
+                mainStores.length === 1 ? mainStores[0].store_id : "",
               requested_by_name: auth.username || "",
               notes: "",
-              items: [{ ...EMPTY_LINE, }],
+              items: [{ ...EMPTY_LINE }],
               requested_assets: [],
             });
             setShowCreate(true);
@@ -332,12 +349,13 @@ export default function SubStore() {
         </button>
       </div>
 
-      {(pendingGRN > 0 && filterStatus !== "FULFILLED") && (
+      {pendingGRN > 0 && filterStatus !== "FULFILLED" && (
         <PendingRequestIndicator
           pendingCount={pendingGRN}
           setFilterStatus={setFilterStatus}
           filterStatus={filterStatus}
-          pageType={pageType} />
+          pageType={pageType}
+        />
       )}
 
       {/* ── Filters ── */}
@@ -366,31 +384,41 @@ export default function SubStore() {
           </button>
         </div>
 
-        <div className="Temp-downloader">
-          <ExcelDownloaderWithDates
-            dateKey="created_at"
-            fileName="requests"
-            columns={[
-              { key: "request_id", label: "درخواست نمبر" },
-              { key: "requested_by_name", label: "درخواست کنندہ" },
-              {
-                key: "created_at",
-                label: "درخواست کی تاریخ",
-                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-              },
-              { key: "status", label: "حالت" },
-              {
-                key: "approved_at",
-                label: "منظوری کی تاریخ",
-                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-              },
-              {
-                key: "fulfilled_at",
-                label: "تکمیل کی تاریخ",
-                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-              },
-            ]}
-          />
+        <div className="Temp-downloader flex justify-center items-center gap-4">
+          <div className="">
+            <ExcelDownloaderWithDates
+              dateKey="created_at"
+              fileName="requests"
+              columns={[
+                { key: "request_id", label: "درخواست نمبر" },
+                { key: "requested_by_name", label: "درخواست کنندہ" },
+                {
+                  key: "created_at",
+                  label: "درخواست کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                { key: "status", label: "حالت" },
+                {
+                  key: "approved_at",
+                  label: "منظوری کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                {
+                  key: "fulfilled_at",
+                  label: "تکمیل کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+              ]}
+            />
+          </div>
+          <div className="SentScrap">
+            <button
+              onClick={() => {}}
+              className="bg-red-600 hover:bg-red-800 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
+            >
+              Sent Scrap
+            </button>
+          </div>
         </div>
       </div>
 
@@ -401,7 +429,7 @@ export default function SubStore() {
             <TableHead />
           </thead>
           <tbody>
-            {(pageLoading || error || requests.length === 0) ? (
+            {pageLoading || error || requests.length === 0 ? (
               <CheckLoadingAndError
                 loading={pageLoading}
                 error={error}
@@ -469,4 +497,3 @@ export default function SubStore() {
     </div>
   );
 }
-
