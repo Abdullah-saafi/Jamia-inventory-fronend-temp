@@ -61,7 +61,7 @@ const ApproveRejectModal = ({ setApproveModal, approveModal, approverName, setAp
                                                     {i.item_name}
                                                 </div>
                                                 <div className="text-gray-400 text-xs font-mono">
-                                                    {i.item_no} · {i.item_uom}
+                                                    {i.item_no} {i.item_type === "REUSABLE" ? `· ${i.item_uom}` : "abc"}
                                                 </div>
                                             </td>
                                             <td className="py-2 font-mono text-gray-500 text-center">

@@ -7,11 +7,13 @@ import { useAuth } from "../context/authContext";
 import useErrorHandler from "../components/useErrorHandler";
 import BlockedUI from "../components/BlockedUI";
 import Toast from "../components/Toast";
+import Scrap from "../components/MainStore/Scrap";
 
 const TABS = [
   { id: "items", label: "تمام اشیاء" },
   { id: "requests", label: "زیلی اسٹورز کی درخواستیں" },
   { id: "ho-create", label: "نئی مرکزی دفتر کی درخواست" },
+  // { id: "scrap", label: "Scrap" },
 ];
 
 export default function MainStore() {
@@ -163,6 +165,12 @@ export default function MainStore() {
           setToast={setToast}
           loading={loading}
           mainStoreError={mainStoreError}
+        />
+      )}
+
+      {tab === "scrap" && (
+        <Scrap
+          
         />
       )}
 

@@ -5,6 +5,7 @@ import {
   headOfficeFulfillRequest,
   acceptReturn,
   resendItems,
+  fulfillRequest,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
@@ -314,50 +315,17 @@ export default function HeadOffice() {
     }
   };
 
-  const openFulfill = async (r, mode = "fulfill") => {
-    try {
-      setActioning(true);
-      const res = await getRequestById(r.request_id);
-      setFulfilledItems(
-        (res.data.data.items || []).map((i) => ({
-          ...i,
-          fulfilled_qty: i.approved_qty ?? i.requested_qty,
-        })),
-      );
-      setFulfillModal(res.data.data);
-      setFulfillMode(mode);
-      setFulfillerName(auth.username || "");
-      setFulfillNotes("");
-    } catch (error) {
-      const msg = handleError(error, "Failed to load items");
-      setToast({ message: msg, type: "error" });
-    } finally {
-      setActioning(false);
-    }
-  };
-
-  const handleFulfill = async () => {
-    if (!fulfillerName.trim()) return;
-    if (fulfillMode === "refulfill" && !fulfillNotes.trim()) return;
+  const handleFulfill = async (id) => {
+    // if (!fulfillerName.trim()) return;
+    // if (fulfillMode === "refulfill" && !fulfillNotes.trim()) return;
     setActioning(true);
     try {
-      await headOfficeFulfillRequest(fulfillModal.request_id, {
-        fulfilled_by_name: fulfillerName,
-        notes: fulfillNotes,
-        fulfilled_items: fulfilledItems.map((i) => ({
-          request_item_id: i.request_item_id,
-          fulfilled_qty: i.fulfilled_qty,
-        })),
-      });
+      await fulfillRequest(id);
       setToast({
         message : fulfillMode === "refulfill"
           ? "Re-dispatched — Main Store will verify the corrected delivery"
           : "Request fulfilled — Main Store will verify delivery",
       });
-      setFulfillModal(null);
-      setFulfillerName("");
-      setFulfillNotes("");
-      setFulfilledItems([]);
       load();
     } catch (e) {
       const msg = handleError(e, "Error fulfilling request");
@@ -601,7 +569,7 @@ export default function HeadOffice() {
                               disabled={actioning}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                openFulfill(r, "fulfill");
+                                handleFulfill(r.request_id);
                               }}
                               className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-2.5 ml-2 py-1.5 rounded disabled:opacity-40"
                             >

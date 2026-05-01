@@ -6,23 +6,36 @@ import {
   getRequests,
   getRequestById,
   submitGRN,
+<<<<<<< HEAD
+=======
+  sendReturnToMain
+>>>>>>> 26059281a1f5d415afb96eba9a2d9b15cf93ee70
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import GRNModal from "../components/GRNModal";
-import API from "../services/api";
 import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Toast from "../components/Toast";
-import StatusBadge from "../components/StatusBadge";
 import StoreFilters from "../components/StoreFilters";
 import Pagination from "../components/Pagination";
 import CreateRequestModal from "../components/CreateRequestModal";
 import PendingRequestIndicator from "../components/PendingRequestIndicator";
+<<<<<<< HEAD
 import DateTimeCell from "../components/DateTimeCell";
 import TypeBadge from "../components/TypeBadge";
 import RequestRow from "../components/RequestRow";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
 // import DetailPanel from "../components/DetailPanel"
+=======
+import RequestRow from "../components/RequestRow";
+import TableHead from "../components/TableHead";
+import CheckLoadingAndError from "../components/CheckLoadingAndError";
+import ReturnItemsModal from "../components/ReturnItemsModal";
+import useErrorHandler from "../components/useErrorHandler";
+import RequestDashboard from "../components/RequestDashboard";
+import SubStoreScrapModal from "../components/SubStoreScrapModal";
+import { sendScrapToMain } from "../services/api";
+>>>>>>> 26059281a1f5d415afb96eba9a2d9b15cf93ee70
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -59,17 +72,40 @@ export default function SubStore() {
   const [detailLoad, setDL] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [storeItems, setStoreItems] = useState([]);
-  const [reuseableItems, setReuseableItems] = useState([]);
+  const [reusableItems, setReusableItems] = useState([]);
+  const [usableItems, setUsableItems] = useState([]);
   const [creating, setCreating] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
+  const [returnModal, setReturnModal] = useState(false);
+  const [returnModalLoading, setReturnModalLoading] = useState(false)
   const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
+  const [username, setUsername] = useState("");
+  const [returnItemData, setReturnItemData] = useState([]);
+  const [scrapModal, setScrapModal] = useState(false);
+  const [scrapModalLoading, setScrapModalLoading] = useState(false);
+  const [scrapForm, setScrapForm] = useState({
+    sendByName: "",
+    requestData: null,
+    note: "",
+    scrap_items: [],
+  });
+  const [returnForm, setReturnForm] = useState({
+    sendByName: "",
+    returnData: [],
+    note: "",
+  });
 
   const { auth } = useAuth();
+<<<<<<< HEAD
   const pageType = "subStore";
+=======
+  const handleError = useErrorHandler()
+  const pageType = "subStore"
+>>>>>>> 26059281a1f5d415afb96eba9a2d9b15cf93ee70
 
   // ─── Load ─────────────────────────────────────────────────────────────────
   const load = async () => {
@@ -93,10 +129,109 @@ export default function SubStore() {
         setAllRequests(rRes.data.data);
       }
       setRequests(rRes.data.data);
-    } catch {
-      setError("Failed to load data");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data")
+      setError(msg);
     } finally {
       setPageLoading(false);
+    }
+  };
+
+  const fetchStoreData = async () => {
+    if (!itemForm.to_store_id) {
+      setStoreItems([]);
+      setReusableItems([]);
+      setUsableItems([])
+      return;
+    }
+    try {
+      const response = await getItems({ store_id: itemForm.to_store_id });
+      if (response.data?.success) {
+        const items = response.data.data || [];
+        setStoreItems(items);
+        const reusable = items.filter((i) => i.item_type === "REUSABLE");
+        const usable = items.filter(i => i.item_type === "USABLE")
+        setReusableItems(reusable);
+        setUsableItems(usable)
+      } else {
+        setStoreItems([]);
+        setReusableItems([]);
+        setUsableItems([])
+      }
+    } catch (error) {
+      setStoreItems([]);
+      setUsableItems([])
+      setReusableItems([]);
+      const msg = handleError(error, "Failed to fetch items")
+      setToast({ message: msg, type: "error" })
+    }
+
+  }
+
+  const scrapItem = async (id) => {
+    try {
+      setScrapModalLoading(true);
+
+      const response = await getRequestById(id);
+      const requestData = response.data.data;
+
+      const scrappableItems = (requestData.items || []).filter(
+        (i) => i.item_type === "USABLE" || i.item_type === "REUSABLE"
+      );
+
+      setScrapForm({
+        sendByName: auth.username,
+        requestData,
+        note: "",
+        from_sub_store: auth.store_id,
+        scrap_items: scrappableItems.map((i) => ({
+          request_item_id: i.request_item_id,
+          scrap_qty: 0,
+          max_qty:
+            Number(i.received_qty) ||
+            Number(i.fulfilled_qty) ||
+            Number(i.requested_qty) ||
+            0,
+        })),
+      });
+
+      setScrapModal(true);
+    } catch (error) {
+      const msg = handleError(error, "Failed to open scrap modal");
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setScrapModalLoading(false);
+    }
+  };
+
+  const handleScrap = async (id, data) => {
+    try {
+      setScrapModalLoading(true);
+
+      await sendScrapToMain(id, {
+        ...data,
+        from_sub_store: auth.store_id,
+        to_main_store: scrapForm.requestData.to_store_id,
+      });
+
+      setScrapModal(false);
+
+      setToast({ message: "Items scrapped successfully", type: "success" });
+
+      setScrapForm({
+        sendByName: "",
+        requestData: null,
+        note: "",
+        scrap_items: [],
+      });
+
+      load();
+      fetchStoreData()
+    } catch (error) {
+      const msg = handleError(error, "Failed to scrap items");
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setScrapModalLoading(false);
     }
   };
 
@@ -107,7 +242,9 @@ export default function SubStore() {
   useEffect(() => {
     if (auth.store_id || auth.role === "super admin") load();
   }, [filterStatus, filterStore, auth.store_id]);
+
   useEffect(() => {
+<<<<<<< HEAD
     const fetchStoreData = async () => {
       if (!itemForm.to_store_id) {
         setStoreItems([]);
@@ -132,6 +269,9 @@ export default function SubStore() {
       }
     };
     fetchStoreData();
+=======
+    fetchStoreData()
+>>>>>>> 26059281a1f5d415afb96eba9a2d9b15cf93ee70
   }, [itemForm.to_store_id]);
 
   useEffect(() => {
@@ -142,9 +282,14 @@ export default function SubStore() {
 
   // ─── Detail ───────────────────────────────────────────────────────────────
   const openDetail = async (r) => {
+<<<<<<< HEAD
     console.log("detail", detail);
     console.log("r is here", r);
 
+=======
+    console.log("detail",detail);
+    console.log("r is here",r)
+>>>>>>> 26059281a1f5d415afb96eba9a2d9b15cf93ee70
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
       return;
@@ -154,7 +299,9 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-    } catch {
+    } catch (error) {
+      const msg = handleError(error, "Failed to open detail")
+      setToast({ message: msg, type: "error" })
     } finally {
       setDL(false);
     }
@@ -167,8 +314,9 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setGrnRequest(res.data.data);
-    } catch {
-      setToast({ message: "Failed to load request details", type: "error" });
+    } catch (error) {
+      const msg = handleError(error, "Failed to load request details")
+      setToast({ message: msg, type: "error" });
     } finally {
       setGrnLoading(false);
     }
@@ -192,10 +340,15 @@ export default function SubStore() {
       setDetail(null);
       load();
     } catch (e) {
+<<<<<<< HEAD
       setToast({
         message: e.response?.data?.message || "Failed to submit GRN",
         type: "error",
       });
+=======
+      const msg = handleError(e, "Failed to submit GRN")
+      setToast({ message: msg, type: "error" });
+>>>>>>> 26059281a1f5d415afb96eba9a2d9b15cf93ee70
     } finally {
       setGrnSubmitting(false);
     }
@@ -218,12 +371,18 @@ export default function SubStore() {
           items[idx].item_no = found.item_no;
           items[idx].item_name = found.item_name;
           items[idx].item_uom = found.item_uom;
+<<<<<<< HEAD
           items[idx].item_type = found.item_type;
         } else {
           items[idx].item_no =
             items[idx].item_name =
             items[idx].item_uom =
               items[idx].item_type;
+=======
+          items[idx].item_type = found.item_type
+        } else {
+          items[idx].item_no = items[idx].item_name = items[idx].item_uom = items[idx].item_type;
+>>>>>>> 26059281a1f5d415afb96eba9a2d9b15cf93ee70
         }
       }
       return { ...f, items };
@@ -245,6 +404,44 @@ export default function SubStore() {
     return `${prefix}${String(max + 1).padStart(3, "0")}`;
   };
 
+  // Return Items ───────────────────────────────────────────────────────────────
+
+  const returnItem = async (id) => {
+    try {
+      setReturnModalLoading(true)
+      const response = await getRequestById(id)
+      setReturnForm((f) => ({ ...f, returnData: response.data.data, sendByName: auth.username }))
+      setReturnModal(true)
+    } catch (error) {
+      const msg = handleError(error, "Failed to open return modal");
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setReturnModalLoading(false)
+    }
+  }
+
+  const handleReturn = async (id, data) => {
+    try {
+      setReturnModalLoading(true)
+      console.log("Sending return to main log id", id, "and its log of data", data);
+
+      const returnItemResponse = await sendReturnToMain(id, data)
+      setReturnModal(false)
+      setToast({ message: "Successfully returns the item", type: "success" });
+      setReturnForm({
+        sendByName: "",
+        returnData: [],
+        note: ""
+      })
+      load()
+    } catch (error) {
+      const msg = handleError(error, "Failed to return");
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setReturnModalLoading(false)
+    }
+  }
+
   // ─── Submit ───────────────────────────────────────────────────────────────
   const handleCreate = async (e) => {
     e?.preventDefault();
@@ -256,12 +453,21 @@ export default function SubStore() {
       requested_assets = [],
     } = itemForm;
 
+<<<<<<< HEAD
     const isUOMMissing = items.item_type === "USEABLE" && !item_uom;
     const itemLines = items.filter((i) => i.item_no);
     const hasItems = itemLines.length > 0;
 
     console.log("items", items);
 
+=======
+    const itemLines = items.filter((i) => i.item_no);
+    const hasItems = itemLines.length > 0;
+    
+    const isUOMMissing = itemLines.some(
+      (i) => i.item_type === "USABLE" && !i.item_uom
+    );
+>>>>>>> 26059281a1f5d415afb96eba9a2d9b15cf93ee70
     if (!from_store_id || !to_store_id || !requested_by_name)
       return setToast({
         message: "Please fill all required fields",
@@ -297,19 +503,24 @@ export default function SubStore() {
       setItemForm({ ...EMPTY_FORM });
       load();
     } catch (e) {
+<<<<<<< HEAD
       setToast({
         message: e.response?.data?.message || "Failed to submit",
         type: "error",
       });
+=======
+      const msg = handleError(e, "Failed to load request details")
+      setToast({ message: msg, type: "error" });
+>>>>>>> 26059281a1f5d415afb96eba9a2d9b15cf93ee70
     } finally {
       setCreating(false);
     }
   };
 
   // ─── Computed ─────────────────────────────────────────────────────────────
-  const pendingGRN = allRequests.filter(
-    (r) => r.status === "FULFILLED" && !r.grn_at,
-  ).length;
+  const pendingGRN = allRequests.filter((r) => r.status === "FULFILLED" && !r.grn_at,).length;
+
+  const pendingReturn = allRequests.filter((r) => r.status === "RECEIVED" && r.item_type === "REUSABLE").length
 
   const paginated = requests.slice((page - 1) * pageSize, page * pageSize);
 
@@ -349,6 +560,7 @@ export default function SubStore() {
         </button>
       </div>
 
+<<<<<<< HEAD
       {pendingGRN > 0 && filterStatus !== "FULFILLED" && (
         <PendingRequestIndicator
           pendingCount={pendingGRN}
@@ -357,6 +569,19 @@ export default function SubStore() {
           pageType={pageType}
         />
       )}
+=======
+      <RequestDashboard
+        pageType={pageType}
+        setFilterStatus={setFilterStatus}
+        filterStatus={filterStatus}
+        counts={{
+          pending: pendingGRN,
+          returnBack: pendingReturn,
+          emergency: 0,
+          disputed: 0
+        }}
+      />
+>>>>>>> 26059281a1f5d415afb96eba9a2d9b15cf93ee70
 
       {/* ── Filters ── */}
       <div className="flex h-full py-2  items-end justify-between">
@@ -375,9 +600,13 @@ export default function SubStore() {
             }}
             role={auth.role}
             subStores={subStores}
+            loading={pageLoading}
           />
           <button
-            onClick={load}
+            onClick={() => {
+              load()
+              fetchStoreData()
+            }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto hover:bg-gray-50 shadow-sm"
           >
             ↻ Refresh
@@ -444,8 +673,12 @@ export default function SubStore() {
                   detailLoad={detailLoad}
                   openDetail={openDetail}
                   openGRN={openGRN}
+                  scrapItem={scrapItem}
+                  scrapModalLoading={scrapModalLoading}
                   grnLoading={grnLoading}
                   pageType={pageType}
+                  returnItem={returnItem}
+                  returnModalLoading={returnModalLoading}
                 />
               ))
             )}
@@ -475,6 +708,26 @@ export default function SubStore() {
         />
       )}
 
+      {returnModal && (
+        <ReturnItemsModal
+          setReturnModal={setReturnModal}
+          handleReturn={handleReturn}
+          returnModalLoading={returnModalLoading}
+          returnForm={returnForm}
+          setReturnForm={setReturnForm}
+        />
+      )}
+
+      {scrapModal && (
+        <SubStoreScrapModal
+          scrapForm={scrapForm}
+          setScrapForm={setScrapForm}
+          handleScrap={handleScrap}
+          scrapModalLoading={scrapModalLoading}
+          setScrapModal={setScrapModal}
+        />
+      )}
+
       {/* Create Modal */}
       {showCreate && (
         <CreateRequestModal
@@ -482,7 +735,8 @@ export default function SubStore() {
           setItemForm={setItemForm}
           mainStores={mainStores}
           storeItems={storeItems}
-          reuseableItems={reuseableItems}
+          reusableItems={reusableItems}
+          usableItems={usableItems}
           onClose={() => setShowCreate(false)}
           onSubmit={handleCreate}
           addLine={addLine}

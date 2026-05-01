@@ -2,8 +2,8 @@ import { useState } from "react";
 import {
   getRequestById,
   fulfillRequest,
-  acceptReturn,
-  resendItems,
+  acceptReturnFromSub,
+  scrapByMain,
 } from "../../services/api";
 import StatusBadge from "../StatusBadge";
 import { useAuth } from "../../context/authContext";
@@ -12,11 +12,11 @@ import React from "react";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
 import DateTimeCell from "../DateTimeCell";
-import DisputeResolutionPanel from "../DisputeResolutionPanel";
 import RenderInlineDetail from "../RenderInlineDetail";
 import PendingRequestIndicator from "../PendingRequestIndicator";
 import StoreFilters from "../StoreFilters";
 import CheckLoadingAndError from "../CheckLoadingAndError";
+import RequestDashboard from "../RequestDashboard";
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MainSubStoreReqs({
@@ -32,6 +32,8 @@ export default function MainSubStoreReqs({
   const [fulfilling, setFulfilling] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [returnLoading, setReturnLoading] = useState(false)
+  const [scrapLoading, setScrapLoading] = useState(false)
 
   const { auth } = useAuth();
   const handleError = useErrorHandler();
@@ -80,6 +82,72 @@ export default function MainSubStoreReqs({
     }
   };
 
+  const handleAcceptReturn = async (id) => {
+    try {
+      setReturnLoading(true)
+      const response = await getRequestById(id)
+      const accepted_by_name = auth.username
+      const requestId = response.data.data.request_id;
+      console.log("requesid", requestId);
+      await acceptReturnFromSub(requestId, accepted_by_name)
+      setToast({ message: "Return accepted successfully", type: "success" });
+      onRefresh();
+    } catch (error) {
+      const msg = handleError(error, "Failed to fulfill");
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setReturnLoading(false)
+    }
+  }
+
+  const handleScrap = async (data) => {
+    try {
+      setScrapLoading(true);
+      const response = await getRequestById(data.request_id)
+      const requestDetails = response.data.data;
+
+      const formattedItems = requestDetails.items.map(item => ({
+        item_no: item.item_no,
+        quantity: item.requested_scrap_qty,
+        store_id: requestDetails.from_store_id,
+      }));
+
+      console.log("response main sub store reqs", response);
+      console.log("requestDetails main sub store reqs", requestDetails);
+      console.log("formatted items main sub store reqs", formattedItems);
+      console.log("formatted items items main sub store reqs", requestDetails.items);
+
+
+
+
+      await scrapByMain({
+        main_store_id: auth.store_id,
+        removed_by: auth.username,
+        items: formattedItems,
+        id: requestDetails.request_id
+      });
+
+      // setScrapLoading(false);
+
+      setToast({ message: "Items scrapped successfully", type: "success" });
+
+      // setScrapForm({
+      //   sendByName: "",
+      //   requestData: null,
+      //   note: "",
+      //   scrap_items: [],
+      // });
+
+      // load();
+      onRefresh()
+    } catch (error) {
+      const msg = handleError(error, "Failed to scrap items");
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setScrapLoading(false);
+    }
+  };
+
   const handleResolved = () => {
     setDetail(null);
     onRefresh();
@@ -99,33 +167,25 @@ export default function MainSubStoreReqs({
 
   const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
   const approvedCount = requests.filter((r) => r.status === "APPROVED").length;
-
-  // Count emergency requests that are APPROVED (waiting to be fulfilled)
-  const emergencyCount = requests.filter(
-    (r) => r.is_emergency && r.status === "APPROVED",
-  ).length;
+  const emergencyCount = requests.filter((r) => r.is_emergency && r.status === "APPROVED",).length;
+  const returnBack = requests.filter((r) => r.status === "RETURN_BACK").length
 
   const COL_COUNT = 10;
 
   return (
     <div>
-      {approvedCount > 0 && reqFilter !== "APPROVED" && (
-        <PendingRequestIndicator
-          pendingCount={approvedCount}
-          setFilterStatus={setReqFilter}
-          pageType={pageType}
-        />
-      )}
-
-      {disputedCount > 0 && reqFilter !== "DISPUTED" && (
-        <PendingRequestIndicator disputedCount={disputedCount} filterStatus={reqFilter} setFilterStatus={setReqFilter} pageType={pageType} />
-      )}
-
-
-      {/* Emergency alert banner */}
-      {emergencyCount > 0 && reqFilter !== "APPROVED" && (
-        <PendingRequestIndicator emergencyCount={emergencyCount} filterStatus={reqFilter} setFilterStatus={setReqFilter} pageType={pageType} />
-      )}
+      <RequestDashboard
+        pageType={pageType}
+        setFilterStatus={setReqFilter}
+        filterStatus={reqFilter}
+        data={paginatedData}
+        counts={{
+          pending: approvedCount,
+          emergency: emergencyCount,
+          disputed: disputedCount,
+          returnBack: returnBack
+        }}
+      />
 
       <div className="flex h-full py-2 items-end justify-between">
         <div>
@@ -138,14 +198,14 @@ export default function MainSubStoreReqs({
             pageType={pageType}
           />
           <button
-              onClick={() => {
-                setCurrentPage(1)
-                onRefresh()
-              }}
-              className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
-            >
-              ↻ Refresh
-            </button>
+            onClick={() => {
+              setCurrentPage(1)
+              onRefresh()
+            }}
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
+          >
+            ↻ Refresh
+          </button>
         </div>
 
         <div className="Temp-downloader">
@@ -195,7 +255,7 @@ export default function MainSubStoreReqs({
                 "درخواست کی تاریخ",
                 "تکمیل کی تاریخ",
                 "حالت",
-                "",
+                "عملیات",
               ].map((h) => (
                 <th
                   key={h}
@@ -264,10 +324,10 @@ export default function MainSubStoreReqs({
                       <td className="px-4 py-3 text-gray-500">
                         {r.fulfilled_by_name || "—"}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-gray-500">
                         <DateTimeCell ts={r.created_at} />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-gray-700">
                         <DateTimeCell ts={r.fulfilled_at} />
                       </td>
                       <td className="px-4 py-3">
@@ -293,6 +353,32 @@ export default function MainSubStoreReqs({
                               disabled={fulfilling === r.request_id}
                             >
                               {fulfilling === r.request_id ? "..." : "Fulfill"}
+                            </button>
+                          )}
+                          {r.status === "RETURN_BACK" && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAcceptReturn(r.request_id);
+                              }}
+                              className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
+                              disabled={returnLoading}
+                            >
+                              {fulfilling === r.request_id ? "..." : "Accept Return"}
+                            </button>
+                          )}
+                          {r.status === "SCRAPPED" && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleScrap(r);
+                                console.log("Requesti ddd", r);
+
+                              }}
+                              disabled={scrapLoading}
+                              className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
+                            >
+                              {scrapLoading ? "..." : "Accept Scrap"}
                             </button>
                           )}
                         </div>

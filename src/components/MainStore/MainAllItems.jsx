@@ -37,15 +37,6 @@ export default function MainAllItems({
   const [showAddItem, setShowAddItem] = useState(false);
   const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
   const [savingItem, setSavingItem] = useState(false);
-  const [scrapModal, setScrapModal] = useState(false);
-  const [scrapModalLoading, setScrapModalLoading] = useState(false);
-  const [scrapData, setScrapData] = useState([]);
-  const [scrapForm, setScrapForm] = useState({
-    removed_by: "",
-    note: "",
-    main_store_id: "",
-    items: [],
-  });
 
   const { auth } = useAuth();
   const handleError = useErrorHandler();
@@ -121,6 +112,44 @@ export default function MainAllItems({
     }
   };
 
+  const scrap = async () => {
+    try {
+      setScrapModalLoading(true);
+      setScrapData((f) => ({
+        ...f,
+        removed_by: auth.username,
+        main_store_id: auth.store_id,
+      }));
+      setScrapModal(true);
+    } catch (error) {
+      const msg = handleError(error, "Failed to open scrap modal");
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setScrapModalLoading(false);
+    }
+  };
+
+  const handleScrap = async (data) => {
+    try {
+      setScrapModalLoading(true);
+      const payload = {
+        ...data,
+        main_store_id: auth.store_id,
+        removed_by: auth.username,
+      };
+      console.log("Final Payload being sent to backend:", payload);
+      await scrapByMain(payload);
+      setScrapModal(false);
+      setToast({ message: "Scrap the items successfully", type: "success" });
+      onRefresh();
+    } catch (error) {
+      const msg = handleError(error, "Failed to scrap");
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setScrapModalLoading(false);
+    }
+  };
+
   // Replace the groupedItems block with this:
   // Replace the entire groupedItems block with this:
   const groupedItems = Object.values(
@@ -129,12 +158,14 @@ export default function MainAllItems({
       if (!acc[key]) {
         acc[key] = {
           ...row,
-          item_quantity: Number(row.item_quantity || 0),
-          sub_qty: Number(row.sub_qty || 0),
-          scrapped_qty: Number(row.scrapped_qty || 0),
-          remaining_qty: Number(row.remaining_qty || 0),
-          min_quantity: Number(row.min_quantity || 0),
+          total_qty: qty,
+          main_qty: isMain ? qty : 0,
+          sub_qty: isSub ? qty : 0,
         };
+      } else {
+        acc[row.item_no].total_qty += qty;
+        if (isMain) acc[row.item_no].main_qty += qty;
+        if (isSub) acc[row.item_no].sub_qty += qty;
       }
       return acc;
     }, {}),
@@ -258,7 +289,6 @@ export default function MainAllItems({
                 "مرکزی اسٹور کا اسٹاک",
                 "ذیلی اسٹورز کو بھیجا گیا",
                 "باقی اسٹاک",
-                "اسکریپ شدہ مقدار", // ← new
                 "کم از کم اسٹاک",
                 "حالت",
               ].map((h) => (
@@ -280,7 +310,7 @@ export default function MainAllItems({
               />
             ) : (
               paginatedItems.map((i) => {
-                const isLow = i.item_quantity <= i.min_quantity; // ← fixed: was i.main_qty
+                const isLow = i.main_qty <= parseFloat(i.min_quantity || 0);
                 return (
                   <tr
                     className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
@@ -300,16 +330,11 @@ export default function MainAllItems({
                     <td className="px-4 py-3 font-mono text-xs text-gray-600">
                       {i.item_uom || "―"}
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-600">
-                      {i.item_type || "―"}
-                    </td>
-
-                    {/* Main store stock */}
                     <td className="px-4 py-3">
                       <span
                         className={`font-mono font-bold ${isLow ? "text-red-500" : "text-emerald-600"}`}
                       >
-                        {i.item_quantity.toFixed(0)}
+                        {Number(i.main_qty).toFixed(0)}
                       </span>
                     </td>
 
@@ -326,8 +351,6 @@ export default function MainAllItems({
                         {i.remaining_qty.toFixed(0)}
                       </span>
                     </td>
-
-                    {/* Scrapped qty */}
                     <td className="px-4 py-3">
                       <span
                         className={`font-mono text-xs font-bold ${i.scrapped_qty > 0 ? "text-red-500" : "text-gray-400"}`}
@@ -335,8 +358,6 @@ export default function MainAllItems({
                         {i.scrapped_qty.toFixed(0)}
                       </span>
                     </td>
-
-                    {/* Min quantity */}
                     <td className="px-4 py-3 font-mono text-gray-400 text-xs">
                       {i.min_quantity.toFixed(0)}
                     </td>
@@ -355,17 +376,6 @@ export default function MainAllItems({
             )}
           </tbody>
         </table>
-
-        {scrapModal && (
-          <ScrapModal
-            handleScrap={handleScrap}
-            scrapModalLoading={scrapModalLoading}
-            setScrapModal={setScrapModal}
-            scrapData={scrapData}
-            setScrapForm={setScrapForm}
-            scrapForm={scrapForm}
-          />
-        )}
 
         <Pagination
           currentPage={currentPage}

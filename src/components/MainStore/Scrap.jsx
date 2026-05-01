@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import API from "../services/api";
+import API from "../../services/api";
 
 const STATUS_COLORS = {
   AVAILABLE: "bg-emerald-50 border-emerald-300 text-emerald-700",
@@ -16,7 +16,7 @@ const EMPTY_FORM = {
 };
 const EMPTY_TRANSFER = { asset_id: "", from_store_id: "", to_store_id: "" };
 
-export default function Assets({ showToast }) {
+export default function Scrap({ showToast }) {
   const [assets, setAssets] = useState([]);
   const [stores, setStores] = useState([]); // ← fetched internally
   const [loading, setLoading] = useState(true);
@@ -156,12 +156,11 @@ export default function Assets({ showToast }) {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-                "Reusable Items",
-                "Reusable Items No.",
-                "Store ?",
-                "Current Status",
-                "Assigned To",
-                "Actions",
+                "آئٹم نمبر",
+                "نام",
+                "زمرہ",
+                "اکائی",
+                "آئٹم کی قسم",
               ].map((h) => (
                 <th
                   key={h}
@@ -173,7 +172,7 @@ export default function Assets({ showToast }) {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {/* {loading ? (
               <tr>
                 <td colSpan={6} className="text-center py-12">
                   <div className="flex justify-center">
@@ -227,7 +226,7 @@ export default function Assets({ showToast }) {
                   </td>
                 </tr>
               ))
-            )}
+            )} */}
           </tbody>
         </table>
       </div>
@@ -379,33 +378,3 @@ export default function Assets({ showToast }) {
   );
 }
 
-// ── Tiny helpers ──────────────────────────────────────────────────────────────
-const inputCls =
-  "w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500";
-
-const Field = ({ label, children }) => (
-  <div>
-    <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-      {label}
-    </label>
-    {children}
-  </div>
-);
-
-const Modal = ({ title, onClose, children }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-    <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-md shadow-2xl">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-        <h2 className="text-gray-900 font-bold text-sm">{title}</h2>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-700 text-xl"
-        >
-          ×
-        </button>
-      </div>
-      <div className="p-5">{children}</div>
-    </div>
-  </div>
-);

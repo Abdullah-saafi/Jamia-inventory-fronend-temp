@@ -17,7 +17,7 @@ import AddStoreTab from "./components/Admin/AddStoreTab";
 import NotFound from "./pages/NotFound";
 import EditUser from "./components/Admin/EditUser";
 import EditStore from "./components/Admin/EditStore";
-import Assets from "./pages/Assets";
+import Scrap from "./components/MainStore/Scrap";
 import AddItemsAndCategories from "./components/Admin/AddItemsAndCategories";
 
 export default function App() {
@@ -39,18 +39,6 @@ export default function App() {
               >
                 <Route path="/substore-staff" element={<SubStoreStaff />} />
               </Route>
-
-              {/* test */}
-
-              <Route
-                element={
-                  <ProtectedRoute allowedRoles={["sub-store", "super admin"]} />
-                }
-              >
-                <Route path="/assets" element={<Assets />} />
-              </Route>
-
-              {/* test */}
 
               {/* Sub Store Manager — 1st level approval */}
               <Route

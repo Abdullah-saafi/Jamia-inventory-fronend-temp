@@ -2,7 +2,7 @@ import { useState } from "react";
 
 const ConditionBadge = ({ condition }) => {
   const styles = {
-    OK:      "bg-emerald-50 border-emerald-300 text-emerald-700",
+    OK: "bg-emerald-50 border-emerald-300 text-emerald-700",
     DAMAGED: "bg-amber-50  border-amber-300  text-amber-700",
     MISSING: "bg-red-50    border-red-300    text-red-700",
   };
@@ -18,13 +18,19 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
   const [items, setItems] = useState(
     (request.items || []).map((i) => ({
       request_item_id: i.request_item_id,
-      item_no:         i.item_no,
-      item_name:       i.item_name,
-      item_uom:        i.item_uom,
-      fulfilled_qty:   i.fulfilled_qty ?? i.approved_qty ?? i.requested_qty,
-      received_qty:    i.fulfilled_qty ?? i.approved_qty ?? i.requested_qty,
-      item_condition:  "OK",
+      item_no: i.item_no,
+      item_name: i.item_name,
+      item_uom: i.item_uom,
+      fulfilled_qty: i.fulfilled_qty ?? i.approved_qty ?? i.requested_qty,
+      received_qty: i.fulfilled_qty ?? i.approved_qty ?? i.requested_qty,
+      item_condition: "OK",
     })),
+  );
+
+  const hasInvalidDamage = items.some(
+    (i) =>
+      Number(i.received_qty) === Number(i.fulfilled_qty) &&
+      (i.item_condition === "DAMAGED" || i.item_condition === "MISSING")
   );
 
   const updateItem = (idx, field, value) =>
@@ -54,7 +60,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
       grn_note: grnNote.trim() || null,
       received_items: items.map(({ request_item_id, received_qty, item_condition }) => ({
         request_item_id,
-        received_qty:   Number(received_qty),
+        received_qty: Number(received_qty),
         item_condition,
       })),
     });
@@ -67,7 +73,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
       grn_note: grnNote.trim() || "Delivery rejected by sub store.",
       received_items: items.map(({ request_item_id }) => ({
         request_item_id,
-        received_qty:  0,
+        received_qty: 0,
         item_condition: "MISSING",
       })),
     });
@@ -117,11 +123,10 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
         <div className="p-6 space-y-5 flex-1">
           {/* Live status pill */}
           <div
-            className={`flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border ${
-              hasIssues
-                ? "bg-amber-50 border-amber-200 text-amber-700"
-                : "bg-emerald-50 border-emerald-200 text-emerald-700"
-            }`}
+            className={`flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border ${hasIssues
+              ? "bg-amber-50 border-amber-200 text-amber-700"
+              : "bg-emerald-50 border-emerald-200 text-emerald-700"
+              }`}
           >
             <span
               className={`w-2 h-2 rounded-full ${hasIssues ? "bg-amber-400" : "bg-emerald-400"}`}
@@ -174,18 +179,20 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                             Math.max(0, Number(e.target.value)),
                           );
                           updateItem(idx, "received_qty", val);
-                          if (val === 0 && item.item_condition === "OK") {
+                          if (val === 0) {
                             updateItem(idx, "item_condition", "MISSING");
-                          }
-                          if (val > 0 && item.item_condition === "MISSING") {
+                          } else if (val < item.fulfilled_qty) {
+                            if (item.item_condition === "OK") {
+                              updateItem(idx, "item_condition", "MISSING");
+                            }
+                          } else if (val === item.fulfilled_qty) {
                             updateItem(idx, "item_condition", "OK");
                           }
                         }}
-                        className={`w-20 border rounded px-2 py-1 text-sm font-mono focus:outline-none ${
-                          Number(item.received_qty) < Number(item.fulfilled_qty)
-                            ? "border-amber-300 text-amber-700 bg-amber-50"
-                            : "border-gray-300 text-gray-800"
-                        }`}
+                        className={`w-20 border rounded px-2 py-1 text-sm font-mono focus:outline-none ${Number(item.received_qty) < Number(item.fulfilled_qty)
+                          ? "border-amber-300 text-amber-700 bg-amber-50"
+                          : "border-gray-300 text-gray-800"
+                          }`}
                       />
                     </td>
                     <td className="px-4 py-3">
@@ -197,13 +204,12 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                             updateItem(idx, "received_qty", 0);
                           }
                         }}
-                        className={`border rounded px-2 py-1 text-xs font-semibold focus:outline-none ${
-                          item.item_condition === "OK"
-                            ? "border-emerald-300 text-emerald-700 bg-emerald-50"
-                            : item.item_condition === "DAMAGED"
+                        className={`border rounded px-2 py-1 text-xs font-semibold focus:outline-none ${item.item_condition === "OK"
+                          ? "border-emerald-300 text-emerald-700 bg-emerald-50"
+                          : item.item_condition === "DAMAGED"
                             ? "border-amber-300 text-amber-700 bg-amber-50"
                             : "border-red-300 text-red-700 bg-red-50"
-                        }`}
+                          }`}
                       >
                         <option value="OK">✓ OK</option>
                         <option value="DAMAGED">⚠ Damaged</option>
@@ -290,18 +296,17 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
             </button>
             <button
               onClick={handleConfirm}
-              disabled={submitting}
-              className={`text-sm font-semibold text-white px-5 py-2 rounded-lg transition-colors disabled:opacity-40 ${
-                hasIssues
-                  ? "bg-amber-500 hover:bg-amber-400"
-                  : "bg-emerald-600 hover:bg-emerald-500"
-              }`}
+              disabled={submitting || hasInvalidDamage}
+              className={`text-sm font-semibold text-white px-5 py-2 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${hasIssues
+                ? "bg-amber-500 hover:bg-amber-400"
+                : "bg-emerald-600 hover:bg-emerald-500"
+                }`}
             >
               {submitting
                 ? "Submitting…"
                 : hasIssues
-                ? "Submit with Issues"
-                : "✓ Confirm Receipt"}
+                  ? "Submit with Issues"
+                  : "✓ Confirm Receipt"}
             </button>
           </div>
         </div>

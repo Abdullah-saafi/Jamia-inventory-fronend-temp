@@ -1,6 +1,7 @@
 import { useState } from "react";
 import useErrorHandler from "./useErrorHandler";
 import StatusBadge from "./StatusBadge";
+import { acceptReturn, resendItems } from "../services/api";
 
 const DisputeResolutionPanel = ({
   request,
@@ -40,6 +41,7 @@ const DisputeResolutionPanel = ({
     try {
       const res = await resendItems(request.request_id, {
         resolved_by_name: managerName,
+        item_type: request.item_type
       });
       setToast({message: res.data?.message || "New request created and ready to fulfill"});
       onResolved();

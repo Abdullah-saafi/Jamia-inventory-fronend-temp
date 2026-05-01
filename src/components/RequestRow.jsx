@@ -13,21 +13,26 @@ export default function RequestRow({
   pageType,
   actioning,
   openApprove,
-  openReject
+  openReject,
+  returnItem,
+  returnModalLoading,
+  scrapItem,
+  scrapModalLoading
 }) {
   const isExpanded = detail && detail.request_id === r.request_id;
   const needsGRN = r.status === "FULFILLED" && !r.grn_at;
   const isDisputed = r.status === "DISPUTED";
   const isReceived = r.status === "RECEIVED";
-  const isREUSEABLE = r.item
+  const isREUSABLE = r.item
   const hasItems = (r.item_count ?? 0) > 0;
   const hasAssets = (r.asset_count ?? 0) > 0;
-  const isReturnable = detail?.items[0]?.item_type === "REUSEABLE"
+  const isReturnable = r.item_type === "REUSABLE" ? true : false
+  const isScrappable = r.status === "RECEIVED" && (r.scrap_remaining ?? r.item_count ?? 0) > 0;
 
   return (
     <>
       <tr
-        className={`border-b border-gray-100 cursor-pointer transition-colors ${needsGRN
+        className={`border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-100 ${needsGRN
           ? "bg-blue-50/40 hover:bg-blue-50"
           : isDisputed
             ? "bg-amber-50/40 hover:bg-amber-50"
@@ -72,6 +77,11 @@ export default function RequestRow({
         <td className="px-4 py-3">
           <DateTimeCell ts={r.fulfilled_at} />
         </td>
+        {/* <td className="px-4 py-3 font-mono text-xs font-bold text-red-500">
+          {Number(r.total_scrap_qty ?? 0) > 0
+            ? Number(r.total_scrap_qty).toFixed(0)
+            : "—"}
+        </td> */}
         <td className="px-4 py-3 text-right">
           <div className="flex items-center justify-end gap-2">
             {(needsGRN && pageType === "subStore") && (
@@ -83,13 +93,28 @@ export default function RequestRow({
                 {grnLoading ? "…" : "Verify Delivery"}
               </button>
             )}
-            {isReturnable && (
-               <button
-                onClick={(e) => openGRN(e, r)}
-                disabled={grnLoading}
-                className="text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
+            {isReturnable && pageType === "subStore" && (r.status === "RECEIVED" || r.status === "DISPUTED") && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  returnItem(r.request_id,)
+                }}
+                disabled={returnModalLoading}
+                className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
               >
-                {grnLoading ? "…" : "Return Items"}
+                {returnModalLoading ? "…" : "Return Items"}
+              </button>
+            )}
+            {isScrappable && pageType === "subStore" && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  scrapItem(r.request_id,);
+                }}
+                disabled={scrapModalLoading}
+                className="text-xs bg-red-600 hover:bg-red-500 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
+              >
+                {scrapModalLoading ? "…" : "Scrap"}
               </button>
             )}
             {(r.status === "PENDING" && pageType === "subStoreManager") && (
@@ -166,6 +191,14 @@ export default function RequestRow({
                     items={detail?.items || []}
                     isDisputed={isDisputed}
                     isReceived={isReceived}
+                    isScrapped={
+                      detail?.status === "SCRAPPED" ||
+                      detail?.status === "SCRAP_ACCEPTED"
+                    }
+                    isScrapVisible={
+                      isReceived &&
+                      (detail?.items || []).some((i) => Number(i.scrap_qty) > 0)
+                    }
                   />
                 </div>
               </div>

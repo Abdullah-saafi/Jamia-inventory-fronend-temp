@@ -9,18 +9,15 @@ import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
 import BlockedUI from "../components/BlockedUI";
 import useErrorHandler from "../components/useErrorHandler";
-import ItemsTable from "../components/ItemsTable";
 import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Pagination from "../components/Pagination";
 import StoreFilters from "../components/StoreFilters";
-import StatusBadge from "../components/StatusBadge";
-import DateTimeCell from "../components/DateTimeCell";
 import PendingRequestIndicator from "../components/PendingRequestIndicator";
 import RequestRow from "../components/RequestRow";
 import ApproveRejectModal from "../components/ApproveRejectModal";
 import TableHead from "../components/TableHead";
-import TableBody from "../components/TableBody";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
+import RequestDashboard from "../components/RequestDashboard";
 
 export default function SubStoreManager() {
   const [requests, setRequests] = useState([]);
@@ -150,6 +147,9 @@ export default function SubStoreManager() {
     if (!approverName.trim()) return;
     setActioning(true);
     try {
+      console.log("Approver modal", approveModal);
+      console.log("edited items", editedItems);
+
       await approveRequest(approveModal.request_id, {
         approved_by_name: approverName,
         approved_items: editedItems.map((i) => ({
@@ -217,13 +217,18 @@ export default function SubStoreManager() {
           </p>
         </div>
       </div>
-
-      {pendingCount > 0 && filterStatus !== "PENDING" && (
-        <PendingRequestIndicator
-          pendingCount={pendingCount}
-          setFilterStatus={setFilterStatus}
-          pageType={pageType} />
-      )}
+      
+        <RequestDashboard
+        pageType={pageType}
+        setFilterStatus={setFilterStatus}
+        filterStatus={filterStatus}
+        counts={{
+          pending: pendingCount,
+          returnBack: 0,
+          emergency: 0,
+          disputed: 0
+        }}
+      />
 
       <div className="flex h-full py-2  items-end justify-between">
         <div className="Filter">
