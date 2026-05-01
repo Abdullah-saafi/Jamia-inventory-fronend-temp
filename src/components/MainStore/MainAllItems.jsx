@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { createItem } from "../../services/api";
+import { createItem, scrapByMain } from "../../services/api";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
 import { useAuth } from "../../context/authContext";
 import useErrorHandler from "../useErrorHandler";
 import CheckLoadingAndError from "../CheckLoadingAndError";
 import AddItemModal from "../AddItemModal";
+import ScrapModal from "../ScrapModal";
 
 const EMPTY_NEW_ITEM = {
   item_no: "",
@@ -36,6 +37,15 @@ export default function MainAllItems({
   const [showAddItem, setShowAddItem] = useState(false);
   const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
   const [savingItem, setSavingItem] = useState(false);
+  const [scrapModal, setScrapModal] = useState(false);
+  const [scrapModalLoading, setScrapModalLoading] = useState(false);
+  const [scrapData, setScrapData] = useState([]);
+  const [scrapForm, setScrapForm] = useState({
+    removed_by: "",
+    note: "",
+    main_store_id: "",
+    items: [],
+  });
 
   const { auth } = useAuth();
   const handleError = useErrorHandler();
@@ -73,27 +83,62 @@ export default function MainAllItems({
     }
   };
 
+  const scrap = async () => {
+    try {
+      setScrapModalLoading(true);
+      setScrapData((f) => ({
+        ...f,
+        removed_by: auth.username,
+        main_store_id: auth.store_id,
+      }));
+      setScrapModal(true);
+    } catch (error) {
+      const msg = handleError(error, "Failed to open scrap modal");
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setScrapModalLoading(false);
+    }
+  };
+
+  const handleScrap = async (data) => {
+    try {
+      setScrapModalLoading(true);
+      const payload = {
+        ...data,
+        main_store_id: auth.store_id,
+        removed_by: auth.username,
+      };
+      console.log("Final Payload being sent to backend:", payload);
+      await scrapByMain(payload);
+      setScrapModal(false);
+      setToast({ message: "Scrap the items successfully", type: "success" });
+      onRefresh();
+    } catch (error) {
+      const msg = handleError(error, "Failed to scrap");
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setScrapModalLoading(false);
+    }
+  };
+
+  // Replace the groupedItems block with this:
+  // Replace the entire groupedItems block with this:
   const groupedItems = Object.values(
     allItems.reduce((acc, row) => {
-      const qty = parseFloat(row.item_quantity || 0);
-      const isMain = row.store_type === "MAIN_STORE";
-      const isSub = row.store_type === "SUB_STORE";
-      if (!acc[row.item_no]) {
-        acc[row.item_no] = {
+      const key = `${row.item_no}_${row.store_id}`;
+      if (!acc[key]) {
+        acc[key] = {
           ...row,
-          total_qty: qty,
-          main_qty: isMain ? qty : 0,
-          sub_qty: isSub ? qty : 0,
+          item_quantity: Number(row.item_quantity || 0),
+          sub_qty: Number(row.sub_qty || 0),
+          scrapped_qty: Number(row.scrapped_qty || 0),
+          remaining_qty: Number(row.remaining_qty || 0),
+          min_quantity: Number(row.min_quantity || 0),
         };
-      } else {
-        acc[row.item_no].total_qty += qty;
-        if (isMain) acc[row.item_no].main_qty += qty;
-        if (isSub) acc[row.item_no].sub_qty += qty;
       }
       return acc;
     }, {}),
   );
-
   const categories = [
     ...new Set(allItems.map((i) => i.category).filter(Boolean)),
   ];
@@ -101,7 +146,9 @@ export default function MainAllItems({
   const filteredItems = groupedItems.filter((i) => {
     const q = search.toLowerCase();
     return (
-      (!search || i.item_name.toLowerCase().includes(q) || i.item_no.toLowerCase().includes(q)) &&
+      (!search ||
+        i.item_name.toLowerCase().includes(q) ||
+        i.item_no.toLowerCase().includes(q)) &&
       (!filterCategory || i.category === filterCategory) &&
       (!filterType || i.item_type === filterType)
     );
@@ -114,15 +161,6 @@ export default function MainAllItems({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={openAddItem}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded flex items-center gap-1.5 shadow-sm ml-auto"
-        >
-          <span className="text-base leading-none">+</span> نئی اشیاء شامل کریں
-        </button>
-      </div>
-
       <div className="flex items-end justify-between py-2">
         <div className="">
           <input
@@ -158,14 +196,14 @@ export default function MainAllItems({
             className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm mr-2"
           >
             <option value="">آئٹم کی قسم</option>
-            <option value="USEABLE">Consumeable</option>
-            <option value="REUSEABLE">Non-Consumeable</option>
+            <option value="USABLE">USABLE</option>
+            <option value="REUSABLE">REUSABLE</option>
           </select>
           {(search || filterCategory || filterType) && (
             <button
               onClick={() => {
                 setSearch("");
-                setFilterType("")
+                setFilterType("");
                 setFilterCategory("");
                 setCurrentPage(1);
               }}
@@ -176,10 +214,10 @@ export default function MainAllItems({
           )}
           <button
             onClick={() => {
-              setSearch("")
-              setFilterCategory("")
-              setCurrentPage(1)
-              onRefresh()
+              setSearch("");
+              setFilterCategory("");
+              setCurrentPage(1);
+              onRefresh();
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >
@@ -216,9 +254,11 @@ export default function MainAllItems({
                 "نام",
                 "زمرہ",
                 "اکائی",
+                "آئٹم کی قسم",
                 "مرکزی اسٹور کا اسٹاک",
                 "ذیلی اسٹورز کو بھیجا گیا",
                 "باقی اسٹاک",
+                "اسکریپ شدہ مقدار", // ← new
                 "کم از کم اسٹاک",
                 "حالت",
               ].map((h) => (
@@ -232,19 +272,19 @@ export default function MainAllItems({
             </tr>
           </thead>
           <tbody>
-            {(loading || mainStoreError || paginatedItems.length === 0) ? (
+            {loading || mainStoreError || paginatedItems.length === 0 ? (
               <CheckLoadingAndError
                 loading={loading}
                 error={mainStoreError}
                 requests={paginatedItems}
               />
             ) : (
-               paginatedItems.map((i) => {
-                const isLow = i.main_qty <= parseFloat(i.min_quantity || 0);
+              paginatedItems.map((i) => {
+                const isLow = i.item_quantity <= i.min_quantity; // ← fixed: was i.main_qty
                 return (
                   <tr
-                    key={i.item_no}
                     className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    key={`${i.item_no}_${i.store_id}`}
                   >
                     <td className="px-4 py-3">
                       <span className="font-mono text-emerald-600 text-xs">
@@ -260,26 +300,48 @@ export default function MainAllItems({
                     <td className="px-4 py-3 font-mono text-xs text-gray-600">
                       {i.item_uom || "―"}
                     </td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-600">
+                      {i.item_type || "―"}
+                    </td>
+
+                    {/* Main store stock */}
                     <td className="px-4 py-3">
                       <span
                         className={`font-mono font-bold ${isLow ? "text-red-500" : "text-emerald-600"}`}
                       >
-                        {Number(i.main_qty).toFixed(0)}
+                        {i.item_quantity.toFixed(0)}
                       </span>
                     </td>
+
+                    {/* Sent to sub stores */}
                     <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">
-                      {Number(i.sub_qty).toFixed(0)}
+                      {i.sub_qty.toFixed(0)}
                     </td>
+
+                    {/* Remaining = item_quantity (backend already tracks this correctly) */}
                     <td className="px-4 py-3">
                       <span
-                        className={`font-mono text-xs font-bold ${i.main_qty - i.sub_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
+                        className={`font-mono text-xs font-bold ${i.remaining_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
                       >
-                        {Number(i.main_qty - i.sub_qty).toFixed(0)}
+                        {i.remaining_qty.toFixed(0)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-mono text-gray-400 text-xs">
-                      {i.min_quantity ?? "—"}
+
+                    {/* Scrapped qty */}
+                    <td className="px-4 py-3">
+                      <span
+                        className={`font-mono text-xs font-bold ${i.scrapped_qty > 0 ? "text-red-500" : "text-gray-400"}`}
+                      >
+                        {i.scrapped_qty.toFixed(0)}
+                      </span>
                     </td>
+
+                    {/* Min quantity */}
+                    <td className="px-4 py-3 font-mono text-gray-400 text-xs">
+                      {i.min_quantity.toFixed(0)}
+                    </td>
+
+                    {/* Status */}
                     <td className="px-4 py-3">
                       <span
                         className={`text-xs font-semibold ${isLow ? "text-red-500" : "text-emerald-600"}`}
@@ -293,6 +355,17 @@ export default function MainAllItems({
             )}
           </tbody>
         </table>
+
+        {scrapModal && (
+          <ScrapModal
+            handleScrap={handleScrap}
+            scrapModalLoading={scrapModalLoading}
+            setScrapModal={setScrapModal}
+            scrapData={scrapData}
+            setScrapForm={setScrapForm}
+            scrapForm={scrapForm}
+          />
+        )}
 
         <Pagination
           currentPage={currentPage}
