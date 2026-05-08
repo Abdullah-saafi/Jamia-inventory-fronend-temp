@@ -31,6 +31,22 @@ export default function MainStore() {
   const [mainStoreError, setMainStoreError] = useState("");
   const [toast, setToast] = useState(null);
 
+  // ── Pagination ────────────────────────────────────────────────────────────────────
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageLimit, setPageLimit] = useState(10);
+
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    pageLimit: 10,
+    totalItems: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+
+  const [requestStatusFilter, setRequestStatusFilter] = useState("");
+
   // ── Auth And Error ──────────────────────────────────────────────────────────
 
   const { auth } = useAuth();
@@ -43,13 +59,19 @@ export default function MainStore() {
     if (!silent) setLoading(true);
     try {
       const [rRes, sRes, iRes, hoReqRes] = await Promise.all([
-        getRequests({ direction: "SUB_TO_MAIN" }),
+        getRequests({
+          direction: "SUB_TO_MAIN",
+          page: currentPage,
+          limit: pageLimit,
+          status: requestStatusFilter || undefined,
+        }),
         getStores(),
         getItems(),
         getRequests({ direction: "MAIN_TO_HO" }),
       ]);
 
       setRequests(rRes.data.data);
+      setPagination(rRes.data.pagination);
       setHoRequests(hoReqRes.data.data);
       setAllItems(iRes.data.data);
 
@@ -62,16 +84,16 @@ export default function MainStore() {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, []);
+  }, [currentPage, pageLimit, requestStatusFilter]);
 
   useEffect(() => {
     fetchData(false);
   }, [fetchData]);
 
   useEffect(() => {
-      setTimeout(() => {
-        setToast(null);
-      }, 3000); 
+    setTimeout(() => {
+      setToast(null);
+    }, 3000);
   }, [toast]);
 
   const refresh = useCallback(() => fetchData(false), [fetchData]);
@@ -114,21 +136,19 @@ export default function MainStore() {
                 key={t.id}
                 onClick={() => setTab(t.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors
-            ${
-              tab === t.id
-                ? "bg-emerald-600 text-white"
-                : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-            }`}
+            ${tab === t.id
+                    ? "bg-emerald-600 text-white"
+                    : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                  }`}
               >
                 {t.label}
                 {badge && (
                   <span
                     className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none
-                ${
-                  tab === t.id
-                    ? "bg-white/20 text-white"
-                    : "bg-emerald-600 text-white"
-                }`}
+                ${tab === t.id
+                        ? "bg-white/20 text-white"
+                        : "bg-emerald-600 text-white"
+                      }`}
                   >
                     {badge}
                   </span>
@@ -145,11 +165,10 @@ export default function MainStore() {
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors
-          ${
-            tab === t.id
-              ? "bg-emerald-600 text-white"
-              : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-          }`}
+          ${tab === t.id
+                  ? "bg-emerald-600 text-white"
+                  : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                }`}
             >
               {t.label}
             </button>
@@ -170,13 +189,18 @@ export default function MainStore() {
 
       {tab === "scrap" && (
         <Scrap
-          
+
         />
       )}
 
       {tab === "requests" && (
         <MainSubStoreReqs
           requests={requests}
+          pagination={pagination}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          setPageLimit={setPageLimit}
+          onFilterChange={setRequestStatusFilter}
           onRefresh={refresh}
           setToast={setToast}
           loading={loading}

@@ -15,7 +15,6 @@ import Toast from "../components/Toast";
 import StoreFilters from "../components/StoreFilters";
 import Pagination from "../components/Pagination";
 import CreateRequestModal from "../components/CreateRequestModal";
-import PendingRequestIndicator from "../components/PendingRequestIndicator";
 import RequestRow from "../components/RequestRow";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
@@ -87,6 +86,15 @@ export default function SubStore() {
     returnData: [],
     note: "",
   });
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    pageLimit: 10,
+    totalItems: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+
 
   const { auth } = useAuth();
   const handleError = useErrorHandler()
@@ -96,7 +104,12 @@ export default function SubStore() {
   const load = async () => {
     setPageLoading(true);
     try {
-      const params = { direction: "SUB_TO_MAIN" };
+      const params = {
+        direction: "SUB_TO_MAIN",
+        page,
+        limit: pageSize,
+      };
+
       if (filterStatus) params.status = filterStatus;
       if (auth.role !== "super admin") {
         params.store_id = auth.store_id;
@@ -113,7 +126,8 @@ export default function SubStore() {
       if (!filterStatus) {
         setAllRequests(rRes.data.data)
       }
-      setRequests(rRes.data.data);
+      setRequests(rRes.data.data || []);
+      setPagination(rRes.data.pagination);
     } catch (error) {
       const msg = handleError(error, "Failed to load data")
       setError(msg);
@@ -225,8 +239,16 @@ export default function SubStore() {
   }, [toast]);
 
   useEffect(() => {
-    if (auth.store_id || auth.role === "super admin") load();
-  }, [filterStatus, filterStore, auth.store_id]);
+    if (auth.store_id || auth.role === "super admin") {
+      load();
+    }
+  }, [
+    filterStatus,
+    filterStore,
+    auth.store_id,
+    page,
+    pageSize,
+  ]);
 
   useEffect(() => {
     fetchStoreData()
@@ -371,7 +393,7 @@ export default function SubStore() {
         returned_items: returnForm.returnData.items
           .map((i) => ({
             request_item_id: i.request_item_id,
-            returned_qty: Number(i.return_qty_input || 0),
+            returned_qty: Number(i.return_qty_input || i.received_qty),
           }))
           .filter((i) => i.returned_qty > 0),
       };
@@ -456,7 +478,7 @@ export default function SubStore() {
 
   const pendingReturn = allRequests.filter((r) => r.status === "RECEIVED" && r.item_type === "REUSABLE").length
 
-  const paginated = requests.slice((page - 1) * pageSize, page * pageSize);
+  // const paginated = requests.slice((page - 1) * pageSize, page * pageSize);
 
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message} />;
@@ -575,7 +597,7 @@ export default function SubStore() {
                 requests={requests}
               />
             ) : (
-              paginated.map((r) => (
+              requests.map((r) => (
                 <RequestRow
                   key={r.request_id}
                   r={r}
@@ -596,9 +618,9 @@ export default function SubStore() {
         </table>
 
         <Pagination
-          currentPage={page}
-          totalItems={requests.length}
-          pageSize={pageSize}
+          currentPage={pagination.currentPage}
+          totalItems={pagination.totalItems}
+          pageSize={pagination.pageLimit}
           onPageChange={setPage}
           pageSizeOptions={[10, 25, 50]}
           onPageSizeChange={(s) => {
@@ -606,6 +628,7 @@ export default function SubStore() {
             setPage(1);
           }}
         />
+
       </div>
 
       {/* GRN Modal */}

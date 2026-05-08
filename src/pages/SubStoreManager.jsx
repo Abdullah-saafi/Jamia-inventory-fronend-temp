@@ -37,6 +37,14 @@ export default function SubStoreManager() {
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    pageLimit: 10,
+    totalItems: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
 
   const { auth } = useAuth();
   const handleError = useErrorHandler();
@@ -53,7 +61,11 @@ export default function SubStoreManager() {
   const load = async () => {
     setLoading(true);
     try {
-      const params = { direction: "SUB_TO_MAIN" };
+      const params = {
+        direction: "SUB_TO_MAIN",
+        page,
+        limit: pageSize,
+      };
       if (filterStatus) params.status = filterStatus;
       if (auth.role !== "super admin" && auth.store_id)
         params.store_id = auth.store_id;
@@ -63,7 +75,8 @@ export default function SubStoreManager() {
       if (!filterStatus) {
         setAllRequests(r.data.data)
       }
-      setRequests(r.data.data);
+      setRequests(r.data.data || []);
+      setPagination(r.data.pagination);
     } catch (error) {
       const msg = handleError(error, "Failed to load requests");
       setError(msg);
@@ -74,7 +87,7 @@ export default function SubStoreManager() {
 
   useEffect(() => {
     load();
-  }, [filterStatus, filterStore, auth.store_id]);
+  }, [filterStatus, filterStore, auth.store_id, page, pageSize,]);
 
   useEffect(() => {
     if (auth.role === "super admin") {
@@ -194,11 +207,6 @@ export default function SubStoreManager() {
     }
   };
 
-  const paginatedRequests = requests.slice(
-    (page - 1) * pageSize,
-    page * pageSize,
-  );
-
   const pendingCount = allRequests.filter((r) => r.status === "PENDING").length;
 
   if (auth.isBlocked) {
@@ -217,8 +225,8 @@ export default function SubStoreManager() {
           </p>
         </div>
       </div>
-      
-        <RequestDashboard
+
+      <RequestDashboard
         pageType={pageType}
         setFilterStatus={setFilterStatus}
         filterStatus={filterStatus}
@@ -287,14 +295,14 @@ export default function SubStoreManager() {
             <TableHead />
           </thead>
           <tbody>
-            {(loading || error || paginatedRequests.length === 0) ? (
+            {(loading || error || requests.length === 0) ? (
               <CheckLoadingAndError
                 loading={loading}
                 error={error}
-                requests={paginatedRequests}
+                requests={requests}
               />
             ) : (
-              paginatedRequests.map((r) => (
+              requests.map((r) => (
                 <RequestRow
                   key={r.request_id}
                   r={r}
@@ -312,12 +320,15 @@ export default function SubStoreManager() {
         </table>
 
         <Pagination
-          currentPage={page}
-          totalItems={requests.length}
-          pageSize={pageSize}
+          currentPage={pagination.currentPage}
+          totalItems={pagination.totalItems}
+          pageSize={pagination.pageLimit}
           onPageChange={setPage}
           pageSizeOptions={[10, 25, 50]}
-          onPageSizeChange={setPageSize}
+          onPageSizeChange={(s) => {
+            setPageSize(s);
+            setPage(1);
+          }}
         />
       </div>
 

@@ -332,7 +332,7 @@ export default function MainAllItems({
                       <span
                         className={`font-mono text-xs font-bold ${i.main_qty - i.sub_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
                       >
-                        {Number(i.main_qty - i.sub_qty).toFixed(0)}
+                        {Number(i.main_qty - i.sub_qty - i.transit_qty).toFixed(0)}
                       </span>
                     </td>
 
