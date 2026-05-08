@@ -48,6 +48,7 @@ const AddItemsAndCategories = () => {
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [categorySearch, setCategorySearch] = useState("");
   const [deletingId, setDeletingId] = useState(null);
+  const [showUOMDropDown, setShowUOMDropDown] = useState(false);
 
   const handleError = useErrorHandler();
 
@@ -59,9 +60,9 @@ const AddItemsAndCategories = () => {
         getUOM(),
         getCategories()
       ]);
-      const list = res.data.data || res.data;
+      const list = cRes.data.data || cRes.data;
       setCategories(Array.isArray(list) ? list : []);
-      stores = s.data.data || s.data;
+      const stores = sRes.data.data || sRes.data;
       if (Array.isArray(stores)) {
         setMainStores(stores.filter((s) => s.store_type === "MAIN_STORE"));
       }
@@ -168,7 +169,8 @@ const AddItemsAndCategories = () => {
       await createCategory(newCategory);
       setToast({ message: "Category added successfully", type: "success" });
       setNewCategory(EMPTY_NEW_CATEGORY);
-      fetchCategories();
+      // fetchCategories();
+      fetchData()
     } catch (e) {
       setCategoryServerError(
         e.response?.data?.message || e.message || "Failed to add category",
@@ -183,7 +185,8 @@ const AddItemsAndCategories = () => {
     try {
       await deleteCategory(id);
       setToast({ message: "Category deleted", type: "success" });
-      fetchCategories();
+      // fetchCategories();
+      fetchData()
     } catch (e) {
       const msg = handleError(e, "Failed to delete category");
       setToast({ message: msg, type: "error" });
@@ -263,6 +266,10 @@ const AddItemsAndCategories = () => {
                   </div>
 
                   <div>
+                    <button onClick={() => {
+                      console.log("Log", uom);
+
+                    }}>Click</button>
                     <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                       اشیاء کا نام
                     </label>
@@ -318,6 +325,7 @@ const AddItemsAndCategories = () => {
                         value={newItem.item_uom}
                         id="UOM"
                         disabled={newItem.item_type === "REUSABLE"}
+                        onFocus={(e) => setShowUOMDropDown(true)}
                         onChange={(e) => {
                           setNewItem((f) => ({
                             ...f,
@@ -331,7 +339,36 @@ const AddItemsAndCategories = () => {
                           : "border-gray-300"
                           }`}
                       />
-                      {fieldError("item_uom")}
+                      {/* WORKING========================================================================================================================= */}
+                      {showUOMDropDown && uom.length > 0 && (
+                        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                          {uom.map((u) => (
+                              <button
+                                key={u.id}
+                                type="button"
+                                onMouseDown={() => {
+                                  setNewItem((f) => ({
+                                    ...f,
+                                    category: u.name,
+                                  }));
+                                  setShowUOMDropDown(false);
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                              >
+                                {u.name}
+                              </button>
+                            ))}
+                          {uom.filter((c) =>
+                            c.name
+                              .toLowerCase()
+                              .includes(newItem.category.toLowerCase()),
+                          ).length === 0 && (
+                              <p className="px-3 py-2 text-sm text-gray-400 italic">
+                                No matching categories
+                              </p>
+                            )}
+                        </div>
+                      )}
                     </div>
 
                     <div id="category-dropdown-wrapper" className="relative">
