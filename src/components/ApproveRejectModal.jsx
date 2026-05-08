@@ -65,13 +65,13 @@ const ApproveRejectModal = ({ setApproveModal, approveModal, approverName, setAp
                                                 </div>
                                             </td>
                                             <td className="py-2 font-mono text-gray-500 text-center">
-                                                {i.requested_qty}
+                                                {Number(i.requested_qty)}
                                             </td>
                                             <td className="py-2 text-center">
                                                 <input
                                                     type="number"
                                                     min="0"
-                                                    value={i.approved_qty}
+                                                    value={Number(i.approved_qty)}
                                                     onChange={(e) => {
                                                         const u = [...editedItems];
                                                         u[idx] = {

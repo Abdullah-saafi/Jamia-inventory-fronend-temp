@@ -22,12 +22,12 @@ export default function RequestRow({
   const isExpanded = detail && detail.request_id === r.request_id;
   const needsGRN = r.status === "FULFILLED" && !r.grn_at;
   const isDisputed = r.status === "DISPUTED";
-  const isReturned = r.status === "RETURN_BACK"
+  const isReturned = r.status === "RETURN_BACK" || r.status === "RETURN_ACCEPTED"
   const isReceived = r.status === "RECEIVED" || r.status === "PARTIALLY_RECEIVED";
   const isREUSABLE = r.item
   const hasItems = (r.item_count ?? 0) > 0;
   const hasAssets = (r.asset_count ?? 0) > 0;
-  const isReturnable = r.item_type === "REUSABLE" && r.has_returnable_items && (r.status === "RECEIVED" || r.status === "DISPUTED");
+  const isReturnable = r.item_type === "REUSABLE" && r.has_returnable_items && (r.status === "RECEIVED" || r.status === "PARTIALLY_RECEIVED");
 
   return (
     <>

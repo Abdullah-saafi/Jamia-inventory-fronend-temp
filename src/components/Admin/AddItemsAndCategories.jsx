@@ -6,6 +6,7 @@ import {
   getCategories,
   deleteCategory,
   generateRandomNumber,
+  getUOM,
 } from "../../services/api";
 import useErrorHandler from "../useErrorHandler";
 import Toast from "../Toast";
@@ -43,6 +44,7 @@ const AddItemsAndCategories = () => {
   const [categorySubmitLoading, setCategorySubmitLoading] = useState(false);
   const [categoryServerError, setCategoryServerError] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [uom, setUOM] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [categorySearch, setCategorySearch] = useState("");
   const [deletingId, setDeletingId] = useState(null);
@@ -52,11 +54,18 @@ const AddItemsAndCategories = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await getStores(),
-        stores = res.data.data || res.data;
+      const [sRes, uRes, cRes] = await Promise.all([
+        getStores(),
+        getUOM(),
+        getCategories()
+      ]);
+      const list = res.data.data || res.data;
+      setCategories(Array.isArray(list) ? list : []);
+      stores = s.data.data || s.data;
       if (Array.isArray(stores)) {
         setMainStores(stores.filter((s) => s.store_type === "MAIN_STORE"));
       }
+      setUOM(uRes.data.data)
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
       setToast({ message: msg, type: "error" });
@@ -65,36 +74,37 @@ const AddItemsAndCategories = () => {
     }
   };
 
-  const fetchCategories = async () => {
-    try {
-      setCategoriesLoading(true);
-      const res = await getCategories();
-      const list = res.data.data || res.data;
-      setCategories(Array.isArray(list) ? list : []);
-    } catch (e) {
-      // silent
-    } finally {
-      setCategoriesLoading(false);
-    }
-  };
+  // const fetchCategories = async () => {
+  //   try {
+  //     setCategoriesLoading(true);
+  //     const res = await getCategories();
+  //     const list = res.data.data || res.data;
+  //     setCategories(Array.isArray(list) ? list : []);
+  //   } catch (e) {
+  //     const msg = handleError(e, "Failed to get categories")
+  //     setToast({ message: msg, type: "error" })
+  //   } finally {
+  //     setCategoriesLoading(false);
+  //   }
+  // };
 
   let latestRequest = useRef(0)
   const generateRandomItemNo = async (type) => {
     const reqId = ++latestRequest.current
-    const response = await generateRandomNumber( {type} )
+    const response = await generateRandomNumber({ type })
     if (reqId !== latestRequest.current) return;
     return response.data.data;
   };
 
   const regenerateItemNo = async () => {
     const itemNo = await generateRandomItemNo(newItem.item_type)
-    if(!itemNo) return
+    if (!itemNo) return
     setNewItem((f) => ({ ...f, item_no: itemNo }));
   }
 
   useEffect(() => {
     fetchData();
-    fetchCategories();
+    // fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -133,7 +143,7 @@ const AddItemsAndCategories = () => {
       await createItem(newItem);
       setToast({ message: "Item added successfully", type: "success" });
       const itemNo = await generateRandomItemNo(item_type)
-      if(!itemNo) return
+      if (!itemNo) return
       setNewItem({
         ...EMPTY_NEW_ITEM,
         item_no: itemNo,
@@ -202,8 +212,8 @@ const AddItemsAndCategories = () => {
         <button
           onClick={() => setActiveTab("item")}
           className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === "item"
-              ? "bg-emerald-600 text-white shadow-sm"
-              : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
+            ? "bg-emerald-600 text-white shadow-sm"
+            : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
             }`}
         >
           Add Item
@@ -211,8 +221,8 @@ const AddItemsAndCategories = () => {
         <button
           onClick={() => setActiveTab("category")}
           className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === "category"
-              ? "bg-emerald-600 text-white shadow-sm"
-              : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
+            ? "bg-emerald-600 text-white shadow-sm"
+            : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
             }`}
         >
           Add Category
@@ -244,8 +254,8 @@ const AddItemsAndCategories = () => {
                           setItemErrors((f) => ({ ...f, item_no: undefined }));
                         }}
                         className={`flex-1 bg-white border rounded px-3 py-2 text-emerald-600 font-mono font-bold text-sm focus:outline-none focus:border-emerald-500 ${itemErrors.item_no
-                            ? "border-red-400"
-                            : "border-gray-300"
+                          ? "border-red-400"
+                          : "border-gray-300"
                           }`}
                       />
                     </div>
@@ -280,7 +290,7 @@ const AddItemsAndCategories = () => {
                       onChange={async (e) => {
                         const selectedType = e.target.value;
                         const newItemNo = await generateRandomItemNo(selectedType)
-                        if(!newItemNo) return
+                        if (!newItemNo) return
                         setNewItem((f) => ({
                           ...f,
                           item_type: selectedType,
@@ -317,8 +327,8 @@ const AddItemsAndCategories = () => {
                         }}
                         placeholder="pcs / kg / box…"
                         className={`w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${itemErrors.item_uom
-                            ? "border-red-400"
-                            : "border-gray-300"
+                          ? "border-red-400"
+                          : "border-gray-300"
                           }`}
                       />
                       {fieldError("item_uom")}

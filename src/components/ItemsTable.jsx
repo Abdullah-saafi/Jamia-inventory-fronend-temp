@@ -72,9 +72,7 @@ export default function ItemsTable({ items = [], isDisputed, isReceived, isRetur
                 </td>
                 <td className="py-2 text-center">
                   {i.item_condition ? (
-                    <span                    >
                       <StatusBadge status={i.item_condition} />
-                    </span>
                   ) : (
                     <span className="text-gray-300">—</span>
                   )}

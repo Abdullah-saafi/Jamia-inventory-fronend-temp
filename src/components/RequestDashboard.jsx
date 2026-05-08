@@ -7,9 +7,7 @@ const RequestDashboard = ({
   data
 }) => {
 
-  const isEmergent = data?.filter((r) => {
-   r.is_emergency;
-  }).length
+  const isEmergent = data?.filter((r) => r.is_emergency).length;
   const handleFilter = (status) => {
     setFilterStatus(status);
   };
@@ -22,8 +20,8 @@ const RequestDashboard = ({
           title="منظوری کی منتظر"
           count={counts.pending}
           colorClass="bg-blue-500"
-          isActive={filterStatus === (pageType === ("subStore" || "mainReqToHO") ? "FULFILLED" : "PENDING")}
-          onClick={() => handleFilter(pageType === ("subStore" || "mainReqToHO") ? "FULFILLED" : "PENDING")}
+          isActive={filterStatus === (pageType === "subStore" || pageType === "mainReqToHO" ? "FULFILLED" : "PENDING")}
+          onClick={() => handleFilter(pageType === "subStore" || pageType === "mainReqToHO" ? "FULFILLED" : "PENDING")}
         />
       )}
 
@@ -64,12 +62,12 @@ const RequestDashboard = ({
       {/* Return Card */}
       {pageType === "subStore" && (
         <StatusCard
-        title="واپسی کی منتظر"
-        count={counts.returnBack}
-        colorClass="bg-amber-500"
-        isActive={filterStatus === (pageType === "mainSubStoreReqs" ? "RETURN_BACK" : "RECEIVED")}
-        onClick={() => handleFilter(pageType === "mainSubStoreReqs" ? "RETURN_BACK" : "RECEIVED")}
-      />)}
+          title="واپسی کی منتظر"
+          count={counts.returnBack}
+          colorClass="bg-amber-500"
+          isActive={filterStatus === (pageType === "mainSubStoreReqs" ? "RETURN_BACK" : "RECEIVED")}
+          onClick={() => handleFilter(pageType === "mainSubStoreReqs" ? "RETURN_BACK" : "RECEIVED")}
+        />)}
     </div>
   );
 };

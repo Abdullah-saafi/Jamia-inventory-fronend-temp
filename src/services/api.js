@@ -155,6 +155,11 @@ export const getCategories = () => API.get("/categories");
 export const createCategory = (data) => API.post("/categories", data);
 export const deleteCategory = (id) => API.delete(`/categories/${id}`);
 
+// ── Categories ────────────────────────────────────────────────
+
+export const getUOM = () => API.get("/baseunits")
+export const addUOM = () => API.post("/baseunits")
+
 // ── Scrap ────────────────────────────────────────────────
 export const scrapByMain = (data) => API.patch("/requests/scrapMain", data);
 export const sendScrapToMain = (id, data) =>
