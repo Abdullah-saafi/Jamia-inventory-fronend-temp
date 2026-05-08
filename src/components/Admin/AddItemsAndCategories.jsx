@@ -49,6 +49,7 @@ const AddItemsAndCategories = () => {
   const [categorySearch, setCategorySearch] = useState("");
   const [deletingId, setDeletingId] = useState(null);
   const [showUOMDropDown, setShowUOMDropDown] = useState(false);
+  const [showInputs, setShowInputs] = useState(false);
 
   const handleError = useErrorHandler();
 
@@ -112,6 +113,9 @@ const AddItemsAndCategories = () => {
     const handler = (e) => {
       if (!e.target.closest("#category-dropdown-wrapper")) {
         setShowCategoryDropdown(false);
+      }
+      if (!e.target.closest("#uom-dropdown-wrapper")) {
+        setShowUOMDropDown(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -317,7 +321,7 @@ const AddItemsAndCategories = () => {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
+                    <div id="uom-dropdown-wrapper" className="relative">
                       <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                         UOM *
                       </label>
@@ -339,29 +343,40 @@ const AddItemsAndCategories = () => {
                           : "border-gray-300"
                           }`}
                       />
-                      {/* WORKING========================================================================================================================= */}
+                      {/* WORKING ========================================================================================================================= */}
+
                       {showUOMDropDown && uom.length > 0 && (
-                        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                          {uom.map((u) => (
-                              <button
-                                key={u.id}
-                                type="button"
-                                onMouseDown={() => {
-                                  setNewItem((f) => ({
-                                    ...f,
-                                    category: u.name,
-                                  }));
-                                  setShowUOMDropDown(false);
-                                }}
-                                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
-                              >
-                                {u.name}
-                              </button>
-                            ))}
+                        <div className="absolute z-50 top-full mb-auto left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                           {uom.filter((c) =>
                             c.name
                               .toLowerCase()
-                              .includes(newItem.category.toLowerCase()),
+                              .includes(newItem.item_uom.toLowerCase()),
+                          ).map((u) => (
+                            <button
+                              key={u.id}
+                              type="button"
+                              onMouseDown={() => {
+                                setNewItem((f) => ({
+                                  ...f,
+                                  item_uom: u.name,
+                                }));
+                                setShowUOMDropDown(false);
+                              }}
+                              className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                            >
+                              {u.name}
+                            </button>
+                          ))}
+                          <p onClick={() => {
+                            setShowInputs((prev) => !prev)
+                          }}
+                            className="w-full font-mono text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
+                            Add custom
+                          </p>
+                          {uom.filter((c) =>
+                            c.name
+                              .toLowerCase()
+                              .includes(newItem.item_uom.toLowerCase()),
                           ).length === 0 && (
                               <p className="px-3 py-2 text-sm text-gray-400 italic">
                                 No matching categories
@@ -370,6 +385,37 @@ const AddItemsAndCategories = () => {
                         </div>
                       )}
                     </div>
+
+                    {showInputs && (
+                      <>
+                        <div className="space-y-1">
+                          <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
+                            UOM Name
+                          </label>
+
+                          <input
+                            type="text"
+                            placeholder="e.g. Packet"
+                            className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
+                            UOM quantity
+                          </label>
+
+                          <input
+                            type="text"
+                            placeholder="e.g. pkt"
+                            className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {/* CATEGORY STARTS FROM HERE ==================================================================================================== */}
+
 
                     <div id="category-dropdown-wrapper" className="relative">
                       <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
