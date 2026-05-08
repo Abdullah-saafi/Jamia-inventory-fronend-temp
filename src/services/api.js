@@ -112,19 +112,14 @@ export const approveRequest = (id, data) =>
 export const rejectRequest = (id, data) =>
   API.patch(`/requests/${id}/reject`, data);
 export const fulfillRequest = (id) => API.patch(`/requests/${id}/fulfill`, {});
-<<<<<<< HEAD
 export const headOfficeFulfillRequest = (id, data) =>
   API.patch(`/requests/${id}/fulfill`, data);
 export const sendReturnToMain = (id, data) =>
-  API.patch(`/requests/${id}/send-back`, { data });
+  API.patch(`/requests/${id}/send-back`, data);
 export const acceptReturnFromSub = (id, accepted_by_name) =>
   API.patch(`/requests/${id}/close-reusable`, { accepted_by_name });
-=======
-export const headOfficeFulfillRequest = (id, data) => API.patch(`/requests/${id}/fulfill`, data);
-export const sendReturnToMain = (id, data) => API.patch(`/requests/${id}/send-back`, data);
-export const acceptReturnFromSub = (id, accepted_by_name) => API.patch(`/requests/${id}/close-reusable`, { accepted_by_name })
-export const resolveDispute = (id, data) => API.post(`/requests/resolve-dispute/${id}`, data);
->>>>>>> c01af13f1de92be303681896c1df593ede82d1f8
+export const resolveDispute = (id, data) =>
+  API.post(`/requests/resolve-dispute/${id}`, data);
 // ── Users ────────────────────────────────────────────────
 
 export const login = (credentials) => API.post("/users/login", credentials);
