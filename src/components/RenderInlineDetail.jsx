@@ -170,8 +170,10 @@ const RenderInlineDetail = (
                           className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${i.item_condition === "OK"
                               ? "bg-emerald-50 border-emerald-300 text-emerald-700"
                               : i.item_condition === "DAMAGED"
-                                ? "bg-amber-50 border-amber-300 text-amber-700"
-                                : "bg-red-50 border-red-300 text-red-700"
+                              ? "bg-amber-50 border-amber-300 text-amber-700"
+                              : i.item_condition === "RETURN" 
+                              ? "bg-blue-50 border-blue-300 text-blue-700" 
+                              :"bg-red-50 border-red-300 text-red-700"
                             }`}
                         >
                           {i.item_condition}

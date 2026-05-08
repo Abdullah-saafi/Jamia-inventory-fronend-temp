@@ -23,13 +23,11 @@ export default function RequestRow({
   const needsGRN = r.status === "FULFILLED" && !r.grn_at;
   const isDisputed = r.status === "DISPUTED";
   const isReturned = r.status === "RETURN_BACK"
-  const isReceived = r.status === "RECEIVED";
+  const isReceived = r.status === "RECEIVED" || r.status === "PARTIALLY_RECEIVED";
   const isREUSABLE = r.item
   const hasItems = (r.item_count ?? 0) > 0;
   const hasAssets = (r.asset_count ?? 0) > 0;
-  const isReturnable = r.item_type === "REUSABLE" ? true : false
-  // const hasReturnItems = r.returned_qty > 0 ? true : false
-  // const isScrappable = r.status === "RECEIVED" && (r.scrap_remaining ?? r.item_count ?? 0) > 0;
+  const isReturnable = r.item_type === "REUSABLE" && r.has_returnable_items && (r.status === "RECEIVED" || r.status === "DISPUTED");
 
   return (
     <>
@@ -90,7 +88,7 @@ export default function RequestRow({
                 {grnLoading ? "…" : "Verify Delivery"}
               </button>
             )}
-            {isReturnable && pageType === "subStore" && (r.status === "RECEIVED" || r.status === "DISPUTED" || r.status === "RETURN_BACK" || r.status === "RETURN_ACCEPTED") && (
+            {isReturnable && pageType === "subStore" && (
               <button
                 onClick={(e) => {
                   e.stopPropagation()

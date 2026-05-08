@@ -1,3 +1,5 @@
+import StatusBadge from "./StatusBadge";
+
 export default function ItemsTable({ items = [], isDisputed, isReceived, isReturned }) {
   return (
     <table className="w-full text-sm">
@@ -70,15 +72,8 @@ export default function ItemsTable({ items = [], isDisputed, isReceived, isRetur
                 </td>
                 <td className="py-2 text-center">
                   {i.item_condition ? (
-                    <span
-                      className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${i.item_condition === "OK"
-                        ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                        : i.item_condition === "DAMAGED"
-                          ? "bg-amber-50 border-amber-300 text-amber-700"
-                          : "bg-red-50 border-red-300 text-red-700"
-                        }`}
-                    >
-                      {i.item_condition}
+                    <span                    >
+                      <StatusBadge status={i.item_condition} />
                     </span>
                   ) : (
                     <span className="text-gray-300">—</span>

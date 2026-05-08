@@ -83,7 +83,7 @@ const ReturnItemsModal = ({
                         <thead>
                             <tr className="border-b border-gray-200 text-gray-400 text-xs">
                                 <th className="text-left pb-2">Item</th>
-                                <th className="text-center pb-2">Approve Qty</th>
+                                <th className="text-center pb-2">Received Qty</th>
                             </tr>
                         </thead>
                         <tbody>

@@ -257,7 +257,7 @@ export default function MainAllItems({
                 "آئٹم کی قسم",
                 "مرکزی اسٹور کا اسٹاک",
                 "ذیلی اسٹورز کو بھیجا گیا",
-                "On the way",
+                "Transit Qty",
                 "باقی اسٹاک",
                 // "اسکریپ شدہ مقدار",
                 "کم از کم اسٹاک",
@@ -324,11 +324,10 @@ export default function MainAllItems({
                       <span
                         className="font-mono text-xs font-bold text-gray-700"
                       >
-                        {}
+                        {i.transit_qty || "—"}
                       </span>
                     </td>
 
-                    
                     <td className="px-4 py-3">
                       <span
                         className={`font-mono text-xs font-bold ${i.main_qty - i.sub_qty <= 0 ? "text-red-500" : "text-gray-700"}`}

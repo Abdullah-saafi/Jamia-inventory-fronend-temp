@@ -44,15 +44,15 @@ export default function MainSubStoreReqs({
       setDetail(null);
       return;
     }
-    
+
     setDL(true);
     setDetail({ ...r, items: [] });
     try {
       const res = await getRequestById(r.request_id);
-      // setDetail(res.data.data);
-      console.log("detail",res.data.data);
-      console.log("r",r);
-      
+      setDetail(res.data.data);
+      console.log("detail", res.data.data);
+      console.log("r", r);
+
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
       setToast({ message: msg, type: "error" });
@@ -119,10 +119,7 @@ export default function MainSubStoreReqs({
       console.log("response main sub store reqs", response);
       console.log("requestDetails main sub store reqs", requestDetails);
       console.log("formatted items main sub store reqs", formattedItems);
-      console.log("formatted items items main sub store reqs", requestDetails.items);
-
-
-
+      console.log("formatted items items main sub store reqs", requestDetails.items)
 
       await scrapByMain({
         main_store_id: auth.store_id,
@@ -136,7 +133,7 @@ export default function MainSubStoreReqs({
       setToast({ message: "Items scrapped successfully", type: "success" });
 
       // setScrapForm({
-      //   sendByName: "",
+      //    ByName: "",
       //   requestData: null,
       //   note: "",
       //   scrap_items: [],
@@ -359,18 +356,18 @@ export default function MainSubStoreReqs({
                               {fulfilling === r.request_id ? "..." : "Fulfill"}
                             </button>
                           )}
-                          {r.status === "RETURN_BACK" && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAcceptReturn(r.request_id);
-                              }}
-                              className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
-                              disabled={returnLoading}
-                            >
-                              {fulfilling === r.request_id ? "..." : "Accept Return"}
-                            </button>
-                          )}
+                          {r.item_type === "REUSABLE" && r.status === "RETURN_BACK"  && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAcceptReturn(r.request_id);
+                                }}
+                                className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
+                                disabled={returnLoading}
+                              >
+                                {fulfilling === r.request_id ? "..." : "Accept Return"}
+                              </button>
+                            )}
                           {r.status === "SCRAPPED" && (
                             <button
                               onClick={(e) => {

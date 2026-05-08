@@ -10,6 +10,9 @@ export default function StatusBadge({ status }) {
     CLOSED: "bg-gray-100 text-gray-500 border border-gray-300",
     DAMAGED: "bg-amber-50 border-amber-300 text-amber-700",
     MISSING: "bg-red-50 border-red-300 text-red-700",
+    RETURN: "bg-blue-50 border-blue-300 text-blue-700",
+    OK: "bg-emerald-50 border-emerald-300 text-emerald-700",
+    PARTIALLY_RECEIVED: "bg-teal-50 text-teal-600 border border-teal-300"
   };
   return (
     <span
