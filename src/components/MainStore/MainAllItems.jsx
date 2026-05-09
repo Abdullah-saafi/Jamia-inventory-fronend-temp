@@ -8,19 +8,6 @@ import CheckLoadingAndError from "../CheckLoadingAndError";
 import AddItemModal from "../AddItemModal";
 import ScrapModal from "../ScrapModal";
 
-const EMPTY_NEW_ITEM = {
-  item_no: "",
-  item_name: "",
-  item_uom: "",
-  category: "",
-  item_quantity: "",
-  min_quantity: "",
-  store_id: "",
-};
-
-const generateRandomItemNo = () =>
-  `ITM-${Math.floor(Math.random() * 900) + 100}`;
-
 export default function MainAllItems({
   allItems,
   mainStores,
@@ -28,15 +15,19 @@ export default function MainAllItems({
   setToast,
   loading,
   mainStoreError,
+  pagination,
+  currentPage,
+  setCurrentPage,
+  pageLimit,
+  setPageLimit,
+  search,
+  setSearch,
+  filterCategory,
+  setFilterCategory,
+  filterType,
+  setFilterType,
 }) {
-  const [search, setSearch] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
-  const [filterType, setFilterType] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [showAddItem, setShowAddItem] = useState(false);
-  const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
-  const [savingItem, setSavingItem] = useState(false);
   const [scrapModal, setScrapModal] = useState(false);
   const [scrapModalLoading, setScrapModalLoading] = useState(false);
   const [scrapData, setScrapData] = useState([])
@@ -49,39 +40,6 @@ export default function MainAllItems({
 
   const { auth } = useAuth();
   const handleError = useErrorHandler();
-
-  const openAddItem = () => {
-    setNewItem({ ...EMPTY_NEW_ITEM, item_no: generateRandomItemNo() });
-    setShowAddItem(true);
-  };
-
-  const regenerateItemNo = () =>
-    setNewItem((f) => ({ ...f, item_no: generateRandomItemNo() }));
-
-  const handleSaveItem = async () => {
-    if (
-      !newItem.item_no ||
-      !newItem.item_name ||
-      !newItem.item_uom ||
-      !newItem.store_id
-    )
-      return setToast({
-        message: "Item No, Name, UOM and Store are required",
-        type: "error",
-      });
-    setSavingItem(true);
-    try {
-      await createItem(newItem);
-      setToast({ message: "Item added successfully", type: "success" });
-      setShowAddItem(false);
-      onRefresh();
-    } catch (e) {
-      const msg = handleError(e, "Failed to add item");
-      setToast({ message: msg, type: "error" });
-    } finally {
-      setSavingItem(false);
-    }
-  };
 
   const scrap = async () => {
     try {
@@ -107,7 +65,7 @@ export default function MainAllItems({
       console.log("Final Payload being sent to backend:", payload);
       await scrapByMain(payload)
       setScrapModal(false)
-      setToast({message: "Scrap the items successfully", type:"success"})
+      setToast({ message: "Scrap the items successfully", type: "success" })
       onRefresh()
     } catch (error) {
       const msg = handleError(error, "Failed to scrap")
@@ -117,50 +75,21 @@ export default function MainAllItems({
     }
   }
 
-  const groupedItems = Object.values(
-    allItems.reduce((acc, row) => {
-      const qty = parseFloat(row.item_quantity || 0);
-      const isMain = row.store_type === "MAIN_STORE";
-      const isSub = row.store_type === "SUB_STORE";
-      if (!acc[row.item_no]) {
-        acc[row.item_no] = {
-          ...row,
-          total_qty: qty,
-          main_qty: isMain ? qty : 0,
-          scrapped_qty: Number(row.scrapped_qty || 0),
-          sub_qty: isSub ? qty : 0,
-        };
-      } else {
-        acc[row.item_no].total_qty += qty;
-        if (isMain) acc[row.item_no].main_qty += qty;
-        if (isSub) acc[row.item_no].sub_qty += qty;
-      }
-      return acc;
-    }, {}),
-  );
-
   const categories = [
     ...new Set(allItems.map((i) => i.category).filter(Boolean)),
   ];
 
-  const filteredItems = groupedItems.filter((i) => {
-    const q = search.toLowerCase();
-    return (
-      (!search ||
-        i.item_name.toLowerCase().includes(q) ||
-        i.item_no.toLowerCase().includes(q)) &&
-      (!filterCategory || i.category === filterCategory) &&
-      (!filterType || i.item_type === filterType)
-    );
-  });
-
-  const paginatedItems = filteredItems.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize,
-  );
-
   return (
     <div>
+      <button onClick={() => {
+          setToast({ message: "Checking Toast messages", type: "success" })
+        }}>Toast</button>
+
+        <button onClick={() => {
+          setTimeout(() => {
+            setToast(null);
+          }, 3000);
+        }}>Close Toast</button>
       <div className="flex items-end justify-between py-2">
         <div className="">
           <input
@@ -227,7 +156,7 @@ export default function MainAllItems({
 
         <div className="downloader">
           <ExcelDownloaderWithDates
-            data={paginatedItems}
+            data={allItems}
             dateKey="created_at"
             fileName={auth.username}
             columns={[
@@ -273,14 +202,14 @@ export default function MainAllItems({
             </tr>
           </thead>
           <tbody>
-            {loading || mainStoreError || paginatedItems.length === 0 ? (
+            {loading || mainStoreError || allItems.length === 0 ? (
               <CheckLoadingAndError
                 loading={loading}
                 error={mainStoreError}
-                requests={paginatedItems}
+                requests={allItems}
               />
             ) : (
-              paginatedItems.map((i) => {
+              allItems.map((i) => {
                 const isLow = i.main_qty <= parseFloat(i.min_quantity || 0);
                 return (
                   <tr
@@ -308,23 +237,17 @@ export default function MainAllItems({
                       <span
                         className={`font-mono font-bold ${isLow ? "text-red-500" : "text-emerald-600"}`}
                       >
-                        {i.item_quantity || "―"}
+                      {Number(i.item_quantity) || "―"}
                       </span>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">
                       {Number(i.sub_qty).toFixed(0)}
                     </td>
-
-
-                      {/* <button onClick={() => {
-                        console.log("paginated of main all items", paginatedItems);
-                        
-                      }}> log</button> */}
-                      <td className="px-4 py-3">
+                    <td className="px-4 py-3">
                       <span
                         className="font-mono text-xs font-bold text-gray-700"
                       >
-                        {i.transit_qty || "—"}
+                        {i.transit_qty}
                       </span>
                     </td>
 
@@ -332,7 +255,7 @@ export default function MainAllItems({
                       <span
                         className={`font-mono text-xs font-bold ${i.main_qty - i.sub_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
                       >
-                        {Number(i.main_qty - i.sub_qty - i.transit_qty).toFixed(0)}
+                        {Number(i.item_quantity - i.sub_qty - i.transit_qty).toFixed(0)}
                       </span>
                     </td>
 
@@ -346,7 +269,7 @@ export default function MainAllItems({
                     </td> */}
 
                     <td className="px-4 py-3 font-mono text-gray-400 text-xs">
-                      {i.min_quantity ?? "—"}
+                      {Number(i.min_quantity) ?? "—"}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -372,29 +295,17 @@ export default function MainAllItems({
         />)}
 
         <Pagination
-          currentPage={currentPage}
-          totalItems={filteredItems.length}
-          pageSize={pageSize}
+          currentPage={pagination.currentPage}
+          totalItems={pagination.totalItems}
+          pageSize={pagination.pageLimit}
           onPageChange={setCurrentPage}
           pageSizeOptions={[10, 25, 50]}
           onPageSizeChange={(s) => {
-            setPageSize(s);
+            setPageLimit(s);
             setCurrentPage(1);
           }}
         />
       </div>
-
-      {showAddItem && (
-        <AddItemModal
-          setShowAddItem={setShowAddItem}
-          setNewItem={setNewItem}
-          regenerateItemNo={regenerateItemNo}
-          newItem={newItem}
-          mainStores={mainStores}
-          handleSaveItem={handleSaveItem}
-          savingItem={savingItem}
-        />
-      )}
     </div>
   );
 }

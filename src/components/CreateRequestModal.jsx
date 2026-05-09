@@ -44,17 +44,17 @@ export default function CreateRequestModal({
         </div>
 
         {/* ── Emergency banner ── */}
-        {itemForm.is_emergency && (
+        {/* {itemForm.is_emergency && (
           <div className="bg-red-50 border-b border-red-200 px-5 py-3 flex items-center gap-2 justify-end">
             <span className="text-red-600 text-sm font-semibold text-left">
               یہ درخواست براہ راست مرکزی اسٹور کو بھیجی جائے گی
             </span>
           </div>
-        )}
+        )} */}
 
         <form onSubmit={onSubmit} className="p-5 space-y-4">
           {/* ── Emergency toggle ── */}
-          <div
+          {/* <div
             onClick={() =>
               setItemForm((f) => ({ ...f, is_emergency: !f.is_emergency }))
             }
@@ -80,7 +80,7 @@ export default function CreateRequestModal({
                 className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${itemForm.is_emergency ? "translate-x-5" : "translate-x-0.5"}`}
               />
             </div>
-          </div>
+          </div> */}
 
           {/* ── Store + requester row ── */}
           <div className="grid grid-cols-2 gap-3">

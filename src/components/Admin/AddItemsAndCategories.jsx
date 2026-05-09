@@ -27,6 +27,12 @@ const EMPTY_NEW_CATEGORY = {
   description: "",
 };
 
+const EMPTY_newBaseUnit = {
+  name: "",
+  bu_name: "",
+  bu_value: ""
+}
+
 const AddItemsAndCategories = () => {
   const [activeTab, setActiveTab] = useState("item");
 
@@ -41,6 +47,7 @@ const AddItemsAndCategories = () => {
 
   // ── Category state ──────────────────────────────────────────────────────
   const [newCategory, setNewCategory] = useState(EMPTY_NEW_CATEGORY);
+  const [newBaseUnit, setNewBaseUnit] = useState(EMPTY_newBaseUnit);
   const [categorySubmitLoading, setCategorySubmitLoading] = useState(false);
   const [categoryServerError, setCategoryServerError] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -76,20 +83,6 @@ const AddItemsAndCategories = () => {
     }
   };
 
-  // const fetchCategories = async () => {
-  //   try {
-  //     setCategoriesLoading(true);
-  //     const res = await getCategories();
-  //     const list = res.data.data || res.data;
-  //     setCategories(Array.isArray(list) ? list : []);
-  //   } catch (e) {
-  //     const msg = handleError(e, "Failed to get categories")
-  //     setToast({ message: msg, type: "error" })
-  //   } finally {
-  //     setCategoriesLoading(false);
-  //   }
-  // };
-
   let latestRequest = useRef(0)
   const generateRandomItemNo = async (type) => {
     const reqId = ++latestRequest.current
@@ -106,7 +99,6 @@ const AddItemsAndCategories = () => {
 
   useEffect(() => {
     fetchData();
-    // fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -173,7 +165,6 @@ const AddItemsAndCategories = () => {
       await createCategory(newCategory);
       setToast({ message: "Category added successfully", type: "success" });
       setNewCategory(EMPTY_NEW_CATEGORY);
-      // fetchCategories();
       fetchData()
     } catch (e) {
       setCategoryServerError(
@@ -189,7 +180,6 @@ const AddItemsAndCategories = () => {
     try {
       await deleteCategory(id);
       setToast({ message: "Category deleted", type: "success" });
-      // fetchCategories();
       fetchData()
     } catch (e) {
       const msg = handleError(e, "Failed to delete category");
@@ -232,7 +222,7 @@ const AddItemsAndCategories = () => {
             : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
             }`}
         >
-          Add Category
+          Add Category And UOM
         </button>
       </div>
 
@@ -330,6 +320,7 @@ const AddItemsAndCategories = () => {
                         id="UOM"
                         disabled={newItem.item_type === "REUSABLE"}
                         onFocus={(e) => setShowUOMDropDown(true)}
+                        autoComplete="off"
                         onChange={(e) => {
                           setNewItem((f) => ({
                             ...f,
@@ -369,15 +360,20 @@ const AddItemsAndCategories = () => {
                           ))}
                           <p onClick={() => {
                             setShowInputs((prev) => !prev)
+                            setShowUOMDropDown(false)
+                            setNewItem((f) => ({
+                              ...f,
+                              item_uom: "Add Custom",
+                            }));
                           }}
-                            className="w-full font-mono text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
-                            Add custom
+                            className="w-full font-mono text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer transition-colors">
+                            Add Custom
                           </p>
                           {uom.filter((c) =>
                             c.name
                               .toLowerCase()
                               .includes(newItem.item_uom.toLowerCase()),
-                          ).length === 0 && (
+                          ).length === 0 && newItem.item_uom !== "Add Custom" && (
                               <p className="px-3 py-2 text-sm text-gray-400 italic">
                                 No matching categories
                               </p>
@@ -386,7 +382,7 @@ const AddItemsAndCategories = () => {
                       )}
                     </div>
 
-                    {showInputs && (
+                    {newItem.item_uom === "Add Custom" && (
                       <>
                         <div className="space-y-1">
                           <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
@@ -621,9 +617,6 @@ const AddItemsAndCategories = () => {
                 <div className="SEARCH">
                   <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                     زمرے تلاش کریں
-                    <span className="text-gray-400 font-normal normal-case ml-1">
-                      (Search Categories)
-                    </span>
                   </label>
                   <input
                     value={categorySearch}
@@ -672,6 +665,44 @@ const AddItemsAndCategories = () => {
                     </ul>
                   )}
                 </div>
+              </div>
+            </div>
+
+            <div className="border-t-2 border-gray-200 ml-5 mr-5">
+              <div className="mt-10 mb-10">
+                <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block ">
+                  UOM Name
+                </label>
+                <input
+                  value={newBaseUnit.name}
+                  onChange={(e) => {
+                    setNewBaseUnit((f) => ({ ...f, name: e.target.value }));
+                  }}
+                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                />
+
+                <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block ">
+                  Base Unit Name
+                </label>
+                <input
+                  value={newBaseUnit.bu_name}
+                  onChange={(e) => {
+                    setNewBaseUnit((f) => ({ ...f, bu_name: e.target.value }));
+                  }}
+                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                />
+
+                <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block ">
+                  Base Unti Value
+                </label>
+                <input
+                  type="number"
+                  value={newBaseUnit.bu_value}
+                  onChange={(e) => {
+                    setNewBaseUnit((f) => ({ ...f, bu_value: e.target.value }));
+                  }}
+                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                />
               </div>
             </div>
           </div>
