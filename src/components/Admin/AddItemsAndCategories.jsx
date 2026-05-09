@@ -7,19 +7,22 @@ import {
   deleteCategory,
   generateRandomNumber,
   getUOM,
+  addUOM,
 } from "../../services/api";
 import useErrorHandler from "../useErrorHandler";
 import Toast from "../Toast";
 
 const EMPTY_NEW_ITEM = {
-  item_no: "",
-  item_name: "",
-  item_uom: "",
-  category: "",
-  item_quantity: "",
-  min_quantity: "",
-  store_id: "",
-  item_type: "",
+  item_no: "",   // --- For create item
+  item_name: "", // --- For create item
+  item_uom: "",   // --- For base unit api
+  bu_name:"",   // ---  for base unit api
+  bu_value:"",    // ---  for base unit api
+  category: "",   // ---  For create item
+  item_quantity: "",    // ---  For create item
+  min_quantity: "", // ---  For create item
+  store_id: "",   // ---  For create item
+  item_type: "",  // ---  For create item
 };
 
 const EMPTY_NEW_CATEGORY = {
@@ -27,11 +30,6 @@ const EMPTY_NEW_CATEGORY = {
   description: "",
 };
 
-const EMPTY_newBaseUnit = {
-  name: "",
-  bu_name: "",
-  bu_value: ""
-}
 
 const AddItemsAndCategories = () => {
   const [activeTab, setActiveTab] = useState("item");
@@ -47,7 +45,6 @@ const AddItemsAndCategories = () => {
 
   // ── Category state ──────────────────────────────────────────────────────
   const [newCategory, setNewCategory] = useState(EMPTY_NEW_CATEGORY);
-  const [newBaseUnit, setNewBaseUnit] = useState(EMPTY_newBaseUnit);
   const [categorySubmitLoading, setCategorySubmitLoading] = useState(false);
   const [categoryServerError, setCategoryServerError] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -63,9 +60,8 @@ const AddItemsAndCategories = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [sRes, uRes, cRes] = await Promise.all([
+      const [sRes, cRes] = await Promise.all([
         getStores(),
-        getUOM(),
         getCategories()
       ]);
       const list = cRes.data.data || cRes.data;
@@ -74,7 +70,6 @@ const AddItemsAndCategories = () => {
       if (Array.isArray(stores)) {
         setMainStores(stores.filter((s) => s.store_type === "MAIN_STORE"));
       }
-      setUOM(uRes.data.data)
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
       setToast({ message: msg, type: "error" });
@@ -123,7 +118,9 @@ const AddItemsAndCategories = () => {
       !newItem.item_type;
     const isUOMMissing = item_type === "USABLE" && !item_uom;
 
-    if (missingFields || isUOMMissing) {
+    if (missingFields 
+      || isUOMMissing
+    ) {
       const errs = {};
       if (!newItem.item_no) errs.item_no = "Item No is required";
       if (!newItem.item_name) errs.item_name = "Item Name is required";
@@ -190,7 +187,7 @@ const AddItemsAndCategories = () => {
   };
 
   const filteredCategories = categories.filter((c) =>
-    c.name.toLowerCase().includes(categorySearch.toLowerCase()),
+    c.category_name.toLowerCase().includes(categorySearch.toLowerCase()),
   );
 
   const fieldError = (key) =>
@@ -222,7 +219,7 @@ const AddItemsAndCategories = () => {
             : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
             }`}
         >
-          Add Category And UOM
+          Add Category
         </button>
       </div>
 
@@ -309,7 +306,6 @@ const AddItemsAndCategories = () => {
                     </select>
                     {fieldError("item_type")}
                   </div>
-
                   <div className="grid grid-cols-2 gap-3">
                     <div id="uom-dropdown-wrapper" className="relative">
                       <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
@@ -319,7 +315,6 @@ const AddItemsAndCategories = () => {
                         value={newItem.item_uom}
                         id="UOM"
                         disabled={newItem.item_type === "REUSABLE"}
-                        onFocus={(e) => setShowUOMDropDown(true)}
                         autoComplete="off"
                         onChange={(e) => {
                           setNewItem((f) => ({
@@ -328,90 +323,13 @@ const AddItemsAndCategories = () => {
                           }));
                           setItemErrors((f) => ({ ...f, item_uom: undefined }));
                         }}
-                        placeholder="pcs / kg / box…"
+                        placeholder="Select or Type UOM"
                         className={`w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${itemErrors.item_uom
                           ? "border-red-400"
                           : "border-gray-300"
                           }`}
                       />
-                      {/* WORKING ========================================================================================================================= */}
-
-                      {showUOMDropDown && uom.length > 0 && (
-                        <div className="absolute z-50 top-full mb-auto left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                          {uom.filter((c) =>
-                            c.name
-                              .toLowerCase()
-                              .includes(newItem.item_uom.toLowerCase()),
-                          ).map((u) => (
-                            <button
-                              key={u.id}
-                              type="button"
-                              onMouseDown={() => {
-                                setNewItem((f) => ({
-                                  ...f,
-                                  item_uom: u.name,
-                                }));
-                                setShowUOMDropDown(false);
-                              }}
-                              className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
-                            >
-                              {u.name}
-                            </button>
-                          ))}
-                          <p onClick={() => {
-                            setShowInputs((prev) => !prev)
-                            setShowUOMDropDown(false)
-                            setNewItem((f) => ({
-                              ...f,
-                              item_uom: "Add Custom",
-                            }));
-                          }}
-                            className="w-full font-mono text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer transition-colors">
-                            Add Custom
-                          </p>
-                          {uom.filter((c) =>
-                            c.name
-                              .toLowerCase()
-                              .includes(newItem.item_uom.toLowerCase()),
-                          ).length === 0 && newItem.item_uom !== "Add Custom" && (
-                              <p className="px-3 py-2 text-sm text-gray-400 italic">
-                                No matching categories
-                              </p>
-                            )}
-                        </div>
-                      )}
                     </div>
-
-                    {newItem.item_uom === "Add Custom" && (
-                      <>
-                        <div className="space-y-1">
-                          <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
-                            UOM Name
-                          </label>
-
-                          <input
-                            type="text"
-                            placeholder="e.g. Packet"
-                            className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
-                            UOM quantity
-                          </label>
-
-                          <input
-                            type="text"
-                            placeholder="e.g. pkt"
-                            className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {/* CATEGORY STARTS FROM HERE ==================================================================================================== */}
-
 
                     <div id="category-dropdown-wrapper" className="relative">
                       <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
@@ -434,28 +352,28 @@ const AddItemsAndCategories = () => {
                         <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                           {categories
                             .filter((c) =>
-                              c.name
+                              c.category_name
                                 .toLowerCase()
                                 .includes(newItem.category.toLowerCase()),
                             )
                             .map((cat) => (
                               <button
-                                key={cat.id}
+                                key={cat.category_id}
                                 type="button"
                                 onMouseDown={() => {
                                   setNewItem((f) => ({
                                     ...f,
-                                    category: cat.name,
+                                    category: cat.category_name,
                                   }));
                                   setShowCategoryDropdown(false);
                                 }}
                                 className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
                               >
-                                {cat.name}
+                                {cat.category_name}
                               </button>
                             ))}
                           {categories.filter((c) =>
-                            c.name
+                            c.category_name
                               .toLowerCase()
                               .includes(newItem.category.toLowerCase()),
                           ).length === 0 && (
@@ -539,6 +457,11 @@ const AddItemsAndCategories = () => {
               >
                 {submitLoading ? "Adding..." : "Add Item"}
               </button>
+              <button onClick={() => {
+                console.log("form",newItem);
+                console.log("category",categories);
+                
+              }}>Button</button>
             </div>
           </div>
         </div>
@@ -640,12 +563,12 @@ const AddItemsAndCategories = () => {
                     <ul className="divide-y divide-gray-100 max-h-48 overflow-y-auto">
                       {filteredCategories.map((cat) => (
                         <li
-                          key={cat.id}
+                          key={cat.category_id}
                           className="flex items-center justify-between px-4 py-2 hover:bg-gray-50"
                         >
                           <div>
                             <p className="text-sm font-medium text-gray-800">
-                              {cat.name}
+                              {cat.category_name}
                             </p>
                             {cat.description && (
                               <p className="text-sm text-gray-400">
@@ -654,7 +577,7 @@ const AddItemsAndCategories = () => {
                             )}
                           </div>
                           <button
-                            onClick={() => handleDeleteCategory(cat.id)}
+                            onClick={() => handleDeleteCategory(cat.category_id)}
                             disabled={deletingId === cat.id}
                             className="text-red-400 hover:text-red-600 text-sm font-semibold px-2 py-1 rounded hover:bg-red-50 transition-all disabled:opacity-40"
                           >
@@ -665,44 +588,6 @@ const AddItemsAndCategories = () => {
                     </ul>
                   )}
                 </div>
-              </div>
-            </div>
-
-            <div className="border-t-2 border-gray-200 ml-5 mr-5">
-              <div className="mt-10 mb-10">
-                <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block ">
-                  UOM Name
-                </label>
-                <input
-                  value={newBaseUnit.name}
-                  onChange={(e) => {
-                    setNewBaseUnit((f) => ({ ...f, name: e.target.value }));
-                  }}
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                />
-
-                <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block ">
-                  Base Unit Name
-                </label>
-                <input
-                  value={newBaseUnit.bu_name}
-                  onChange={(e) => {
-                    setNewBaseUnit((f) => ({ ...f, bu_name: e.target.value }));
-                  }}
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                />
-
-                <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block ">
-                  Base Unti Value
-                </label>
-                <input
-                  type="number"
-                  value={newBaseUnit.bu_value}
-                  onChange={(e) => {
-                    setNewBaseUnit((f) => ({ ...f, bu_value: e.target.value }));
-                  }}
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                />
               </div>
             </div>
           </div>
