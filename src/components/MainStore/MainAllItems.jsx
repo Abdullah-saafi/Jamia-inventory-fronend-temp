@@ -15,7 +15,7 @@ export default function MainAllItems({
   setToast,
   loading,
   mainStoreError,
-  pagination,
+  pagination = { currentPage: 1, totalItems: 0, pageLimit: 10 },
   currentPage,
   setCurrentPage,
   pageLimit,
@@ -30,50 +30,54 @@ export default function MainAllItems({
   const [showAddItem, setShowAddItem] = useState(false);
   const [scrapModal, setScrapModal] = useState(false);
   const [scrapModalLoading, setScrapModalLoading] = useState(false);
-  const [scrapData, setScrapData] = useState([])
+  const [scrapData, setScrapData] = useState([]);
   const [scrapForm, setScrapForm] = useState({
     removed_by: "",
     note: "",
     main_store_id: "",
-    items: []
-  })
+    items: [],
+  });
 
   const { auth } = useAuth();
   const handleError = useErrorHandler();
 
   const scrap = async () => {
     try {
-      setScrapModalLoading(true)
-      setScrapData((f) => ({ ...f, removed_by: auth.username, main_store_id: auth.store_id }))
-      setScrapModal(true)
+      setScrapModalLoading(true);
+      setScrapData((f) => ({
+        ...f,
+        removed_by: auth.username,
+        main_store_id: auth.store_id,
+      }));
+      setScrapModal(true);
     } catch (error) {
-      const msg = handleError(error, "Failed to open scrap modal")
-      setToast({ message: msg, type: "error" })
+      const msg = handleError(error, "Failed to open scrap modal");
+      setToast({ message: msg, type: "error" });
     } finally {
-      setScrapModalLoading(false)
+      setScrapModalLoading(false);
     }
-  }
+  };
 
   const handleScrap = async (data) => {
     try {
-      setScrapModalLoading(true)
+      setScrapModalLoading(true);
       const payload = {
         ...data,
         main_store_id: auth.store_id,
-        removed_by: auth.username
-      }
+        removed_by: auth.username,
+      };
       console.log("Final Payload being sent to backend:", payload);
-      await scrapByMain(payload)
-      setScrapModal(false)
-      setToast({ message: "Scrap the items successfully", type: "success" })
-      onRefresh()
+      await scrapByMain(payload);
+      setScrapModal(false);
+      setToast({ message: "Scrap the items successfully", type: "success" });
+      onRefresh();
     } catch (error) {
-      const msg = handleError(error, "Failed to scrap")
-      setToast({ message: msg, type: "error" })
+      const msg = handleError(error, "Failed to scrap");
+      setToast({ message: msg, type: "error" });
     } finally {
-      setScrapModalLoading(false)
+      setScrapModalLoading(false);
     }
-  }
+  };
 
   const categories = [
     ...new Set(allItems.map((i) => i.category).filter(Boolean)),
@@ -81,15 +85,23 @@ export default function MainAllItems({
 
   return (
     <div>
-      <button onClick={() => {
-          setToast({ message: "Checking Toast messages", type: "success" })
-        }}>Toast</button>
+      <button
+        onClick={() => {
+          setToast({ message: "Checking Toast messages", type: "success" });
+        }}
+      >
+        Toast
+      </button>
 
-        <button onClick={() => {
+      <button
+        onClick={() => {
           setTimeout(() => {
             setToast(null);
           }, 3000);
-        }}>Close Toast</button>
+        }}
+      >
+        Close Toast
+      </button>
       <div className="flex items-end justify-between py-2">
         <div className="">
           <input
@@ -237,16 +249,14 @@ export default function MainAllItems({
                       <span
                         className={`font-mono font-bold ${isLow ? "text-red-500" : "text-emerald-600"}`}
                       >
-                      {Number(i.item_quantity) || "―"}
+                        {Number(i.item_quantity) || "―"}
                       </span>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">
                       {Number(i.sub_qty).toFixed(0)}
                     </td>
                     <td className="px-4 py-3">
-                      <span
-                        className="font-mono text-xs font-bold text-gray-700"
-                      >
+                      <span className="font-mono text-xs font-bold text-gray-700">
                         {i.transit_qty}
                       </span>
                     </td>
@@ -255,7 +265,9 @@ export default function MainAllItems({
                       <span
                         className={`font-mono text-xs font-bold ${i.main_qty - i.sub_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
                       >
-                        {Number(i.item_quantity - i.sub_qty - i.transit_qty).toFixed(0)}
+                        {Number(
+                          i.item_quantity - i.sub_qty - i.transit_qty,
+                        ).toFixed(0)}
                       </span>
                     </td>
 
@@ -285,14 +297,16 @@ export default function MainAllItems({
           </tbody>
         </table>
 
-        {scrapModal && (<ScrapModal
-          handleScrap={handleScrap}
-          scrapModalLoading={scrapModalLoading}
-          setScrapModal={setScrapModal}
-          scrapData={scrapData}
-          setScrapForm={setScrapForm}
-          scrapForm={scrapForm}
-        />)}
+        {scrapModal && (
+          <ScrapModal
+            handleScrap={handleScrap}
+            scrapModalLoading={scrapModalLoading}
+            setScrapModal={setScrapModal}
+            scrapData={scrapData}
+            setScrapForm={setScrapForm}
+            scrapForm={scrapForm}
+          />
+        )}
 
         <Pagination
           currentPage={pagination.currentPage}

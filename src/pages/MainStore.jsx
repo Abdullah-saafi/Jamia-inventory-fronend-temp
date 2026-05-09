@@ -13,7 +13,6 @@ const TABS = [
   { id: "items", label: "تمام اشیاء" },
   { id: "requests", label: "زیلی اسٹورز کی درخواستیں" },
   { id: "ho-create", label: "نئی مرکزی دفتر کی درخواست" },
-  // { id: "scrap", label: "Scrap" },
 ];
 
 export default function MainStore() {
@@ -31,7 +30,7 @@ export default function MainStore() {
   const [mainStoreError, setMainStoreError] = useState("");
   const [toast, setToast] = useState(null);
 
-  // ── Pagination ────────────────────────────────────────────────────────────────────
+  // ── Pagination ────────────────────────────────────────────────────────────
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageLimit, setPageLimit] = useState(10);
@@ -40,7 +39,16 @@ export default function MainStore() {
   const [filterCategory, setFilterCategory] = useState("");
   const [filterType, setFilterType] = useState("");
 
-  const [pagination, setPagination] = useState({
+  const [itemsPagination, setItemsPagination] = useState({
+    currentPage: 1,
+    pageLimit: 10,
+    totalItems: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+
+  const [requestsPagination, setRequestsPagination] = useState({
     currentPage: 1,
     pageLimit: 10,
     totalItems: 0,
@@ -51,59 +59,71 @@ export default function MainStore() {
 
   const [requestStatusFilter, setRequestStatusFilter] = useState("");
 
-  // ── Auth And Error ──────────────────────────────────────────────────────────
+  // ── Auth And Error ────────────────────────────────────────────────────────
 
   const { auth } = useAuth();
-
   const handleError = useErrorHandler();
 
-  // ── Fetch data (silent = no spinner, used for refreshes) ──────────────────
+  // ── Debounce search ───────────────────────────────────────────────────────
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
     }, 500);
-
     return () => clearTimeout(timer);
   }, [search]);
 
-  const fetchData = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    try {
-      const [rRes, sRes, iRes, hoReqRes] = await Promise.all([
-        getRequests({
-          direction: "SUB_TO_MAIN",
-          page: currentPage,
-          limit: pageLimit,
-          status: requestStatusFilter || undefined,
-        }),
-        getStores(),
-        getItems({
-          page: currentPage,
-          limit: pageLimit,
-          search: debouncedSearch,
-          category: filterCategory || undefined,
-          item_type: filterType || undefined,
-        }),
-        getRequests({ direction: "MAIN_TO_HO" }),
-      ]);
+  // ── Fetch data ────────────────────────────────────────────────────────────
 
-      setRequests(rRes.data.data);
-      setPagination(rRes.data.pagination);
-      setHoRequests(hoReqRes.data.data);
-      setAllItems(iRes.data.data);
-      setPagination(iRes.data.pagination);
+  const fetchData = useCallback(
+    async (silent = false) => {
+      if (!silent) setLoading(true);
+      try {
+        const [rRes, sRes, iRes, hoReqRes] = await Promise.all([
+          getRequests({
+            direction: "SUB_TO_MAIN",
+            page: currentPage,
+            limit: pageLimit,
+            status: requestStatusFilter || undefined,
+          }),
+          getStores(),
+          getItems({
+            page: currentPage,
+            limit: pageLimit,
+            search: debouncedSearch,
+            category: filterCategory || undefined,
+            item_type: filterType || undefined,
+          }),
+          getRequests({ direction: "MAIN_TO_HO" }),
+        ]);
 
-      const allStores = sRes.data.data;
-      setMainStores(allStores.filter((s) => s.store_type === "MAIN_STORE"));
-      setHeadOffices(allStores.filter((s) => s.store_type === "HEAD_OFFICE"));
-    } catch (error) {
-      const msg = handleError(error, "Failed to load data");
-      setMainStoreError(msg);
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  }, [currentPage, pageLimit, requestStatusFilter, debouncedSearch, filterCategory, filterType,]);
+        setRequests(rRes.data.data);
+        setRequestsPagination(rRes.data.pagination);
+
+        setHoRequests(hoReqRes.data.data);
+
+        setAllItems(iRes.data.data);
+        setItemsPagination(iRes.data.pagination);
+
+        const allStores = sRes.data.data;
+        setMainStores(allStores.filter((s) => s.store_type === "MAIN_STORE"));
+        setHeadOffices(allStores.filter((s) => s.store_type === "HEAD_OFFICE"));
+      } catch (error) {
+        const msg = handleError(error, "Failed to load data");
+        setMainStoreError(msg);
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    [
+      currentPage,
+      pageLimit,
+      requestStatusFilter,
+      debouncedSearch,
+      filterCategory,
+      filterType,
+    ],
+  );
 
   useEffect(() => {
     fetchData(false);
@@ -140,7 +160,6 @@ export default function MainStore() {
 
       {/* Tab navigation */}
       <nav className="bg-white border border-gray-200 rounded-lg mb-6 px-2 py-1.5 flex items-center shadow-sm">
-        {/* Left tabs */}
         <div className="flex items-center gap-1 flex-wrap">
           {TABS.filter((t) => t.id !== "ho-create").map((t) => {
             const badge =
@@ -155,18 +174,20 @@ export default function MainStore() {
                 key={t.id}
                 onClick={() => setTab(t.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors
-            ${tab === t.id
-                    ? "bg-emerald-600 text-white"
-                    : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                  ${
+                    tab === t.id
+                      ? "bg-emerald-600 text-white"
+                      : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
                   }`}
               >
                 {t.label}
                 {badge && (
                   <span
                     className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none
-                ${tab === t.id
-                        ? "bg-white/20 text-white"
-                        : "bg-emerald-600 text-white"
+                      ${
+                        tab === t.id
+                          ? "bg-white/20 text-white"
+                          : "bg-emerald-600 text-white"
                       }`}
                   >
                     {badge}
@@ -177,16 +198,16 @@ export default function MainStore() {
           })}
         </div>
 
-        {/* Right tab (ho-create) */}
         <div>
           {TABS.filter((t) => t.id === "ho-create").map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors
-          ${tab === t.id
-                  ? "bg-emerald-600 text-white"
-                  : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                ${
+                  tab === t.id
+                    ? "bg-emerald-600 text-white"
+                    : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
                 }`}
             >
               {t.label}
@@ -194,6 +215,7 @@ export default function MainStore() {
           ))}
         </div>
       </nav>
+
       {/* ── TAB CONTENT ──────────────────────────────────────────────────── */}
       {tab === "items" && (
         <MainAllItems
@@ -203,7 +225,7 @@ export default function MainStore() {
           setToast={setToast}
           loading={loading}
           mainStoreError={mainStoreError}
-          pagination={pagination}
+          pagination={itemsPagination}
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
           pageLimit={pageLimit}
@@ -217,16 +239,12 @@ export default function MainStore() {
         />
       )}
 
-      {tab === "scrap" && (
-        <Scrap
-
-        />
-      )}
+      {tab === "scrap" && <Scrap />}
 
       {tab === "requests" && (
         <MainSubStoreReqs
           requests={requests}
-          pagination={pagination}
+          pagination={requestsPagination}
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
           setPageLimit={setPageLimit}

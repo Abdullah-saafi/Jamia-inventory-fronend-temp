@@ -119,7 +119,7 @@ export const sendReturnToMain = (id, data) =>
 export const acceptReturnFromSub = (id, accepted_by_name) =>
   API.patch(`/requests/${id}/close-reusable`, { accepted_by_name });
 export const resolveDispute = (id, data) =>
-  API.post(`/requests/resolve-dispute/${id}`, data);
+  API.patch(`/requests/${id}/resolve-dispute`, data);
 // ── Users ────────────────────────────────────────────────
 
 export const login = (credentials) => API.post("/users/login", credentials);
@@ -155,13 +155,20 @@ export const getCategories = () => API.get("/categories");
 export const createCategory = (data) => API.post("/categories", data);
 export const deleteCategory = (id) => API.delete(`/categories/${id}`);
 
-// ── Categories ────────────────────────────────────────────────
+// ── UOM ────────────────────────────────────────────────
 
-export const getUOM = () => API.get("/baseunits")
-export const addUOM = () => API.post("/baseunits")
+export const getUOM = () => API.get("/baseunits");
+export const addUOM = () => API.post("/baseunits");
 
 // ── Scrap ────────────────────────────────────────────────
 export const scrapByMain = (data) => API.patch("/requests/scrapMain", data);
 export const sendScrapToMain = (id, data) =>
   API.patch(`/requests/${id}/scrapSub`, data);
+
+// scarp and new table api
+export const getReturnRequests = (params) => API.get("/returns", { params });
+export const getReturnRequestById = (id) => API.get(`/returns/${id}`);
+export const processReturnRequest = (id, data) =>
+  API.patch(`/returns/${id}/process`, data);
+
 export default API;

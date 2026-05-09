@@ -19,7 +19,7 @@ export default function CreateRequestModal({
 }) {
   // ── Asset section state ────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("items");
-  const { auth } = useAuth()
+  const { auth } = useAuth();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -144,13 +144,14 @@ export default function CreateRequestModal({
             <button
               type="button"
               onClick={() => {
-                setActiveTab("items")
-                setItemForm({
+                setActiveTab("items");
+                setItemForm((prev) => ({
+                  // ← use prev, not EMPTY_FORM spread
                   ...EMPTY_FORM,
-                  to_store_id: mainStores.length === 1 ? mainStores[0].store_id : "",
+                  to_store_id: prev.to_store_id, // ← keep whatever was selected
                   requested_by_name: auth.username || "",
                   from_store_id: auth.store_id || "",
-                })
+                }));
               }}
               className={`flex-1 py-2 text-sm font-semibold transition-colors
                 ${activeTab === "items" ? "bg-emerald-600 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
@@ -160,13 +161,13 @@ export default function CreateRequestModal({
             <button
               type="button"
               onClick={() => {
-                setActiveTab("assets")
-                setItemForm({
+                setActiveTab("assets");
+                setItemForm((prev) => ({
                   ...EMPTY_FORM,
-                  to_store_id: mainStores.length === 1 ? mainStores[0].store_id : "",
+                  to_store_id: prev.to_store_id, // ← same fix here
                   requested_by_name: auth.username || "",
                   from_store_id: auth.store_id || "",
-                })
+                }));
               }}
               className={`flex-1 py-2 text-sm font-semibold transition-colors border-l border-gray-200
                 ${activeTab === "assets" ? "bg-blue-600 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
@@ -536,7 +537,8 @@ export default function CreateRequestModal({
             <div className="flex items-center gap-2 text-xs text-gray-400">
               {itemForm.items?.length > 0 && (
                 <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded">
-                  {itemForm.items.length} item{itemForm.items.length > 1 ? "s" : ""}
+                  {itemForm.items.length} item
+                  {itemForm.items.length > 1 ? "s" : ""}
                 </span>
               )}
               {itemForm.requested_assets?.length > 0 && (

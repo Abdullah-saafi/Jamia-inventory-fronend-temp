@@ -201,36 +201,36 @@ export default function SubStore() {
     }
   };
 
-  const handleScrap = async (id, data) => {
-    try {
-      setScrapModalLoading(true);
+  // const handleScrap = async (id, data) => {
+  //   try {
+  //     setScrapModalLoading(true);
 
-      await sendScrapToMain(id, {
-        ...data,
-        from_sub_store: auth.store_id,
-        to_main_store: scrapForm.requestData.to_store_id,
-      });
+  //     await sendScrapToMain(id, {
+  //       ...data,
+  //       from_sub_store: auth.store_id,
+  //       to_main_store: scrapForm.requestData.to_store_id,
+  //     });
 
-      setScrapModal(false);
+  //     setScrapModal(false);
 
-      setToast({ message: "Items scrapped successfully", type: "success" });
+  //     setToast({ message: "Items scrapped successfully", type: "success" });
 
-      setScrapForm({
-        sendByName: "",
-        requestData: null,
-        note: "",
-        scrap_items: [],
-      });
+  //     setScrapForm({
+  //       sendByName: "",
+  //       requestData: null,
+  //       note: "",
+  //       scrap_items: [],
+  //     });
 
-      load();
-      fetchStoreData();
-    } catch (error) {
-      const msg = handleError(error, "Failed to scrap items");
-      setToast({ message: msg, type: "error" });
-    } finally {
-      setScrapModalLoading(false);
-    }
-  };
+  //     load();
+  //     fetchStoreData()
+  //   } catch (error) {
+  //     const msg = handleError(error, "Failed to scrap items");
+  //     setToast({ message: msg, type: "error" });
+  //   } finally {
+  //     setScrapModalLoading(false);
+  //   }
+  // };
 
   useEffect(() => {
     setTimeout(() => setToast(null), 7000);
@@ -466,6 +466,8 @@ export default function SubStore() {
         ),
         requested_assets: requested_assets.map((a) => a.asset_id),
       };
+      console.log("payload of creating request", payload);
+
       await createRequest(payload);
       setToast({ message: "Request submitted successfully", type: "success" });
       setShowCreate(false);

@@ -1,6 +1,11 @@
 import StatusBadge from "./StatusBadge";
 
-export default function ItemsTable({ items = [], isDisputed, isReceived, isReturned }) {
+export default function ItemsTable({
+  items = [],
+  isDisputed,
+  isReceived,
+  isReturned,
+}) {
   return (
     <table className="w-full text-sm">
       <thead>
@@ -29,7 +34,9 @@ export default function ItemsTable({ items = [], isDisputed, isReceived, isRetur
 
             <td className="py-2 pr-4 text-gray-800">{i.item_name}</td>
 
-            <td className="py-2 pr-4 text-gray-500 text-sm">{i.item_uom || "―"}</td>
+            <td className="py-2 pr-4 text-gray-500 text-sm">
+              {i.item_uom || "―"}
+            </td>
 
             <td className="py-2 pr-4 font-mono text-gray-800 text-center">
               {i.requested_qty}
@@ -72,7 +79,7 @@ export default function ItemsTable({ items = [], isDisputed, isReceived, isRetur
                 </td>
                 <td className="py-2 text-center">
                   {i.item_condition ? (
-                      <StatusBadge status={i.item_condition} />
+                    <StatusBadge status={i.item_condition} />
                   ) : (
                     <span className="text-gray-300">—</span>
                   )}
