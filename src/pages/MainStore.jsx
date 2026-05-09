@@ -35,6 +35,10 @@ export default function MainStore() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageLimit, setPageLimit] = useState(10);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterType, setFilterType] = useState("");
 
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -55,6 +59,14 @@ export default function MainStore() {
 
   // ── Fetch data (silent = no spinner, used for refreshes) ──────────────────
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const fetchData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
@@ -66,7 +78,13 @@ export default function MainStore() {
           status: requestStatusFilter || undefined,
         }),
         getStores(),
-        getItems(),
+        getItems({
+          page: currentPage,
+          limit: pageLimit,
+          search: debouncedSearch,
+          category: filterCategory || undefined,
+          item_type: filterType || undefined,
+        }),
         getRequests({ direction: "MAIN_TO_HO" }),
       ]);
 
@@ -74,6 +92,7 @@ export default function MainStore() {
       setPagination(rRes.data.pagination);
       setHoRequests(hoReqRes.data.data);
       setAllItems(iRes.data.data);
+      setPagination(iRes.data.pagination);
 
       const allStores = sRes.data.data;
       setMainStores(allStores.filter((s) => s.store_type === "MAIN_STORE"));
@@ -84,7 +103,7 @@ export default function MainStore() {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [currentPage, pageLimit, requestStatusFilter]);
+  }, [currentPage, pageLimit, requestStatusFilter, debouncedSearch, filterCategory, filterType,]);
 
   useEffect(() => {
     fetchData(false);
@@ -184,6 +203,17 @@ export default function MainStore() {
           setToast={setToast}
           loading={loading}
           mainStoreError={mainStoreError}
+          pagination={pagination}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          pageLimit={pageLimit}
+          setPageLimit={setPageLimit}
+          search={search}
+          setSearch={setSearch}
+          filterCategory={filterCategory}
+          setFilterCategory={setFilterCategory}
+          filterType={filterType}
+          setFilterType={setFilterType}
         />
       )}
 
