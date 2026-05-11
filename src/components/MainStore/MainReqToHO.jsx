@@ -885,10 +885,9 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
                                         </span>
                                       </div>
                                       <div className="text-gray-400 text-xs">
-                                        {parseFloat(si.item_quantity).toFixed(
-                                          0,
-                                        )}{" "}
-                                        {si.item_uom}
+                                        {parseFloat(
+                                          si.item_quantity || 0,
+                                        ).toFixed(0)}
                                       </div>
                                     </div>
                                   ))}
