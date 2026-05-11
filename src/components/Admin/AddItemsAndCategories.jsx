@@ -257,10 +257,7 @@ const AddItemsAndCategories = () => {
                   </div>
 
                   <div>
-                    <button onClick={() => {
-                      console.log("Log", uom);
-
-                    }}>Click</button>
+       
                     <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                       اشیاء کا نام
                     </label>
@@ -457,11 +454,7 @@ const AddItemsAndCategories = () => {
               >
                 {submitLoading ? "Adding..." : "Add Item"}
               </button>
-              <button onClick={() => {
-                console.log("form",newItem);
-                console.log("category",categories);
-                
-              }}>Button</button>
+       
             </div>
           </div>
         </div>
