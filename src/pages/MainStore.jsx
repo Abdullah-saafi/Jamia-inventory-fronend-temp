@@ -89,7 +89,8 @@ export default function MainStore() {
             status: requestStatusFilter || undefined,
           }),
           getStores(),
-          getItems({
+        getItems({
+            store_id: auth.store_id, // ← add this
             page: currentPage,
             limit: pageLimit,
             search: debouncedSearch,
