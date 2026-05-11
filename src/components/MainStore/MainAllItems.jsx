@@ -257,7 +257,7 @@ export default function MainAllItems({
 
                     {/* Sent to sub stores */}
                     <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">
-                      {i.sub_qty.toFixed(0)}
+                      {parseFloat(i.sub_qty || 0).toFixed(0)}
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-bold text-gray-700">
@@ -270,7 +270,9 @@ export default function MainAllItems({
                         className={`font-mono text-xs font-bold ${i.remaining_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
                       >
                         {Number(
-                          i.item_quantity - i.sub_qty - i.transit_qty,
+                          parseFloat(i.item_quantity || 0) -
+                            parseFloat(i.sub_qty || 0) -
+                            parseFloat(i.transit_qty || 0),
                         ).toFixed(0)}
                       </span>
                     </td>
@@ -299,7 +301,7 @@ export default function MainAllItems({
 
                     {/* Min quantity */}
                     <td className="px-4 py-3 font-mono text-gray-400 text-xs">
-                      {i.min_quantity.toFixed(0)}
+                      {parseFloat(i.min_quantity || 0).toFixed(0)}
                     </td>
 
                     {/* Status */}
