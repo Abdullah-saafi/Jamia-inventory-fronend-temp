@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../../context/authContext";
-import useErrorHandler from "../useErrorHandler";
-import CheckLoadingAndError from "../CheckLoadingAndError";
+import { useAuth } from "../context/authContext";
+import useErrorHandler from "../components/useErrorHandler";
+import CheckLoadingAndError from "../components/CheckLoadingAndError";
 
 // Add these to your api.js:
 // export const getReturnRequests = (params) => API.get("/returns", { params });
@@ -11,7 +11,7 @@ import {
   getReturnRequests,
   getReturnRequestById,
   processReturnRequest,
-} from "../../services/api";
+} from "../services/api";
 
 const STATUS_COLORS = {
   PENDING: "bg-yellow-100 text-yellow-700 border-yellow-200",

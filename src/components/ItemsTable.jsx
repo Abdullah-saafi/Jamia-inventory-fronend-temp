@@ -16,9 +16,11 @@ export default function ItemsTable({
           <th className="text-center pb-2 pr-4">درخواست شدہ</th>
           <th className="text-center pb-2 pr-4">منظور شدہ</th>
           <th className="text-center pb-2 pr-4">مکمل شدہ</th>
+          <th className="text-center pb-2 pr-4">واپس کیا گیا</th>
           {(isDisputed || isReceived || isReturned) && (
             <>
               <th className="text-center pb-2 pr-4">وصول شدہ</th>
+
               <th className="text-center pb-2">حالت</th>
             </>
           )}
@@ -61,7 +63,17 @@ export default function ItemsTable({
                 {i.fulfilled_qty ?? "—"}
               </span>
             </td>
-
+            <td className="py-2 pr-4 font-mono text-center">
+              <span
+                className={
+                  Number(i.returned_qty) > 0
+                    ? "text-orange-500 font-bold"
+                    : "text-gray-300"
+                }
+              >
+                {Number(i.returned_qty) > 0 ? i.returned_qty : "—"}
+              </span>
+            </td>
             {(isDisputed || isReceived || isReturned) && (
               <>
                 <td className="py-2 pr-4 font-mono text-center">

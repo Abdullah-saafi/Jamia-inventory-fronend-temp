@@ -198,10 +198,12 @@ export default function MainAllItems({
                 "آئٹم کی قسم",
                 "مرکزی اسٹور کا اسٹاک",
                 "ذیلی اسٹورز کو بھیجا گیا",
-                "Transit Qty",
+                "بھیجی جا رہی",
                 "باقی اسٹاک",
                 // "اسکریپ شدہ مقدار",
                 "کم از کم اسٹاک",
+                "واپس آئٹمز",
+                "اسکریپ",
                 "حالت",
               ].map((h) => (
                 <th
@@ -270,7 +272,16 @@ export default function MainAllItems({
                         ).toFixed(0)}
                       </span>
                     </td>
-
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-xs font-bold text-orange-500">
+                        {Number(i.returned_qty) || "—"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-xs font-bold text-red-500">
+                        {Number(i.scrap_qty) || "—"}
+                      </span>
+                    </td>
                     {/* Scrapped qty */}
                     {/* <td className="px-4 py-3">
                       <span

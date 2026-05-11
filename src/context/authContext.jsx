@@ -36,6 +36,7 @@ export const ContextProvider = ({ children }) => {
               storeName: data.storeName,
               store_id: data.storeId,
             });
+            console.log("full auth:", auth);
           }
         } catch (error) {
           if (window.location.pathname !== "/login") {

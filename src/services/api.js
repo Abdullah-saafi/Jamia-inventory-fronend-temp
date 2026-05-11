@@ -170,5 +170,5 @@ export const getReturnRequests = (params) => API.get("/returns", { params });
 export const getReturnRequestById = (id) => API.get(`/returns/${id}`);
 export const processReturnRequest = (id, data) =>
   API.patch(`/returns/${id}/process`, data);
-
+export const createReturnRequest = (data) => API.post("/returns", data);
 export default API;
