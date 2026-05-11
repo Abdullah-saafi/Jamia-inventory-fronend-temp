@@ -1,29 +1,35 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   createItem,
   getStores,
   createCategory,
   getCategories,
   deleteCategory,
+  generateRandomNumber,
+  getUOM,
+  addUOM,
 } from "../../services/api";
 import useErrorHandler from "../useErrorHandler";
 import Toast from "../Toast";
 
 const EMPTY_NEW_ITEM = {
-  item_no: "",
-  item_name: "",
-  item_uom: "",
-  category: "",
-  item_quantity: "",
-  min_quantity: "",
-  store_id: "",
-  item_type: "",
+  item_no: "",   // --- For create item
+  item_name: "", // --- For create item
+  item_uom: "",   // --- For base unit api
+  bu_name:"",   // ---  for base unit api
+  bu_value:"",    // ---  for base unit api
+  category: "",   // ---  For create item
+  item_quantity: "",    // ---  For create item
+  min_quantity: "", // ---  For create item
+  store_id: "",   // ---  For create item
+  item_type: "",  // ---  For create item
 };
 
 const EMPTY_NEW_CATEGORY = {
   name: "",
   description: "",
 };
+
 
 const AddItemsAndCategories = () => {
   const [activeTab, setActiveTab] = useState("item");
@@ -42,17 +48,25 @@ const AddItemsAndCategories = () => {
   const [categorySubmitLoading, setCategorySubmitLoading] = useState(false);
   const [categoryServerError, setCategoryServerError] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [uom, setUOM] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [categorySearch, setCategorySearch] = useState("");
   const [deletingId, setDeletingId] = useState(null);
+  const [showUOMDropDown, setShowUOMDropDown] = useState(false);
+  const [showInputs, setShowInputs] = useState(false);
 
   const handleError = useErrorHandler();
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await getStores(),
-        stores = res.data.data || res.data;
+      const [sRes, cRes] = await Promise.all([
+        getStores(),
+        getCategories()
+      ]);
+      const list = cRes.data.data || cRes.data;
+      setCategories(Array.isArray(list) ? list : []);
+      const stores = sRes.data.data || sRes.data;
       if (Array.isArray(stores)) {
         setMainStores(stores.filter((s) => s.store_type === "MAIN_STORE"));
       }
@@ -64,40 +78,31 @@ const AddItemsAndCategories = () => {
     }
   };
 
-  const fetchCategories = async () => {
-    try {
-      setCategoriesLoading(true);
-      const res = await getCategories();
-      const list = res.data.data || res.data;
-      setCategories(Array.isArray(list) ? list : []);
-    } catch (e) {
-      // silent
-    } finally {
-      setCategoriesLoading(false);
-    }
-  };
-
-  // ON PROGRESS-------------------------
-
+  let latestRequest = useRef(0)
   const generateRandomItemNo = async (type) => {
-    const prefix = type === "REUSABLE" ? "SN-" : "ITM-";
-    // const randomNumber = await
-    return `${prefix}${Math.floor(Math.random() * 900) + 100}`;
+    const reqId = ++latestRequest.current
+    const response = await generateRandomNumber({ type })
+    if (reqId !== latestRequest.current) return;
+    return response.data.data;
   };
 
-  const regenerateItemNo = () =>
-    setNewItem((f) => ({ ...f, item_no: generateRandomItemNo() }));
+  const regenerateItemNo = async () => {
+    const itemNo = await generateRandomItemNo(newItem.item_type)
+    if (!itemNo) return
+    setNewItem((f) => ({ ...f, item_no: itemNo }));
+  }
 
   useEffect(() => {
     fetchData();
-    regenerateItemNo();
-    fetchCategories();
   }, []);
 
   useEffect(() => {
     const handler = (e) => {
       if (!e.target.closest("#category-dropdown-wrapper")) {
         setShowCategoryDropdown(false);
+      }
+      if (!e.target.closest("#uom-dropdown-wrapper")) {
+        setShowUOMDropDown(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -113,7 +118,9 @@ const AddItemsAndCategories = () => {
       !newItem.item_type;
     const isUOMMissing = item_type === "USABLE" && !item_uom;
 
-    if (missingFields || isUOMMissing) {
+    if (missingFields 
+      || isUOMMissing
+    ) {
       const errs = {};
       if (!newItem.item_no) errs.item_no = "Item No is required";
       if (!newItem.item_name) errs.item_name = "Item Name is required";
@@ -129,9 +136,11 @@ const AddItemsAndCategories = () => {
     try {
       await createItem(newItem);
       setToast({ message: "Item added successfully", type: "success" });
+      const itemNo = await generateRandomItemNo(item_type)
+      if (!itemNo) return
       setNewItem({
         ...EMPTY_NEW_ITEM,
-        item_no: generateRandomItemNo(item_type),
+        item_no: itemNo,
       });
       fetchData();
     } catch (e) {
@@ -153,7 +162,7 @@ const AddItemsAndCategories = () => {
       await createCategory(newCategory);
       setToast({ message: "Category added successfully", type: "success" });
       setNewCategory(EMPTY_NEW_CATEGORY);
-      fetchCategories();
+      fetchData()
     } catch (e) {
       setCategoryServerError(
         e.response?.data?.message || e.message || "Failed to add category",
@@ -168,7 +177,7 @@ const AddItemsAndCategories = () => {
     try {
       await deleteCategory(id);
       setToast({ message: "Category deleted", type: "success" });
-      fetchCategories();
+      fetchData()
     } catch (e) {
       const msg = handleError(e, "Failed to delete category");
       setToast({ message: msg, type: "error" });
@@ -178,7 +187,7 @@ const AddItemsAndCategories = () => {
   };
 
   const filteredCategories = categories.filter((c) =>
-    c.name.toLowerCase().includes(categorySearch.toLowerCase()),
+    c.category_name.toLowerCase().includes(categorySearch.toLowerCase()),
   );
 
   const fieldError = (key) =>
@@ -187,8 +196,7 @@ const AddItemsAndCategories = () => {
     ) : null;
 
   const inputCls = (key) =>
-    `w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${
-      itemErrors[key] ? "border-red-400" : "border-gray-300"
+    `w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${itemErrors[key] ? "border-red-400" : "border-gray-300"
     }`;
 
   return (
@@ -197,21 +205,19 @@ const AddItemsAndCategories = () => {
       <div className="flex gap-1 mb-4">
         <button
           onClick={() => setActiveTab("item")}
-          className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${
-            activeTab === "item"
-              ? "bg-emerald-600 text-white shadow-sm"
-              : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
-          }`}
+          className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === "item"
+            ? "bg-emerald-600 text-white shadow-sm"
+            : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
+            }`}
         >
           Add Item
         </button>
         <button
           onClick={() => setActiveTab("category")}
-          className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${
-            activeTab === "category"
-              ? "bg-emerald-600 text-white shadow-sm"
-              : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
-          }`}
+          className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === "category"
+            ? "bg-emerald-600 text-white shadow-sm"
+            : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
+            }`}
         >
           Add Category
         </button>
@@ -224,7 +230,7 @@ const AddItemsAndCategories = () => {
               {loading ? (
                 <div className="flex justify-center">
                   <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                </div> 
+                </div>
               ) : (
                 <>
                   <div>
@@ -241,17 +247,20 @@ const AddItemsAndCategories = () => {
                           }));
                           setItemErrors((f) => ({ ...f, item_no: undefined }));
                         }}
-                        className={`flex-1 bg-white border rounded px-3 py-2 text-emerald-600 font-mono font-bold text-sm focus:outline-none focus:border-emerald-500 ${
-                          itemErrors.item_no
-                            ? "border-red-400"
-                            : "border-gray-300"
-                        }`}
+                        className={`flex-1 bg-white border rounded px-3 py-2 text-emerald-600 font-mono font-bold text-sm focus:outline-none focus:border-emerald-500 ${itemErrors.item_no
+                          ? "border-red-400"
+                          : "border-gray-300"
+                          }`}
                       />
                     </div>
                     {fieldError("item_no")}
                   </div>
 
                   <div>
+                    <button onClick={() => {
+                      console.log("Log", uom);
+
+                    }}>Click</button>
                     <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                       اشیاء کا نام
                     </label>
@@ -276,28 +285,29 @@ const AddItemsAndCategories = () => {
                     </label>
                     <select
                       value={newItem.item_type}
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const selectedType = e.target.value;
+                        const newItemNo = await generateRandomItemNo(selectedType)
+                        if (!newItemNo) return
                         setNewItem((f) => ({
                           ...f,
                           item_type: selectedType,
                           item_uom:
                             selectedType === "REUSABLE" ? "" : f.item_uom,
-                          item_no: generateRandomItemNo(selectedType),
+                          item_no: newItemNo,
                         }));
                         setItemErrors((f) => ({ ...f, item_type: undefined }));
                       }}
                       className={inputCls("item_type")}
                     >
                       <option value="">آئٹم کی قسم</option>
-                      <option value="USABLE">Consumable</option>
-                      <option value="REUSABLE">Non-Consumable</option>
+                      <option value="USABLE">USABLE</option>
+                      <option value="REUSABLE">REUSABLE</option>
                     </select>
                     {fieldError("item_type")}
                   </div>
-
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
+                    <div id="uom-dropdown-wrapper" className="relative">
                       <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                         UOM *
                       </label>
@@ -305,6 +315,7 @@ const AddItemsAndCategories = () => {
                         value={newItem.item_uom}
                         id="UOM"
                         disabled={newItem.item_type === "REUSABLE"}
+                        autoComplete="off"
                         onChange={(e) => {
                           setNewItem((f) => ({
                             ...f,
@@ -312,14 +323,12 @@ const AddItemsAndCategories = () => {
                           }));
                           setItemErrors((f) => ({ ...f, item_uom: undefined }));
                         }}
-                        placeholder="pcs / kg / box…"
-                        className={`w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                          itemErrors.item_uom
-                            ? "border-red-400"
-                            : "border-gray-300"
-                        }`}
+                        placeholder="Select or Type UOM"
+                        className={`w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${itemErrors.item_uom
+                          ? "border-red-400"
+                          : "border-gray-300"
+                          }`}
                       />
-                      {fieldError("item_uom")}
                     </div>
 
                     <div id="category-dropdown-wrapper" className="relative">
@@ -343,35 +352,35 @@ const AddItemsAndCategories = () => {
                         <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                           {categories
                             .filter((c) =>
-                              c.name
+                              c.category_name
                                 .toLowerCase()
                                 .includes(newItem.category.toLowerCase()),
                             )
                             .map((cat) => (
                               <button
-                                key={cat.id}
+                                key={cat.category_id}
                                 type="button"
                                 onMouseDown={() => {
                                   setNewItem((f) => ({
                                     ...f,
-                                    category: cat.name,
+                                    category: cat.category_name,
                                   }));
                                   setShowCategoryDropdown(false);
                                 }}
                                 className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
                               >
-                                {cat.name}
+                                {cat.category_name}
                               </button>
                             ))}
                           {categories.filter((c) =>
-                            c.name
+                            c.category_name
                               .toLowerCase()
                               .includes(newItem.category.toLowerCase()),
                           ).length === 0 && (
-                            <p className="px-3 py-2 text-sm text-gray-400 italic">
-                              No matching categories
-                            </p>
-                          )}
+                              <p className="px-3 py-2 text-sm text-gray-400 italic">
+                                No matching categories
+                              </p>
+                            )}
                         </div>
                       )}
                     </div>
@@ -448,6 +457,11 @@ const AddItemsAndCategories = () => {
               >
                 {submitLoading ? "Adding..." : "Add Item"}
               </button>
+              <button onClick={() => {
+                console.log("form",newItem);
+                console.log("category",categories);
+                
+              }}>Button</button>
             </div>
           </div>
         </div>
@@ -526,9 +540,6 @@ const AddItemsAndCategories = () => {
                 <div className="SEARCH">
                   <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                     زمرے تلاش کریں
-                    <span className="text-gray-400 font-normal normal-case ml-1">
-                      (Search Categories)
-                    </span>
                   </label>
                   <input
                     value={categorySearch}
@@ -552,12 +563,12 @@ const AddItemsAndCategories = () => {
                     <ul className="divide-y divide-gray-100 max-h-48 overflow-y-auto">
                       {filteredCategories.map((cat) => (
                         <li
-                          key={cat.id}
+                          key={cat.category_id}
                           className="flex items-center justify-between px-4 py-2 hover:bg-gray-50"
                         >
                           <div>
                             <p className="text-sm font-medium text-gray-800">
-                              {cat.name}
+                              {cat.category_name}
                             </p>
                             {cat.description && (
                               <p className="text-sm text-gray-400">
@@ -566,7 +577,7 @@ const AddItemsAndCategories = () => {
                             )}
                           </div>
                           <button
-                            onClick={() => handleDeleteCategory(cat.id)}
+                            onClick={() => handleDeleteCategory(cat.category_id)}
                             disabled={deletingId === cat.id}
                             className="text-red-400 hover:text-red-600 text-sm font-semibold px-2 py-1 rounded hover:bg-red-50 transition-all disabled:opacity-40"
                           >

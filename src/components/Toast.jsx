@@ -3,7 +3,7 @@ export default function Toast({ toast, onClose }) {
 
   return (
     <div
-      className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium
+      className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium
         ${
           toast.type === "success"
             ? "bg-emerald-50 border-emerald-200 text-emerald-700"

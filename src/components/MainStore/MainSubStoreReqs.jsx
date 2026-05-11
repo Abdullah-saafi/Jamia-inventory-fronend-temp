@@ -21,8 +21,13 @@ import RequestDashboard from "../RequestDashboard";
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MainSubStoreReqs({
   requests,
+  pagination,
+  setCurrentPage,
+  setPageLimit,
+  currentPage,
   onRefresh,
   setToast,
+  onFilterChange,
   loading,
   mainStoreError,
 }) {
@@ -30,10 +35,8 @@ export default function MainSubStoreReqs({
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [fulfilling, setFulfilling] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [returnLoading, setReturnLoading] = useState(false)
-  const [scrapLoading, setScrapLoading] = useState(false)
+  const [returnLoading, setReturnLoading] = useState(false);
+  const [scrapLoading, setScrapLoading] = useState(false);
 
   const { auth } = useAuth();
   const handleError = useErrorHandler();
@@ -44,15 +47,14 @@ export default function MainSubStoreReqs({
       setDetail(null);
       return;
     }
-    
+
     setDL(true);
     setDetail({ ...r, items: [] });
     try {
       const res = await getRequestById(r.request_id);
-      // setDetail(res.data.data);
-      console.log("detail",res.data.data);
-      console.log("r",r);
-      
+      setDetail(res.data.data);
+      console.log("detail", res.data.data);
+      console.log("r", r);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
       setToast({ message: msg, type: "error" });
@@ -88,29 +90,29 @@ export default function MainSubStoreReqs({
 
   const handleAcceptReturn = async (id) => {
     try {
-      setReturnLoading(true)
-      const response = await getRequestById(id)
-      const accepted_by_name = auth.username
+      setReturnLoading(true);
+      const response = await getRequestById(id);
+      const accepted_by_name = auth.username;
       const requestId = response.data.data.request_id;
       console.log("requesid", requestId);
-      await acceptReturnFromSub(requestId, accepted_by_name)
+      await acceptReturnFromSub(requestId, accepted_by_name);
       setToast({ message: "Return accepted successfully", type: "success" });
       onRefresh();
     } catch (error) {
       const msg = handleError(error, "Failed to fulfill");
       setToast({ message: msg, type: "error" });
     } finally {
-      setReturnLoading(false)
+      setReturnLoading(false);
     }
-  }
+  };
 
   const handleScrap = async (data) => {
     try {
       setScrapLoading(true);
-      const response = await getRequestById(data.request_id)
+      const response = await getRequestById(data.request_id);
       const requestDetails = response.data.data;
 
-      const formattedItems = requestDetails.items.map(item => ({
+      const formattedItems = requestDetails.items.map((item) => ({
         item_no: item.item_no,
         quantity: item.requested_scrap_qty,
         store_id: requestDetails.from_store_id,
@@ -119,16 +121,16 @@ export default function MainSubStoreReqs({
       console.log("response main sub store reqs", response);
       console.log("requestDetails main sub store reqs", requestDetails);
       console.log("formatted items main sub store reqs", formattedItems);
-      console.log("formatted items items main sub store reqs", requestDetails.items);
-
-
-
+      console.log(
+        "formatted items items main sub store reqs",
+        requestDetails.items,
+      );
 
       await scrapByMain({
         main_store_id: auth.store_id,
         removed_by: auth.username,
         items: formattedItems,
-        id: requestDetails.request_id
+        id: requestDetails.request_id,
       });
 
       // setScrapLoading(false);
@@ -136,14 +138,14 @@ export default function MainSubStoreReqs({
       setToast({ message: "Items scrapped successfully", type: "success" });
 
       // setScrapForm({
-      //   sendByName: "",
+      //    ByName: "",
       //   requestData: null,
       //   note: "",
       //   scrap_items: [],
       // });
 
       // load();
-      onRefresh()
+      onRefresh();
     } catch (error) {
       const msg = handleError(error, "Failed to scrap items");
       setToast({ message: msg, type: "error" });
@@ -156,38 +158,27 @@ export default function MainSubStoreReqs({
     setDetail(null);
     onRefresh();
   };
-
-  const filtered = Array.isArray(requests)
-    ? reqFilter
-      ? requests.filter((r) => r.status === reqFilter)
-      : requests
-    : [];
-
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedData = (filtered || []).slice(
-    startIndex,
-    startIndex + pageSize,
-  );
-
   const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
   const approvedCount = requests.filter((r) => r.status === "APPROVED").length;
   // const emergencyCount = requests.filter((r) => r.is_emergency && r.status === "APPROVED",).length;
-  const returnBack = requests.filter((r) => r.status === "RETURN_BACK").length
-
-  const COL_COUNT = 10;
+  const returnBack = requests.filter((r) => r.status === "RETURN_BACK").length;
 
   return (
     <div>
       <RequestDashboard
         pageType={pageType}
-        setFilterStatus={setReqFilter}
+        setFilterStatus={(v) => {
+          setReqFilter(v);
+          setCurrentPage(1);
+          onFilterChange(v);
+        }}
         filterStatus={reqFilter}
-        data={paginatedData}
+        data={requests}
         counts={{
           pending: approvedCount,
           // emergency: emergencyCount,
           disputed: disputedCount,
-          returnBack: returnBack
+          returnBack: returnBack,
         }}
       />
 
@@ -196,15 +187,16 @@ export default function MainSubStoreReqs({
           <StoreFilters
             filterStatus={reqFilter}
             setFilterStatus={(v) => {
-              setReqFilter(v)
-              setCurrentPage(1)
+              setReqFilter(v);
+              setCurrentPage(1);
+              onFilterChange(v);
             }}
             pageType={pageType}
           />
           <button
             onClick={() => {
-              setCurrentPage(1)
-              onRefresh()
+              setCurrentPage(1);
+              onRefresh();
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >
@@ -271,14 +263,14 @@ export default function MainSubStoreReqs({
             </tr>
           </thead>
           <tbody>
-            {(loading || mainStoreError || filtered.length === 0) ? (
+            {loading || mainStoreError || requests.length === 0 ? (
               <CheckLoadingAndError
                 loading={loading}
                 error={mainStoreError}
-                requests={filtered}
+                requests={requests}
               />
             ) : (
-              paginatedData.map((r) => {
+              requests.map((r) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
                 const isDisputed = r.status === "DISPUTED";
                 const isReceived = r.status === "RECEIVED";
@@ -288,16 +280,17 @@ export default function MainSubStoreReqs({
                 return (
                   <React.Fragment key={r.request_id}>
                     <tr
-                      className={`border-b border-gray-100 cursor-pointer transition-colors ${isEmergency && r.status === "APPROVED"
-                        ? "bg-red-50/60 hover:bg-red-50"
-                        : isDisputed
-                          ? "bg-amber-50/50 hover:bg-amber-50"
-                          : isReceived
-                            ? "bg-teal-50/30 hover:bg-teal-50"
-                            : isClosed
-                              ? "bg-gray-50/50 hover:bg-gray-100"
-                              : "hover:bg-gray-50"
-                        } ${isExpanded ? "bg-gray-50" : ""}`}
+                      className={`border-b border-gray-100 cursor-pointer transition-colors ${
+                        isEmergency && r.status === "APPROVED"
+                          ? "bg-red-50/60 hover:bg-red-50"
+                          : isDisputed
+                            ? "bg-amber-50/50 hover:bg-amber-50"
+                            : isReceived
+                              ? "bg-teal-50/30 hover:bg-teal-50"
+                              : isClosed
+                                ? "bg-gray-50/50 hover:bg-gray-100"
+                                : "hover:bg-gray-50"
+                      } ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openDetail(r)}
                     >
                       <td className="px-4 py-3">
@@ -350,34 +343,37 @@ export default function MainSubStoreReqs({
                                 e.stopPropagation();
                                 handleFulfill(r.request_id);
                               }}
-                              className={`text-white text-sm font-semibold px-2.5 ml-2 py-1.5 rounded disabled:opacity-40 ${isEmergency
-                                ? "bg-red-500 hover:bg-red-600"
-                                : "bg-blue-600 hover:bg-blue-500"
-                                }`}
+                              className={`text-white text-sm font-semibold px-2.5 ml-2 py-1.5 rounded disabled:opacity-40 ${
+                                isEmergency
+                                  ? "bg-red-500 hover:bg-red-600"
+                                  : "bg-blue-600 hover:bg-blue-500"
+                              }`}
                               disabled={fulfilling === r.request_id}
                             >
                               {fulfilling === r.request_id ? "..." : "Fulfill"}
                             </button>
                           )}
-                          {r.status === "RETURN_BACK" && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAcceptReturn(r.request_id);
-                              }}
-                              className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
-                              disabled={returnLoading}
-                            >
-                              {fulfilling === r.request_id ? "..." : "Accept Return"}
-                            </button>
-                          )}
+                          {r.item_type === "REUSABLE" &&
+                            r.status === "RETURN_BACK" && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAcceptReturn(r.request_id);
+                                }}
+                                className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
+                                disabled={returnLoading}
+                              >
+                                {fulfilling === r.request_id
+                                  ? "..."
+                                  : "Accept Return"}
+                              </button>
+                            )}
                           {r.status === "SCRAPPED" && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleScrap(r);
                                 console.log("Requesti ddd", r);
-
                               }}
                               disabled={scrapLoading}
                               className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
@@ -390,18 +386,19 @@ export default function MainSubStoreReqs({
                     </tr>
                     {isExpanded && (
                       <tr
-                        className={`border-b-2 ${isEmergency && r.status === "APPROVED"
-                          ? "bg-red-50/20 border-red-300"
-                          : isDisputed
-                            ? "bg-amber-50/20 border-amber-300"
-                            : isReceived
-                              ? "bg-teal-50/20 border-teal-300"
-                              : isClosed
-                                ? "bg-gray-50 border-gray-300"
-                                : "bg-gray-50 border-emerald-200"
-                          }`}
+                        className={`border-b-2 ${
+                          isEmergency && r.status === "APPROVED"
+                            ? "bg-red-50/20 border-red-300"
+                            : isDisputed
+                              ? "bg-amber-50/20 border-amber-300"
+                              : isReceived
+                                ? "bg-teal-50/20 border-teal-300"
+                                : isClosed
+                                  ? "bg-gray-50 border-gray-300"
+                                  : "bg-gray-50 border-emerald-200"
+                        }`}
                       >
-                        <td colSpan={COL_COUNT} className="px-6 py-4">
+                        <td colSpan={10} className="px-6 py-4">
                           {detailLoad ? (
                             <div className="flex justify-center py-6">
                               <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
@@ -432,13 +429,13 @@ export default function MainSubStoreReqs({
       {/* Main Pagination */}
       <div className="mt-4">
         <Pagination
-          currentPage={currentPage}
-          totalItems={filtered?.length || 0}
-          pageSize={pageSize || 10}
+          currentPage={pagination.currentPage}
+          totalItems={pagination.totalItems}
+          pageSize={pagination.pageLimit}
           onPageChange={setCurrentPage}
           pageSizeOptions={[10, 25, 50]}
           onPageSizeChange={(s) => {
-            setPageSize(s);
+            setPageLimit(s);
             setCurrentPage(1);
           }}
         />

@@ -19,7 +19,7 @@ export default function CreateRequestModal({
 }) {
   // ── Asset section state ────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("items");
-  const { auth } = useAuth()
+  const { auth } = useAuth();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -44,43 +44,43 @@ export default function CreateRequestModal({
         </div>
 
         {/* ── Emergency banner ── */}
-        {itemForm.is_emergency && (
+        {/* {itemForm.is_emergency && (
           <div className="bg-red-50 border-b border-red-200 px-5 py-3 flex items-center gap-2 justify-end">
             <span className="text-red-600 text-sm font-semibold text-left">
               یہ درخواست براہ راست مرکزی اسٹور کو بھیجی جائے گی
             </span>
           </div>
-        )}
+        )} */}
 
         <form onSubmit={onSubmit} className="p-5 space-y-4">
           {/* ── Emergency toggle ── */}
-            <div
-              onClick={() =>
-                setItemForm((f) => ({ ...f, is_emergency: !f.is_emergency }))
-              }
-              className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none
+          {/* <div
+            onClick={() =>
+              setItemForm((f) => ({ ...f, is_emergency: !f.is_emergency }))
+            }
+            className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none
               ${itemForm.is_emergency ? "bg-red-50 border-red-400" : "bg-gray-50 border-gray-200 hover:border-red-300"}`}
-            >
-              <div className="flex items-center gap-3">
-                <div>
-                  <p
-                    className={`text-sm font-bold ${itemForm.is_emergency ? "text-red-700" : "text-gray-700"}`}
-                  >
-                    ہنگامی درخواست (Emergency Request)
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    سب اسٹور منیجر کی منظوری کے بغیر مرکزی اسٹور کو بھیجیں
-                  </p>
-                </div>
-              </div>
-              <div
-                className={`relative w-11 h-6 rounded-full transition-colors ${itemForm.is_emergency ? "bg-red-500" : "bg-gray-300"}`}
-              >
-                <div
-                  className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${itemForm.is_emergency ? "translate-x-5" : "translate-x-0.5"}`}
-                />
+          >
+            <div className="flex items-center gap-3">
+              <div>
+                <p
+                  className={`text-sm font-bold ${itemForm.is_emergency ? "text-red-700" : "text-gray-700"}`}
+                >
+                  ہنگامی درخواست (Emergency Request)
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  سب اسٹور منیجر کی منظوری کے بغیر مرکزی اسٹور کو بھیجیں
+                </p>
               </div>
             </div>
+            <div
+              className={`relative w-11 h-6 rounded-full transition-colors ${itemForm.is_emergency ? "bg-red-500" : "bg-gray-300"}`}
+            >
+              <div
+                className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${itemForm.is_emergency ? "translate-x-5" : "translate-x-0.5"}`}
+              />
+            </div>
+          </div> */}
 
           {/* ── Store + requester row ── */}
           <div className="grid grid-cols-2 gap-3">
@@ -144,13 +144,14 @@ export default function CreateRequestModal({
             <button
               type="button"
               onClick={() => {
-                setActiveTab("items")
-                setItemForm({
+                setActiveTab("items");
+                setItemForm((prev) => ({
+                  // ← use prev, not EMPTY_FORM spread
                   ...EMPTY_FORM,
-                  to_store_id: mainStores.length === 1 ? mainStores[0].store_id : "",
+                  to_store_id: prev.to_store_id, // ← keep whatever was selected
                   requested_by_name: auth.username || "",
                   from_store_id: auth.store_id || "",
-                })
+                }));
               }}
               className={`flex-1 py-2 text-sm font-semibold transition-colors
                 ${activeTab === "items" ? "bg-emerald-600 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
@@ -160,13 +161,13 @@ export default function CreateRequestModal({
             <button
               type="button"
               onClick={() => {
-                setActiveTab("assets")
-                setItemForm({
+                setActiveTab("assets");
+                setItemForm((prev) => ({
                   ...EMPTY_FORM,
-                  to_store_id: mainStores.length === 1 ? mainStores[0].store_id : "",
+                  to_store_id: prev.to_store_id, // ← same fix here
                   requested_by_name: auth.username || "",
                   from_store_id: auth.store_id || "",
-                })
+                }));
               }}
               className={`flex-1 py-2 text-sm font-semibold transition-colors border-l border-gray-200
                 ${activeTab === "assets" ? "bg-blue-600 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
@@ -288,10 +289,6 @@ export default function CreateRequestModal({
                                       <span className="text-gray-700 text-xs ml-2">
                                         {si.item_name}
                                       </span>
-                                    </div>
-                                    <div className="text-gray-400 text-xs">
-                                      {parseFloat(si.item_quantity).toFixed(0)}{" "}
-                                      {si.item_uom}
                                     </div>
                                   </div>
                                 ))}
@@ -472,10 +469,6 @@ export default function CreateRequestModal({
                                         {si.item_name}
                                       </span>
                                     </div>
-                                    <div className="text-gray-400 text-xs">
-                                      {parseFloat(si.item_quantity).toFixed(0)}{" "}
-                                      {si.item_uom}
-                                    </div>
                                   </div>
                                 ))}
                             </div>
@@ -544,7 +537,8 @@ export default function CreateRequestModal({
             <div className="flex items-center gap-2 text-xs text-gray-400">
               {itemForm.items?.length > 0 && (
                 <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded">
-                  {itemForm.items.length} item{itemForm.items.length > 1 ? "s" : ""}
+                  {itemForm.items.length} item
+                  {itemForm.items.length > 1 ? "s" : ""}
                 </span>
               )}
               {itemForm.requested_assets?.length > 0 && (

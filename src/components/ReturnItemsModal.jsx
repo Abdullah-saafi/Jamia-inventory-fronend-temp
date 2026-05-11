@@ -57,12 +57,12 @@ const ReturnItemsModal = ({
                         />
                     </div>
                     <div>
-                        <button onClick={() => {
+                        {/* <button onClick={() => {
                             console.log("returnForm",returnForm);
                             
                         }}>
                             click
-                        </button>
+                        </button> */}
                     </div>
                     <div>
                             <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
@@ -83,7 +83,7 @@ const ReturnItemsModal = ({
                         <thead>
                             <tr className="border-b border-gray-200 text-gray-400 text-xs">
                                 <th className="text-left pb-2">Item</th>
-                                <th className="text-center pb-2">Approve Qty</th>
+                                <th className="text-center pb-2">Received Qty</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -103,7 +103,8 @@ const ReturnItemsModal = ({
                                     <td className="py-2 text-center">
                                         <input
                                             type="number"
-                                            value={i.return_qty_input ?? i.received_qty}
+                                            readOnly
+                                            value={i.return_qty_input ?? Number(i.received_qty)}
                                             onChange={(e) => handleQtyChange(idx, e.target.value)}
                                             className="w-20 bg-gray-50 border border-gray-300 rounded px-2 py-1 text-center text-sm focus:border-emerald-500 outline-none"
                                         />

@@ -1,8 +1,14 @@
 import { useEffect, useState, useCallback } from "react";
-import { getRequests, getStores, getItems } from "../services/api";
+import {
+  getRequests,
+  getStores,
+  getItems,
+  getReturnRequests,
+} from "../services/api";
 import MainAllItems from "../components/MainStore/MainAllItems";
 import MainSubStoreReqs from "../components/MainStore/MainSubStoreReqs";
 import MainReqToHO from "../components/MainStore/MainReqToHO";
+import MainStoreProcessReturns from "../components/Mainstoreprocessreturns";
 import { useAuth } from "../context/authContext";
 import useErrorHandler from "../components/useErrorHandler";
 import BlockedUI from "../components/BlockedUI";
@@ -12,8 +18,8 @@ import Scrap from "../components/MainStore/Scrap";
 const TABS = [
   { id: "items", label: "تمام اشیاء" },
   { id: "requests", label: "زیلی اسٹورز کی درخواستیں" },
+  { id: "returns", label: "واپس آئٹمز" },
   { id: "ho-create", label: "نئی مرکزی دفتر کی درخواست" },
-  // { id: "scrap", label: "Scrap" },
 ];
 
 export default function MainStore() {
@@ -25,53 +31,109 @@ export default function MainStore() {
   const [mainStores, setMainStores] = useState([]);
   const [headOffices, setHeadOffices] = useState([]);
   const [hoRequests, setHoRequests] = useState([]);
+  const [pendingReturns, setPendingReturns] = useState(0);
 
   // ── UI ────────────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
   const [mainStoreError, setMainStoreError] = useState("");
   const [toast, setToast] = useState(null);
 
-  // ── Auth And Error ──────────────────────────────────────────────────────────
+  // ── Pagination ────────────────────────────────────────────────────────────
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageLimit, setPageLimit] = useState(10);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterType, setFilterType] = useState("");
 
+  const [itemsPagination, setItemsPagination] = useState({
+    currentPage: 1,
+    pageLimit: 10,
+    totalItems: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+
+  const [requestsPagination, setRequestsPagination] = useState({
+    currentPage: 1,
+    pageLimit: 10,
+    totalItems: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+
+  const [requestStatusFilter, setRequestStatusFilter] = useState("");
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
   const { auth } = useAuth();
-
   const handleError = useErrorHandler();
 
-  // ── Fetch data (silent = no spinner, used for refreshes) ──────────────────
+  // ── Debounce search ───────────────────────────────────────────────────────
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  const fetchData = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    try {
-      const [rRes, sRes, iRes, hoReqRes] = await Promise.all([
-        getRequests({ direction: "SUB_TO_MAIN" }),
-        getStores(),
-        getItems(),
-        getRequests({ direction: "MAIN_TO_HO" }),
-      ]);
+  // ── Fetch data ────────────────────────────────────────────────────────────
+  const fetchData = useCallback(
+    async (silent = false) => {
+      if (!silent) setLoading(true);
+      try {
+        const [rRes, sRes, iRes, hoReqRes, retRes] = await Promise.all([
+          getRequests({
+            direction: "SUB_TO_MAIN",
+            page: currentPage,
+            limit: pageLimit,
+            status: requestStatusFilter || undefined,
+          }),
+          getStores(),
+          getItems({
+            page: currentPage,
+            limit: pageLimit,
+            search: debouncedSearch,
+            category: filterCategory || undefined,
+            item_type: filterType || undefined,
+          }),
+          getRequests({ direction: "MAIN_TO_HO" }),
+          getReturnRequests({ to_store_id: auth.store_id, status: "PENDING" }),
+        ]);
 
-      setRequests(rRes.data.data);
-      setHoRequests(hoReqRes.data.data);
-      setAllItems(iRes.data.data);
+        setRequests(rRes.data.data);
+        setRequestsPagination(rRes.data.pagination);
+        setHoRequests(hoReqRes.data.data);
+        setAllItems(iRes.data.data);
+        setItemsPagination(iRes.data.pagination);
+        setPendingReturns(retRes.data.data?.length || 0);
 
-      const allStores = sRes.data.data;
-      setMainStores(allStores.filter((s) => s.store_type === "MAIN_STORE"));
-      setHeadOffices(allStores.filter((s) => s.store_type === "HEAD_OFFICE"));
-    } catch (error) {
-      const msg = handleError(error, "Failed to load data");
-      setMainStoreError(msg);
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  }, []);
+        const allStores = sRes.data.data;
+        setMainStores(allStores.filter((s) => s.store_type === "MAIN_STORE"));
+        setHeadOffices(allStores.filter((s) => s.store_type === "HEAD_OFFICE"));
+      } catch (error) {
+        const msg = handleError(error, "Failed to load data");
+        setMainStoreError(msg);
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    [
+      currentPage,
+      pageLimit,
+      requestStatusFilter,
+      debouncedSearch,
+      filterCategory,
+      filterType,
+      auth.store_id,
+    ],
+  );
 
   useEffect(() => {
     fetchData(false);
   }, [fetchData]);
 
   useEffect(() => {
-      setTimeout(() => {
-        setToast(null);
-      }, 3000); 
+    setTimeout(() => setToast(null), 3000);
   }, [toast]);
 
   const refresh = useCallback(() => fetchData(false), [fetchData]);
@@ -98,37 +160,38 @@ export default function MainStore() {
       </div>
 
       {/* Tab navigation */}
-      <nav className="bg-white border border-gray-200 rounded-lg mb-6 px-2 py-1.5 flex items-center shadow-sm">
-        {/* Left tabs */}
+      <nav className="bg-white border border-gray-200 rounded-lg mb-6 px-2 py-1.5 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-1 flex-wrap">
           {TABS.filter((t) => t.id !== "ho-create").map((t) => {
             const badge =
               t.id === "requests" && pendingApproved > 0
                 ? pendingApproved
-                : t.id === "ho-status" && pendingHo > 0
-                  ? pendingHo
-                  : null;
+                : t.id === "returns" && pendingReturns > 0
+                  ? pendingReturns
+                  : t.id === "ho-status" && pendingHo > 0
+                    ? pendingHo
+                    : null;
 
             return (
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors
-            ${
-              tab === t.id
-                ? "bg-emerald-600 text-white"
-                : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-            }`}
+                  ${
+                    tab === t.id
+                      ? "bg-emerald-600 text-white"
+                      : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                  }`}
               >
                 {t.label}
                 {badge && (
                   <span
                     className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none
-                ${
-                  tab === t.id
-                    ? "bg-white/20 text-white"
-                    : "bg-emerald-600 text-white"
-                }`}
+                      ${
+                        tab === t.id
+                          ? "bg-white/20 text-white"
+                          : "bg-emerald-600 text-white"
+                      }`}
                   >
                     {badge}
                   </span>
@@ -138,24 +201,24 @@ export default function MainStore() {
           })}
         </div>
 
-        {/* Right tab (ho-create) */}
         <div>
           {TABS.filter((t) => t.id === "ho-create").map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors
-          ${
-            tab === t.id
-              ? "bg-emerald-600 text-white"
-              : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-          }`}
+                ${
+                  tab === t.id
+                    ? "bg-emerald-600 text-white"
+                    : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                }`}
             >
               {t.label}
             </button>
           ))}
         </div>
       </nav>
+
       {/* ── TAB CONTENT ──────────────────────────────────────────────────── */}
       {tab === "items" && (
         <MainAllItems
@@ -165,23 +228,39 @@ export default function MainStore() {
           setToast={setToast}
           loading={loading}
           mainStoreError={mainStoreError}
+          pagination={itemsPagination}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          pageLimit={pageLimit}
+          setPageLimit={setPageLimit}
+          search={search}
+          setSearch={setSearch}
+          filterCategory={filterCategory}
+          setFilterCategory={setFilterCategory}
+          filterType={filterType}
+          setFilterType={setFilterType}
         />
       )}
 
-      {tab === "scrap" && (
-        <Scrap
-          
-        />
-      )}
+      {tab === "scrap" && <Scrap />}
 
       {tab === "requests" && (
         <MainSubStoreReqs
           requests={requests}
+          pagination={requestsPagination}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          setPageLimit={setPageLimit}
+          onFilterChange={setRequestStatusFilter}
           onRefresh={refresh}
           setToast={setToast}
           loading={loading}
           mainStoreError={mainStoreError}
         />
+      )}
+
+      {tab === "returns" && (
+        <MainStoreProcessReturns setToast={setToast} onRefresh={refresh} />
       )}
 
       {tab === "ho-create" && (
@@ -196,7 +275,6 @@ export default function MainStore() {
         />
       )}
 
-      {/* Toast */}
       <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );

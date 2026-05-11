@@ -1,8 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5100/api",
-  baseURL: "http://localhost:5500/api",
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
@@ -115,7 +114,12 @@ export const rejectRequest = (id, data) =>
 export const fulfillRequest = (id) => API.patch(`/requests/${id}/fulfill`, {});
 export const headOfficeFulfillRequest = (id, data) =>
   API.patch(`/requests/${id}/fulfill`, data);
-
+export const sendReturnToMain = (id, data) =>
+  API.patch(`/requests/${id}/send-back`, data);
+export const acceptReturnFromSub = (id, accepted_by_name) =>
+  API.patch(`/requests/${id}/close-reusable`, { accepted_by_name });
+export const resolveDispute = (id, data) =>
+  API.patch(`/requests/${id}/resolve-dispute`, data);
 // ── Users ────────────────────────────────────────────────
 
 export const login = (credentials) => API.post("/users/login", credentials);
@@ -140,6 +144,31 @@ export const editUserById = (id, data) =>
 export const getStoreManager = (params) =>
   API.get("/users/getManager", { params });
 
+// ── Random Number ────────────────────────────────────────────────
+
+export const generateRandomNumber = (params) =>
+  API.get("/items/randomNumber", { params });
+
 export const reusableItems = (params) => API.get("/items", { params });
 
+export const getCategories = () => API.get("/categories");
+export const createCategory = (data) => API.post("/categories", data);
+export const deleteCategory = (id) => API.delete(`/categories/${id}`);
+
+// ── UOM ────────────────────────────────────────────────
+
+export const getUOM = () => API.get("/baseunits");
+export const addUOM = () => API.post("/baseunits");
+
+// ── Scrap ────────────────────────────────────────────────
+export const scrapByMain = (data) => API.patch("/requests/scrapMain", data);
+export const sendScrapToMain = (id, data) =>
+  API.patch(`/requests/${id}/scrapSub`, data);
+
+// scarp and new table api
+export const getReturnRequests = (params) => API.get("/returns", { params });
+export const getReturnRequestById = (id) => API.get(`/returns/${id}`);
+export const processReturnRequest = (id, data) =>
+  API.patch(`/returns/${id}/process`, data);
+export const createReturnRequest = (data) => API.post("/returns", data);
 export default API;

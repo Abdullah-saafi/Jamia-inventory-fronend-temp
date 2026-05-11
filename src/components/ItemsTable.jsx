@@ -1,4 +1,11 @@
-export default function ItemsTable({ items = [], isDisputed, isReceived, isReturned }) {
+import StatusBadge from "./StatusBadge";
+
+export default function ItemsTable({
+  items = [],
+  isDisputed,
+  isReceived,
+  isReturned,
+}) {
   return (
     <table className="w-full text-sm">
       <thead>
@@ -9,9 +16,11 @@ export default function ItemsTable({ items = [], isDisputed, isReceived, isRetur
           <th className="text-center pb-2 pr-4">درخواست شدہ</th>
           <th className="text-center pb-2 pr-4">منظور شدہ</th>
           <th className="text-center pb-2 pr-4">مکمل شدہ</th>
+          <th className="text-center pb-2 pr-4">واپس کیا گیا</th>
           {(isDisputed || isReceived || isReturned) && (
             <>
               <th className="text-center pb-2 pr-4">وصول شدہ</th>
+
               <th className="text-center pb-2">حالت</th>
             </>
           )}
@@ -27,7 +36,9 @@ export default function ItemsTable({ items = [], isDisputed, isReceived, isRetur
 
             <td className="py-2 pr-4 text-gray-800">{i.item_name}</td>
 
-            <td className="py-2 pr-4 text-gray-500 text-sm">{i.item_uom || "―"}</td>
+            <td className="py-2 pr-4 text-gray-500 text-sm">
+              {i.item_uom || "―"}
+            </td>
 
             <td className="py-2 pr-4 font-mono text-gray-800 text-center">
               {i.requested_qty}
@@ -52,7 +63,17 @@ export default function ItemsTable({ items = [], isDisputed, isReceived, isRetur
                 {i.fulfilled_qty ?? "—"}
               </span>
             </td>
-
+            <td className="py-2 pr-4 font-mono text-center">
+              <span
+                className={
+                  Number(i.returned_qty) > 0
+                    ? "text-orange-500 font-bold"
+                    : "text-gray-300"
+                }
+              >
+                {Number(i.returned_qty) > 0 ? i.returned_qty : "—"}
+              </span>
+            </td>
             {(isDisputed || isReceived || isReturned) && (
               <>
                 <td className="py-2 pr-4 font-mono text-center">
@@ -70,16 +91,7 @@ export default function ItemsTable({ items = [], isDisputed, isReceived, isRetur
                 </td>
                 <td className="py-2 text-center">
                   {i.item_condition ? (
-                    <span
-                      className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${i.item_condition === "OK"
-                        ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                        : i.item_condition === "DAMAGED"
-                          ? "bg-amber-50 border-amber-300 text-amber-700"
-                          : "bg-red-50 border-red-300 text-red-700"
-                        }`}
-                    >
-                      {i.item_condition}
-                    </span>
+                    <StatusBadge status={i.item_condition} />
                   ) : (
                     <span className="text-gray-300">—</span>
                   )}
