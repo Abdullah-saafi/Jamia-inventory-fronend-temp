@@ -93,15 +93,7 @@ export default function MainAllItems({
         Toast
       </button>
 
-      <button
-        onClick={() => {
-          setTimeout(() => {
-            setToast(null);
-          }, 3000);
-        }}
-      >
-        Close Toast
-      </button>
+  
       <div className="flex items-end justify-between py-2">
         <div className="">
           <input
@@ -232,7 +224,7 @@ export default function MainAllItems({
                   >
                     <td className="px-4 py-3">
                       <span className="font-mono text-emerald-600 text-xs">
-                        {i.item_no}
+                       key={i.item_id}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-gray-800 font-semibold">
