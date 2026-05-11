@@ -219,12 +219,12 @@ export default function MainAllItems({
                 const isLow = i.main_qty <= parseFloat(i.min_quantity || 0);
                 return (
                   <tr
+                    key={i.item_id}
                     className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                    key={`${i.item_no}_${i.store_id}`}
                   >
                     <td className="px-4 py-3">
                       <span className="font-mono text-emerald-600 text-xs">
-                       key={i.item_id}
+                        {i.item_no}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-gray-800 font-semibold">
@@ -246,10 +246,8 @@ export default function MainAllItems({
                         {Number(i.item_quantity) || "―"}
                       </span>
                     </td>
-
-                    {/* Sent to sub stores */}
                     <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">
-                      {parseFloat(i.sub_qty || 0).toFixed(0)}
+                      {Number(i.sub_qty).toFixed(0)}
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-bold text-gray-700">
@@ -259,44 +257,29 @@ export default function MainAllItems({
 
                     <td className="px-4 py-3">
                       <span
-                        className={`font-mono text-xs font-bold ${i.remaining_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
+                        className={`font-mono text-xs font-bold ${i.main_qty - i.sub_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
                       >
                         {Number(
-                          parseFloat(i.item_quantity || 0) -
-                            parseFloat(i.sub_qty || 0) -
-                            parseFloat(i.transit_qty || 0),
+                          i.item_quantity - i.sub_qty - i.transit_qty,
                         ).toFixed(0)}
                       </span>
                     </td>
+                        <td className="px-4 py-3 font-mono text-gray-400 text-xs">
+                      {Number(i.min_quantity) ?? "0"}
+                    </td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-bold text-orange-500">
-                        {Number(i.returned_qty) || "—"}
+                        {Number(i.returned_qty) || "0"}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-bold text-red-500">
-                        {Number(i.scrap_qty) || "—"}
+                        {Number(i.scrap_qty) || "0"}
                       </span>
                     </td>
-                    {/* Scrapped qty */}
-                    {/* <td className="px-4 py-3">
-                      <span
-                        className={`font-mono text-xs font-bold ${i.scrapped_qty > 0 ? "text-red-500" : "text-gray-400"}`}
-                      >
-                        {i.scrap_qty || "―"}
-                      </span>
-                    </td> */}
+              
 
-                    <td className="px-4 py-3 font-mono text-gray-400 text-xs">
-                      {Number(i.min_quantity) ?? "—"}
-                    </td>
-
-                    {/* Min quantity */}
-                    <td className="px-4 py-3 font-mono text-gray-400 text-xs">
-                      {parseFloat(i.min_quantity || 0).toFixed(0)}
-                    </td>
-
-                    {/* Status */}
+                
                     <td className="px-4 py-3">
                       <span
                         className={`text-xs font-semibold ${isLow ? "text-red-500" : "text-emerald-600"}`}
