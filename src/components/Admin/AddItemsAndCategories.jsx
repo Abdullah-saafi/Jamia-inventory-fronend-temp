@@ -77,8 +77,11 @@ const AddItemsAndCategories = () => {
     }
   };
 
-  const generateRandomItemNo = (type) => {
+  // ON PROGRESS-------------------------
+
+  const generateRandomItemNo = async (type) => {
     const prefix = type === "REUSABLE" ? "SN-" : "ITM-";
+    // const randomNumber = await
     return `${prefix}${Math.floor(Math.random() * 900) + 100}`;
   };
 
@@ -227,9 +230,6 @@ const AddItemsAndCategories = () => {
                   <div>
                     <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                       اشیاء نمبر{" "}
-                      <span className="text-gray-400 font-normal normal-case">
-                        (auto-generated, editable)
-                      </span>
                     </label>
                     <div className="flex gap-2">
                       <input

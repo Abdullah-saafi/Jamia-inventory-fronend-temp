@@ -254,6 +254,7 @@ export default function MainAllItems({
                 "آئٹم کی قسم",
                 "مرکزی اسٹور کا اسٹاک",
                 "ذیلی اسٹورز کو بھیجا گیا",
+                "On the way",
                 "باقی اسٹاک",
                 // "اسکریپ شدہ مقدار",
                 "کم از کم اسٹاک",
@@ -317,6 +318,13 @@ export default function MainAllItems({
                         console.log("paginated of main all items", paginatedItems);
                         
                       }}> log</button> */}
+                      <td className="px-4 py-3">
+                      <span
+                        className="font-mono text-xs font-bold text-gray-700"
+                      >
+                        {}
+                      </span>
+                    </td>
 
                     <td className="px-4 py-3">
                       <span

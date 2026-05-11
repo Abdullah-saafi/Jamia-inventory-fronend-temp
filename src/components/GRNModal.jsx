@@ -3,12 +3,14 @@ import { useState } from "react";
 const ConditionBadge = ({ condition }) => {
   const styles = {
     OK: "bg-emerald-50 border-emerald-300 text-emerald-700",
-    DAMAGED: "bg-amber-50  border-amber-300  text-amber-700",
-    MISSING: "bg-red-50    border-red-300    text-red-700",
+    DAMAGED: "bg-amber-50 border-amber-300 text-amber-700",
+    MISSING: "bg-red-50 border-red-300 text-red-700",
+    RETURN_BACK: "bg-blue-50 border-blue-300 text-blue-700",
   };
+  
   return (
     <span className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${styles[condition] || ""}`}>
-      {condition}
+      {condition === "RETURN_BACK" ? "↵ RETURN" : condition}
     </span>
   );
 };
@@ -43,13 +45,17 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
   // Derive overall GRN status from item states
   // Only RECEIVED or DISPUTED — never REJECTED from the confirm button
   const deriveStatus = () => {
-    const anyIssue = items.some(
+    const hasReturn = items.some(i => i.item_condition === "RETURN_BACK");
+
+    const hasDispute = items.some(
       (i) =>
         i.item_condition === "DAMAGED" ||
         i.item_condition === "MISSING" ||
-        Number(i.received_qty) < Number(i.fulfilled_qty),
+        Number(i.received_qty) < Number(i.fulfilled_qty)
     );
-    return anyIssue ? "DISPUTED" : "RECEIVED";
+    if (hasReturn) return "RETURN_BACK";
+    if (hasDispute) return "DISPUTED";
+    return "RECEIVED";
   };
 
   // Confirm receipt (RECEIVED or DISPUTED based on what user entered)
@@ -79,8 +85,10 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
     });
   };
 
-  const derivedStatus = deriveStatus();
-  const hasIssues = derivedStatus === "DISPUTED";
+
+  const currentStatus = deriveStatus();
+  const hasAnyIssue = ["RETURN_BACK", "DISPUTED"].includes(currentStatus);
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -123,17 +131,22 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
         <div className="p-6 space-y-5 flex-1">
           {/* Live status pill */}
           <div
-            className={`flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border ${hasIssues
-              ? "bg-amber-50 border-amber-200 text-amber-700"
+            className={`flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border ${hasAnyIssue
+              ? currentStatus === "RETURN_BACK"
+                ? "bg-blue-50 border-blue-200 text-blue-700"
+                : "bg-amber-50 border-amber-200 text-amber-700"
               : "bg-emerald-50 border-emerald-200 text-emerald-700"
               }`}
           >
             <span
-              className={`w-2 h-2 rounded-full ${hasIssues ? "bg-amber-400" : "bg-emerald-400"}`}
+              className={`w-2 h-2 rounded-full ${currentStatus === "RETURN_BACK" ? "bg-blue-400" : hasAnyIssue ? "bg-amber-400" : "bg-emerald-400"
+                }`}
             />
-            {hasIssues
-              ? "Issues detected — this will be marked DISPUTED"
-              : "All items look good — this will be marked RECEIVED"}
+            {currentStatus === "RETURN_BACK"
+              ? "Return detected — this will be marked RETURN"
+              : currentStatus === "DISPUTED"
+                ? "Issues detected — this will be marked DISPUTED"
+                : "All items look good — this will be marked RECEIVED"}
           </div>
 
           {/* Items table */}
@@ -189,7 +202,11 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                             updateItem(idx, "item_condition", "OK");
                           }
                         }}
-                        className={`w-20 border rounded px-2 py-1 text-sm font-mono focus:outline-none ${Number(item.received_qty) < Number(item.fulfilled_qty)
+                        className={`w-20 border rounded px-2 py-1 text-sm font-mono focus:outline-none ${currentStatus === "RETURN_BACK"
+                          ? "border-blue-300 text-blue-700 bg-blue-50"
+                          : currentStatus === "DISPUTED"
+                          ? "border-amber-300 text-amber-700 bg-amber-50"
+                          : currentStatus === "DISPUTED"
                           ? "border-amber-300 text-amber-700 bg-amber-50"
                           : "border-gray-300 text-gray-800"
                           }`}
@@ -200,20 +217,21 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                         value={item.item_condition}
                         onChange={(e) => {
                           updateItem(idx, "item_condition", e.target.value);
-                          if (e.target.value === "MISSING") {
-                            updateItem(idx, "received_qty", 0);
-                          }
+                          if (e.target.value === "MISSING") updateItem(idx, "received_qty", 0);
                         }}
                         className={`border rounded px-2 py-1 text-xs font-semibold focus:outline-none ${item.item_condition === "OK"
                           ? "border-emerald-300 text-emerald-700 bg-emerald-50"
-                          : item.item_condition === "DAMAGED"
-                            ? "border-amber-300 text-amber-700 bg-amber-50"
-                            : "border-red-300 text-red-700 bg-red-50"
+                          : item.item_condition === "RETURN_BACK"
+                            ? "border-blue-300 text-blue-700 bg-blue-50"
+                            : item.item_condition === "DAMAGED"
+                              ? "border-amber-300 text-amber-700 bg-amber-50"
+                              : "border-red-300 text-red-700 bg-red-50"
                           }`}
                       >
                         <option value="OK">✓ OK</option>
                         <option value="DAMAGED">⚠ Damaged</option>
                         <option value="MISSING">✕ Missing</option>
+                        <option value="RETURN_BACK">↵ Return</option>
                       </select>
                     </td>
                   </tr>
@@ -223,9 +241,9 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
           </div>
 
           {/* Issue summary */}
-          {hasIssues && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-              <div className="text-amber-700 text-xs font-bold uppercase tracking-wider mb-2">
+          {hasAnyIssue && (
+            <div className={`${currentStatus === "RETURN_BACK" ? "bg-blue-50 border-blue-200" : "bg-amber-50 border-amber-200"} border rounded-xl p-4`}>
+              <div className={`${currentStatus === "RETURN_BACK" ? "text-blue-700" : "text-amber-700"} text-xs font-bold uppercase tracking-wider mb-2`}>
                 Issues Detected
               </div>
               <ul className="space-y-1">
@@ -238,12 +256,12 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                   .map((i) => (
                     <li
                       key={i.request_item_id}
-                      className="text-amber-700 text-xs flex items-center gap-2"
+                      className={`${currentStatus === "RETURN_BACK" ? "text-blue-700" : "text-amber-700"} text-xs flex items-center gap-2`}
                     >
                       <span className="font-mono font-bold">{i.item_no}</span>
                       <span>{i.item_name}</span>
                       {Number(i.received_qty) < Number(i.fulfilled_qty) && (
-                        <span className="text-amber-600">
+                        <span className={`${currentStatus === "RETURN_BACK" ? "text-blue-700" : "text-amber-600"}`}>
                           — received {i.received_qty} of {i.fulfilled_qty}
                         </span>
                       )}
@@ -267,7 +285,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
               onChange={(e) => setGrnNote(e.target.value)}
               rows={3}
               placeholder={
-                hasIssues
+                hasAnyIssue
                   ? "Describe the issue in detail…"
                   : "Any remarks about the delivery…"
               }
@@ -297,20 +315,22 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
             <button
               onClick={handleConfirm}
               disabled={submitting || hasInvalidDamage}
-              className={`text-sm font-semibold text-white px-5 py-2 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${hasIssues
-                ? "bg-amber-500 hover:bg-amber-400"
-                : "bg-emerald-600 hover:bg-emerald-500"
+              className={`text-sm font-semibold text-white px-5 py-2 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${currentStatus === "RETURN_BACK"
+                ? "bg-blue-500 hover:bg-blue-400"
+                : currentStatus === "DISPUTED" ? "bg-amber-500 hover:bg-amber-400" : "bg-emerald-600 hover:bg-emerald-500"
                 }`}
             >
               {submitting
                 ? "Submitting…"
-                : hasIssues
-                  ? "Submit with Issues"
+                : currentStatus === "RETURN_BACK"
+                  ? "Submit Return"
+                  : currentStatus === "DISPUTED" 
+                  ? "Submit with issue" 
                   : "✓ Confirm Receipt"}
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }

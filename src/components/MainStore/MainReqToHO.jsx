@@ -16,6 +16,7 @@ import StatusBadge from "../StatusBadge";
 import DateTimeCell from "../DateTimeCell";
 import PendingRequestIndicator from "../PendingRequestIndicator"
 import StoreFilters from "../StoreFilters";
+import RequestDashboard from "../RequestDashboard";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -85,7 +86,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
       setPageLoading(false);
     }
   };
-  
+
   useEffect(() => {
     setTimeout(() => setToast(null), 5000);
   }, []);
@@ -129,7 +130,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
-      setToast({message: msg, type: "error"});
+      setToast({ message: msg, type: "error" });
     } finally {
       setDL(false);
     }
@@ -143,7 +144,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
       setGrnRequest(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
-      setToast({message: msg, type: "error"});
+      setToast({ message: msg, type: "error" });
     } finally {
       setGrnLoading(false);
     }
@@ -159,13 +160,13 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
           : payload.grn_status === "DISPUTED"
             ? "Issues reported — request marked DISPUTED"
             : "Delivery rejected — main store notified";
-      setToast({message: label, type: payload.grn_status === "RECEIVED" ? "success" : "warn"});
+      setToast({ message: label, type: payload.grn_status === "RECEIVED" ? "success" : "warn" });
       setGrnRequest(null);
       setDetail(null);
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit GRN");
-      setToast({ message: msg, type: "error"});
+      setToast({ message: msg, type: "error" });
     } finally {
       setGrnSubmitting(false);
     }
@@ -205,7 +206,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
       (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
     );
     if (!from_store_id || !to_store_id || !requested_by_name || invalid)
-      return setToast({message: "Please fill all required fields", type: "error"});
+      return setToast({ message: "Please fill all required fields", type: "error" });
 
     setCreating(true);
     try {
@@ -217,7 +218,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
         ),
       };
       await createRequest(payload);
-      setToast({message: "Request submitted successfully", type: "success"});
+      setToast({ message: "Request submitted successfully", type: "success" });
       setShowCreate(false);
       setForm({
         from_store_id: "",
@@ -229,7 +230,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit");
-      setToast({message: msg, type: "error"});
+      setToast({ message: msg, type: "error" });
     } finally {
       setCreating(false);
     }
@@ -271,13 +272,26 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
   return (
     <div>
       {/* ── Header ── */}
-        
-          <PendingRequestIndicator
-            pendingCount={pendingGRN}
-            filterStatus={filterStatus}
-            setFilterStatus={setFilterStatus}
-            pageType={pageType}
-          />          
+
+      {/* <PendingRequestIndicator
+        pendingCount={pendingGRN}
+        filterStatus={filterStatus}
+        setFilterStatus={setFilterStatus}
+        pageType={pageType}
+      /> */}
+
+      <RequestDashboard
+        pageType={pageType}
+        setFilterStatus={setFilterStatus}
+        filterStatus={filterStatus}
+        counts={{
+          pending: pendingGRN,
+          returnBack: 0,
+          emergency: 0,
+          disputed: 0
+        }}
+      />
+
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => {
@@ -316,7 +330,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
             }}
             pageType={pageType}
           />
-          
+
           <button
             onClick={() => {
               setFilterStatus("")
@@ -418,13 +432,12 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
                   <>
                     <tr
                       key={r.request_id}
-                      className={`border-b border-gray-100 cursor-pointer transition-colors ${
-                        needsGRN
+                      className={`border-b border-gray-100 cursor-pointer transition-colors ${needsGRN
                           ? "bg-blue-50/40 hover:bg-blue-50"
                           : isDisputed
                             ? "bg-amber-50/40 hover:bg-amber-50"
                             : "hover:bg-gray-50"
-                      } ${isExpanded ? "bg-gray-50" : ""}`}
+                        } ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openDetail(r)}
                     >
                       <td className="px-4 py-3">
@@ -495,11 +508,10 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
                               {(isDisputed || isReceived) &&
                                 detail?.grn_note && (
                                   <div
-                                    className={`rounded-xl p-3 border text-sm ${
-                                      isDisputed
+                                    className={`rounded-xl p-3 border text-sm ${isDisputed
                                         ? "bg-amber-50 border-amber-200 text-amber-700"
                                         : "bg-teal-50 border-teal-200 text-teal-700"
-                                    }`}
+                                      }`}
                                   >
                                     <div className="text-xs font-bold uppercase tracking-wider mb-1">
                                       {isDisputed
@@ -621,14 +633,13 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
                                             <td className="py-2 text-center">
                                               {i.item_condition ? (
                                                 <span
-                                                  className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${
-                                                    i.item_condition === "OK"
+                                                  className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${i.item_condition === "OK"
                                                       ? "bg-emerald-50 border-emerald-300 text-emerald-700"
                                                       : i.item_condition ===
-                                                          "DAMAGED"
+                                                        "DAMAGED"
                                                         ? "bg-amber-50 border-amber-300 text-amber-700"
                                                         : "bg-red-50 border-red-300 text-red-700"
-                                                  }`}
+                                                    }`}
                                                 >
                                                   {i.item_condition}
                                                 </span>
@@ -883,10 +894,10 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
                                     si.item_name.toLowerCase().includes(q)
                                   );
                                 }).length === 0 && (
-                                  <div className="px-3 py-3 text-xs text-gray-400 text-center">
-                                    No items match your search
-                                  </div>
-                                )}
+                                    <div className="px-3 py-3 text-xs text-gray-400 text-center">
+                                      No items match your search
+                                    </div>
+                                  )}
                               </div>
                             )}
                           </div>
@@ -928,11 +939,10 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
                                 updateLine(idx, "item_name", e.target.value)
                               }
                               placeholder="Full item name"
-                              className={`w-full border rounded px-2 py-1.5 text-sm focus:outline-none ${
-                                item.selected_item_no
+                              className={`w-full border rounded px-2 py-1.5 text-sm focus:outline-none ${item.selected_item_no
                                   ? "bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed"
                                   : "bg-white border-gray-300 text-gray-800 focus:border-emerald-500"
-                              }`}
+                                }`}
                             />
                           </div>
                           <div className="col-span-2">
@@ -948,11 +958,10 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
                                 updateLine(idx, "item_uom", e.target.value)
                               }
                               placeholder="pcs"
-                              className={`w-full border rounded px-2 py-1.5 text-sm focus:outline-none ${
-                                item.selected_item_no
+                              className={`w-full border rounded px-2 py-1.5 text-sm focus:outline-none ${item.selected_item_no
                                   ? "bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed"
                                   : "bg-white border-gray-300 text-gray-800 focus:border-emerald-500"
-                              }`}
+                                }`}
                             />
                           </div>
 

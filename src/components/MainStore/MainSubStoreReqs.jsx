@@ -44,11 +44,15 @@ export default function MainSubStoreReqs({
       setDetail(null);
       return;
     }
+    
     setDL(true);
     setDetail({ ...r, items: [] });
     try {
       const res = await getRequestById(r.request_id);
-      setDetail(res.data.data);
+      // setDetail(res.data.data);
+      console.log("detail",res.data.data);
+      console.log("r",r);
+      
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
       setToast({ message: msg, type: "error" });
@@ -167,7 +171,7 @@ export default function MainSubStoreReqs({
 
   const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
   const approvedCount = requests.filter((r) => r.status === "APPROVED").length;
-  const emergencyCount = requests.filter((r) => r.is_emergency && r.status === "APPROVED",).length;
+  // const emergencyCount = requests.filter((r) => r.is_emergency && r.status === "APPROVED",).length;
   const returnBack = requests.filter((r) => r.status === "RETURN_BACK").length
 
   const COL_COUNT = 10;
@@ -181,7 +185,7 @@ export default function MainSubStoreReqs({
         data={paginatedData}
         counts={{
           pending: approvedCount,
-          emergency: emergencyCount,
+          // emergency: emergencyCount,
           disputed: disputedCount,
           returnBack: returnBack
         }}

@@ -11,7 +11,9 @@ const RenderInlineDetail = (
   const isDisputed = d.status === "DISPUTED";
   const isReceived = d.status === "RECEIVED";
   const isClosed = d.status === "CLOSED";
-  const hasGRN = isDisputed || isReceived || isClosed;
+  const isReturned = d.status === "RETURN_BACK";
+  
+  const hasGRN = isDisputed || isReceived || isClosed || isReturned;
 
   return (
     <div className="space-y-4">
@@ -92,7 +94,7 @@ const RenderInlineDetail = (
           <tr className="border-b border-gray-200 text-gray-400 text-xs">
             <th className="text-left pb-2 pr-4">آئٹم نمبر</th>
             <th className="text-left pb-2 pr-4">آئٹم کا نام</th>
-            <th className="text-left pb-2 pr-4">پیمائش کی اکائی / UOM</th>
+            <th className="text-left pb-2 pr-4">UOM</th>
             <th className="text-center pb-2 pr-4">درخواست کردہ</th>
             <th className="text-center pb-2 pr-4">منظور شدہ</th>
             <th className="text-center pb-2 pr-4">مکمل شدہ</th>
@@ -165,19 +167,31 @@ const RenderInlineDetail = (
                     <td className="py-2 text-center">
                       {i.item_condition ? (
                         <span
-                          className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${
-                            i.item_condition === "OK"
+                          className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${i.item_condition === "OK"
                               ? "bg-emerald-50 border-emerald-300 text-emerald-700"
                               : i.item_condition === "DAMAGED"
                                 ? "bg-amber-50 border-amber-300 text-amber-700"
                                 : "bg-red-50 border-red-300 text-red-700"
-                          }`}
+                            }`}
                         >
                           {i.item_condition}
                         </span>
                       ) : (
                         <span className="text-gray-300">—</span>
                       )}
+                    </td>
+                      <td className="py-2 pr-4 font-mono text-center">
+                        <span
+                          className={
+                            i.received_qty != null
+                              ? Number(i.received_qty) < Number(i.fulfilled_qty)
+                                ? "text-amber-600"
+                                : "text-teal-600"
+                              : "text-gray-300"
+                          }
+                        >
+                          {i.received_qty ?? "—"}
+                        </span>
                     </td>
                   </>
                 )}

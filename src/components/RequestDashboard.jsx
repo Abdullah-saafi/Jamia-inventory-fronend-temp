@@ -17,18 +17,18 @@ const RequestDashboard = ({
   return (
     <div className="flex flex-wrap gap-4 mb-6 justify-evenly">
       {/* Pending / Fulfill Card */}
-      {(pageType === "subStore" || pageType === "subStoreManager") && (
+      {(pageType === "subStore" || pageType === "subStoreManager" || pageType === "mainReqToHO") && (
         <StatusCard
           title="منظوری کی منتظر"
           count={counts.pending}
           colorClass="bg-blue-500"
-          isActive={filterStatus === (pageType === "subStore" ? "FULFILLED" : "PENDING")}
-          onClick={() => handleFilter(pageType === "subStore" ? "FULFILLED" : "PENDING")}
+          isActive={filterStatus === (pageType === ("subStore" || "mainReqToHO") ? "FULFILLED" : "PENDING")}
+          onClick={() => handleFilter(pageType === ("subStore" || "mainReqToHO") ? "FULFILLED" : "PENDING")}
         />
       )}
 
       {/* Emergency Card */}
-      {pageType === "mainSubStoreReqs" && (
+      {/* {pageType === "mainSubStoreReqs" && (
         <StatusCard
           title="ہنگامی درخواستیں"
           count={counts.emergency}
@@ -36,7 +36,7 @@ const RequestDashboard = ({
           isActive={filterStatus === "APPROVED" || isEmergent > 0}
           onClick={() => handleFilter("APPROVED")}
         />
-      )}
+      )} */}
 
       {/* Approved Card */}
 
@@ -62,13 +62,14 @@ const RequestDashboard = ({
       )}
 
       {/* Return Card */}
-      <StatusCard
+      {pageType === "subStore" && (
+        <StatusCard
         title="واپسی کی منتظر"
         count={counts.returnBack}
         colorClass="bg-amber-500"
         isActive={filterStatus === (pageType === "mainSubStoreReqs" ? "RETURN_BACK" : "RECEIVED")}
         onClick={() => handleFilter(pageType === "mainSubStoreReqs" ? "RETURN_BACK" : "RECEIVED")}
-      />
+      />)}
     </div>
   );
 };

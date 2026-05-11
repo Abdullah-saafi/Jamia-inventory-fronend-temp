@@ -1,4 +1,4 @@
-export default function ItemsTable({ items = [], isDisputed, isReceived }) {
+export default function ItemsTable({ items = [], isDisputed, isReceived, isReturned }) {
   return (
     <table className="w-full text-sm">
       <thead>
@@ -9,14 +9,9 @@ export default function ItemsTable({ items = [], isDisputed, isReceived }) {
           <th className="text-center pb-2 pr-4">درخواست شدہ</th>
           <th className="text-center pb-2 pr-4">منظور شدہ</th>
           <th className="text-center pb-2 pr-4">مکمل شدہ</th>
-          {(isDisputed || isReceived) && (
+          {(isDisputed || isReceived || isReturned) && (
             <>
               <th className="text-center pb-2 pr-4">وصول شدہ</th>
-            </>
-          )}
-          <th className="text-center pb-2 pr-4">اسکریپ مقدار</th>
-          {(isDisputed || isReceived) && (
-            <>
               <th className="text-center pb-2">حالت</th>
             </>
           )}
@@ -58,7 +53,7 @@ export default function ItemsTable({ items = [], isDisputed, isReceived }) {
               </span>
             </td>
 
-            {(isDisputed || isReceived) && (
+            {(isDisputed || isReceived || isReturned) && (
               <>
                 <td className="py-2 pr-4 font-mono text-center">
                   <span
@@ -73,15 +68,6 @@ export default function ItemsTable({ items = [], isDisputed, isReceived }) {
                     {i.received_qty ?? "—"}
                   </span>
                 </td>
-              </>
-            )}
-
-            <td className="py-2 pr-4 font-mono text-center text-red-700">
-              {i.requested_scrap_qty || "—"}
-            </td>
-
-            {(isDisputed || isReceived) && (
-              <>
                 <td className="py-2 text-center">
                   {i.item_condition ? (
                     <span
