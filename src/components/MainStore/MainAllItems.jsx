@@ -85,13 +85,7 @@ export default function MainAllItems({
 
   return (
     <div>
-      <button
-        onClick={() => {
-          setToast({ message: "Checking Toast messages", type: "success" });
-        }}
-      >
-        Toast
-      </button>
+ 
 
   
       <div className="flex items-end justify-between py-2">
