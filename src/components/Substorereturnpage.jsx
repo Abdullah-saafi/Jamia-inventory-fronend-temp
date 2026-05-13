@@ -110,7 +110,7 @@ export default function SubStoreReturnPage({ setToast, mainStores = [] }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-lg font-bold text-gray-800">
+          <h2 className="text-lg font-bold text-gray-800 ">
             واپس بھیجیں — اسٹور کو آئٹم واپس کریں
           </h2>
           <p className="text-xs text-gray-400 mt-0.5">

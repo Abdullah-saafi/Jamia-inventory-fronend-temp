@@ -13,23 +13,22 @@ import useErrorHandler from "../useErrorHandler";
 import Toast from "../Toast";
 
 const EMPTY_NEW_ITEM = {
-  item_no: "",   // --- For create item
+  item_no: "", // --- For create item
   item_name: "", // --- For create item
-  item_uom: "",   // --- For base unit api
-  bu_name:"",   // ---  for base unit api
-  bu_value:"",    // ---  for base unit api
-  category: "",   // ---  For create item
-  item_quantity: "",    // ---  For create item
+  item_uom: "", // --- For base unit api
+  bu_name: "", // ---  for base unit api
+  bu_value: "", // ---  for base unit api
+  category: "", // ---  For create item
+  item_quantity: "", // ---  For create item
   min_quantity: "", // ---  For create item
-  store_id: "",   // ---  For create item
-  item_type: "",  // ---  For create item
+  store_id: "", // ---  For create item
+  item_type: "", // ---  For create item
 };
 
 const EMPTY_NEW_CATEGORY = {
   name: "",
   description: "",
 };
-
 
 const AddItemsAndCategories = () => {
   const [activeTab, setActiveTab] = useState("item");
@@ -60,10 +59,7 @@ const AddItemsAndCategories = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [sRes, cRes] = await Promise.all([
-        getStores(),
-        getCategories()
-      ]);
+      const [sRes, cRes] = await Promise.all([getStores(), getCategories()]);
       const list = cRes.data.data || cRes.data;
       setCategories(Array.isArray(list) ? list : []);
       const stores = sRes.data.data || sRes.data;
@@ -78,19 +74,19 @@ const AddItemsAndCategories = () => {
     }
   };
 
-  let latestRequest = useRef(0)
+  let latestRequest = useRef(0);
   const generateRandomItemNo = async (type) => {
-    const reqId = ++latestRequest.current
-    const response = await generateRandomNumber({ type })
+    const reqId = ++latestRequest.current;
+    const response = await generateRandomNumber({ type });
     if (reqId !== latestRequest.current) return;
     return response.data.data;
   };
 
   const regenerateItemNo = async () => {
-    const itemNo = await generateRandomItemNo(newItem.item_type)
-    if (!itemNo) return
+    const itemNo = await generateRandomItemNo(newItem.item_type);
+    if (!itemNo) return;
     setNewItem((f) => ({ ...f, item_no: itemNo }));
-  }
+  };
 
   useEffect(() => {
     fetchData();
@@ -118,9 +114,7 @@ const AddItemsAndCategories = () => {
       !newItem.item_type;
     const isUOMMissing = item_type === "USABLE" && !item_uom;
 
-    if (missingFields 
-      || isUOMMissing
-    ) {
+    if (missingFields || isUOMMissing) {
       const errs = {};
       if (!newItem.item_no) errs.item_no = "Item No is required";
       if (!newItem.item_name) errs.item_name = "Item Name is required";
@@ -136,8 +130,8 @@ const AddItemsAndCategories = () => {
     try {
       await createItem(newItem);
       setToast({ message: "Item added successfully", type: "success" });
-      const itemNo = await generateRandomItemNo(item_type)
-      if (!itemNo) return
+      const itemNo = await generateRandomItemNo(item_type);
+      if (!itemNo) return;
       setNewItem({
         ...EMPTY_NEW_ITEM,
         item_no: itemNo,
@@ -162,7 +156,7 @@ const AddItemsAndCategories = () => {
       await createCategory(newCategory);
       setToast({ message: "Category added successfully", type: "success" });
       setNewCategory(EMPTY_NEW_CATEGORY);
-      fetchData()
+      fetchData();
     } catch (e) {
       setCategoryServerError(
         e.response?.data?.message || e.message || "Failed to add category",
@@ -177,7 +171,7 @@ const AddItemsAndCategories = () => {
     try {
       await deleteCategory(id);
       setToast({ message: "Category deleted", type: "success" });
-      fetchData()
+      fetchData();
     } catch (e) {
       const msg = handleError(e, "Failed to delete category");
       setToast({ message: msg, type: "error" });
@@ -196,7 +190,8 @@ const AddItemsAndCategories = () => {
     ) : null;
 
   const inputCls = (key) =>
-    `w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${itemErrors[key] ? "border-red-400" : "border-gray-300"
+    `w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${
+      itemErrors[key] ? "border-red-400" : "border-gray-300"
     }`;
 
   return (
@@ -205,19 +200,21 @@ const AddItemsAndCategories = () => {
       <div className="flex gap-1 mb-4">
         <button
           onClick={() => setActiveTab("item")}
-          className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === "item"
-            ? "bg-emerald-600 text-white shadow-sm"
-            : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
-            }`}
+          className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${
+            activeTab === "item"
+              ? "bg-emerald-600 text-white shadow-sm"
+              : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
+          }`}
         >
           Add Item
         </button>
         <button
           onClick={() => setActiveTab("category")}
-          className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === "category"
-            ? "bg-emerald-600 text-white shadow-sm"
-            : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
-            }`}
+          className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${
+            activeTab === "category"
+              ? "bg-emerald-600 text-white shadow-sm"
+              : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
+          }`}
         >
           Add Category
         </button>
@@ -247,17 +244,17 @@ const AddItemsAndCategories = () => {
                           }));
                           setItemErrors((f) => ({ ...f, item_no: undefined }));
                         }}
-                        className={`flex-1 bg-white border rounded px-3 py-2 text-emerald-600 font-mono font-bold text-sm focus:outline-none focus:border-emerald-500 ${itemErrors.item_no
-                          ? "border-red-400"
-                          : "border-gray-300"
-                          }`}
+                        className={`flex-1 bg-white border rounded px-3 py-2 text-emerald-600 font-mono font-bold text-sm focus:outline-none focus:border-emerald-500 ${
+                          itemErrors.item_no
+                            ? "border-red-400"
+                            : "border-gray-300"
+                        }`}
                       />
                     </div>
                     {fieldError("item_no")}
                   </div>
 
                   <div>
-       
                     <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                       اشیاء کا نام
                     </label>
@@ -284,8 +281,9 @@ const AddItemsAndCategories = () => {
                       value={newItem.item_type}
                       onChange={async (e) => {
                         const selectedType = e.target.value;
-                        const newItemNo = await generateRandomItemNo(selectedType)
-                        if (!newItemNo) return
+                        const newItemNo =
+                          await generateRandomItemNo(selectedType);
+                        if (!newItemNo) return;
                         setNewItem((f) => ({
                           ...f,
                           item_type: selectedType,
@@ -321,10 +319,11 @@ const AddItemsAndCategories = () => {
                           setItemErrors((f) => ({ ...f, item_uom: undefined }));
                         }}
                         placeholder="Select or Type UOM"
-                        className={`w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${itemErrors.item_uom
-                          ? "border-red-400"
-                          : "border-gray-300"
-                          }`}
+                        className={`w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                          itemErrors.item_uom
+                            ? "border-red-400"
+                            : "border-gray-300"
+                        }`}
                       />
                     </div>
 
@@ -374,10 +373,10 @@ const AddItemsAndCategories = () => {
                               .toLowerCase()
                               .includes(newItem.category.toLowerCase()),
                           ).length === 0 && (
-                              <p className="px-3 py-2 text-sm text-gray-400 italic">
-                                No matching categories
-                              </p>
-                            )}
+                            <p className="px-3 py-2 text-sm text-gray-400 italic">
+                              No matching categories
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -454,7 +453,6 @@ const AddItemsAndCategories = () => {
               >
                 {submitLoading ? "Adding..." : "Add Item"}
               </button>
-       
             </div>
           </div>
         </div>
@@ -570,7 +568,9 @@ const AddItemsAndCategories = () => {
                             )}
                           </div>
                           <button
-                            onClick={() => handleDeleteCategory(cat.category_id)}
+                            onClick={() =>
+                              handleDeleteCategory(cat.category_id)
+                            }
                             disabled={deletingId === cat.id}
                             className="text-red-400 hover:text-red-600 text-sm font-semibold px-2 py-1 rounded hover:bg-red-50 transition-all disabled:opacity-40"
                           >

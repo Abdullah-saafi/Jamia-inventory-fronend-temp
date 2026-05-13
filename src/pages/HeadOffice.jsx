@@ -322,14 +322,15 @@ export default function HeadOffice() {
     try {
       await fulfillRequest(id);
       setToast({
-        message : fulfillMode === "refulfill"
-          ? "Re-dispatched — Main Store will verify the corrected delivery"
-          : "Request fulfilled — Main Store will verify delivery",
+        message:
+          fulfillMode === "refulfill"
+            ? "Re-dispatched — Main Store will verify the corrected delivery"
+            : "Request fulfilled — Main Store will verify delivery",
       });
       load();
     } catch (e) {
       const msg = handleError(e, "Error fulfilling request");
-      setToast({message: msg, type: "error"});
+      setToast({ message: msg, type: "error" });
     } finally {
       setActioning(false);
     }
@@ -416,9 +417,9 @@ export default function HeadOffice() {
           </select>
           <button
             onClick={() => {
-              setFilter("")
-              setPage(1)
-              load()
+              setFilter("");
+              setPage(1);
+              load();
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >
