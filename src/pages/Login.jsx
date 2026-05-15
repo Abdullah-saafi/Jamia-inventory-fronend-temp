@@ -44,6 +44,7 @@ const Login = () => {
                     "headoffice": "/headoffice",
                     "admin": "/admin",
                     "super admin": "/substore-staff",
+                    "PETTY_CASH": "/pettycash",
                 }
                 navigate(routes[data.role] || "/unauthorized")
             }

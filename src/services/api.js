@@ -1,7 +1,9 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5500",
+  baseURL: 
+  // import.meta.env.VITE_API_URL || 
+  "http://localhost:5500/api",
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
@@ -12,6 +14,12 @@ let refreshSubscribers = [];
 
 export const setAccessTokenInApi = (token) => {
   memoryToken = token;
+
+  if (token) {
+    localStorage.setItem("accessToken", token);
+  } else {
+    localStorage.removeItem("accessToken");
+  }
 };
 
 function addRefreshSubscriber(callback) {
@@ -40,11 +48,14 @@ API.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    const isAuthRoute =
+  originalRequest.url.includes("/users/refresh") ||
+  originalRequest.url.includes("/users/login");
+
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      !originalRequest.url.includes("/users/refresh") &&
-      !originalRequest.url.includes("/users/login")
+      !isAuthRoute
     ) {
       originalRequest._retry = true;
       if (isRefreshing) {

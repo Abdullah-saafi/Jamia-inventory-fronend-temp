@@ -4,6 +4,7 @@ export const ROLE_STORE_MAP = {
   "main-store": "MAIN_STORE",
   "main-store-approver": "MAIN_STORE",
   headoffice: "HEAD_OFFICE",
+  PETTY_CASH : "PETTY_CASH"
 }
 
 export const ROLES = [
@@ -12,6 +13,7 @@ export const ROLES = [
   { value: "main-store", label: "مرکزی اسٹور" },
   { value: "main-store-approver", label: "مرکزی اسٹور نگران" },
   { value: "headoffice", label: "مرکزی دفتر" },
+  { value: "PETTY_CASH", label: "پٹی کیش" },
   { value: "admin", label: "انتظامی دفتر" },
 ]
 
@@ -21,6 +23,7 @@ export const ROLE_LABELS = {
   "main-store":         "مرکزی اسٹور",
   "main-store-approver":"مرکزی اسٹور نگران",
   headoffice:           "مرکزی دفتر",
+  "PETTY_CASH":         "پٹی کیش",
   admin:                "انتظامی دفتر",
   "super admin":        "سپر ایڈمن",
 }
@@ -37,6 +40,7 @@ export const STORE_TYPE_LABELS = {
   MAIN_STORE: "مرکزی اسٹور",
   SUB_STORE:  "اسٹور",
   HEAD_OFFICE: "مرکزی دفتر",
+  PETTY_CASH: "پٹی کیش",
 }
 export const inputClass =
   "w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400";

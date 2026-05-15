@@ -19,6 +19,7 @@ const links = [
     roles: ["main-store-approver"],
   },
   { to: "/headoffice", label: "مرکزی دفتر", roles: ["headoffice"] },
+  { to: "/pettycash", label: "پٹی کیش", roles: ["PETTY_CASH"] },
   { to: "/admin", label: "انتظامی دفتر", roles: ["admin"] },
 ];
 

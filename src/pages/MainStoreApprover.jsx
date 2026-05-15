@@ -40,7 +40,7 @@ export default function MainStoreApprover() {
   const load = async () => {
     setLoading(true);
     try {
-      const params = { direction: "MAIN_TO_HO" };
+      const params = { direction: ["MAIN_TO_PCASH","MAIN_TO_HO"] };
       if (filter) params.status = filter;
       const r = await getRequests(params);
       setRequests(r.data.data);

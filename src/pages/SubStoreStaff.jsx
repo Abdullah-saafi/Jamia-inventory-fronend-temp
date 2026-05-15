@@ -261,37 +261,6 @@ export default function SubStore() {
     }
   };
 
-  // const handleScrap = async (id, data) => {
-  //   try {
-  //     setScrapModalLoading(true);
-
-  //     await sendScrapToMain(id, {
-  //       ...data,
-  //       from_sub_store: auth.store_id,
-  //       to_main_store: scrapForm.requestData.to_store_id,
-  //     });
-
-  //     setScrapModal(false);
-
-  //     setToast({ message: "Items scrapped successfully", type: "success" });
-
-  //     setScrapForm({
-  //       sendByName: "",
-  //       requestData: null,
-  //       note: "",
-  //       scrap_items: [],
-  //     });
-
-  //     load();
-  //     fetchStoreData()
-  //   } catch (error) {
-  //     const msg = handleError(error, "Failed to scrap items");
-  //     setToast({ message: msg, type: "error" });
-  //   } finally {
-  //     setScrapModalLoading(false);
-  //   }
-  // };
-
   useEffect(() => {
     setTimeout(() => setToast(null), 7000);
   }, [toast]);

@@ -6,6 +6,7 @@ import SubStoreManager from "./pages/SubStoreManager";
 import MainStore from "./pages/MainStore";
 import MainStoreApprover from "./pages/MainStoreApprover";
 import HeadOffice from "./pages/HeadOffice";
+import PettyCash from "./pages/PettyCash";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Admin from "./pages/Admin";
 import Unauthorized from "./pages/Unauthorized";
@@ -19,6 +20,7 @@ import EditUser from "./components/Admin/EditUser";
 import EditStore from "./components/Admin/EditStore";
 import Scrap from "./components/MainStore/Scrap";
 import AddItemsAndCategories from "./components/Admin/AddItemsAndCategories";
+import { useEffect } from "react";
 
 export default function App() {
   return (
@@ -85,6 +87,18 @@ export default function App() {
                 }
               >
                 <Route path="/headoffice" element={<HeadOffice />} />
+              </Route>
+
+              {/* Petty Cash — creates PC requests, fulfills PC approved requests */}
+
+              <Route
+                element={
+                  <ProtectedRoute
+                    allowedRoles={["PETTY_CASH", "super admin"]}
+                  />
+                }
+              >
+                <Route path="/pettycash"  element={<PettyCash />} />
               </Route>
 
               {/* Admin — create users and sub stores */}

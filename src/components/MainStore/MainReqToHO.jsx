@@ -31,6 +31,7 @@ const EMPTY_LINE = {
 export default function MainReqToHO({ loading, mainStoreError, setToast }) {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
+  const [toStore, setToStore] = useState([]);
   const [requests, setRequests] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState("");
@@ -53,6 +54,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
     to_store_id: "",
     requested_by_name: "",
     notes: "",
+    is_emergency: false,
     items: [{ ...EMPTY_LINE }],
   });
 
@@ -70,13 +72,16 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
       } else if (filterStore) {
         params.store_id = filterStore;
       }
-      const [sRes, rRes] = await Promise.all([
+      const [sRes, rRes, iRes] = await Promise.all([
         getStores(),
         getRequests(params),
+        getItems({ store_id: mainStores })
       ]);
       const all = sRes.data.data;
       setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
       setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
+      setStoreItems(iRes.data.data || [])
+      setToStore(all.filter((s) => s.store_type === "PETTY_CASH" || s.store_type === "HEAD_OFFICE"))
       setRequests(rRes.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
@@ -95,19 +100,19 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
   }, [filterStatus, filterStore, auth.store_id]);
 
   // ── FIX 1: Load items from MAIN STORE (to_store_id), not sub store ─────────
-  useEffect(() => {
-    if (form.to_store_id) {
-      getItems({ store_id: form.to_store_id })
-        .then((r) => setStoreItems(r.data.data || []))
-        .catch((e) => {
-          setStoreItems([]);
-          const msg = handleError(e, "Failed to load items");
-          setError(msg);
-        });
-    } else {
-      setStoreItems([]);
-    }
-  }, [form.to_store_id]);
+  // useEffect(() => {
+  //   if (form.to_store_id) {
+  //     getItems({ store_id: form.to_store_id })
+  //       .then((r) => setStoreItems(r.data.data || []))
+  //       .catch((e) => {
+  //         setStoreItems([]);
+  //         const msg = handleError(e, "Failed to load items");
+  //         setError(msg);
+  //       });
+  //   } else {
+  //     setStoreItems([]);
+  //   }
+  // }, [form.to_store_id]);
 
   // ── FIX 2: Auto-fill main store when only one exists ──────────────────────
   useEffect(() => {
@@ -215,13 +220,24 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
 
     setCreating(true);
     try {
+      const selectedStore = toStore.find(
+        (s) => s.store_id === form.to_store_id
+      )
+
+      const direction =
+        selectedStore?.store_type === "PETTY_CASH"
+          ? "MAIN_TO_PCASH"
+          : "MAIN_TO_HO";
+
       const payload = {
         ...form,
-        direction: "MAIN_TO_HO",
+        direction,
         items: items.map(
           ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
         ),
       };
+      console.log("payload", payload);
+
       await createRequest(payload);
       setToast({ message: "Request submitted successfully", type: "success" });
       setShowCreate(false);
@@ -437,13 +453,12 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
                   <>
                     <tr
                       key={r.request_id}
-                      className={`border-b border-gray-100 cursor-pointer transition-colors ${
-                        needsGRN
-                          ? "bg-blue-50/40 hover:bg-blue-50"
-                          : isDisputed
-                            ? "bg-amber-50/40 hover:bg-amber-50"
-                            : "hover:bg-gray-50"
-                      } ${isExpanded ? "bg-gray-50" : ""}`}
+                      className={`border-b border-gray-100 cursor-pointer transition-colors ${needsGRN
+                        ? "bg-blue-50/40 hover:bg-blue-50"
+                        : isDisputed
+                          ? "bg-amber-50/40 hover:bg-amber-50"
+                          : "hover:bg-gray-50"
+                        } ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openDetail(r)}
                     >
                       <td className="px-4 py-3">
@@ -514,11 +529,10 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
                               {(isDisputed || isReceived) &&
                                 detail?.grn_note && (
                                   <div
-                                    className={`rounded-xl p-3 border text-sm ${
-                                      isDisputed
-                                        ? "bg-amber-50 border-amber-200 text-amber-700"
-                                        : "bg-teal-50 border-teal-200 text-teal-700"
-                                    }`}
+                                    className={`rounded-xl p-3 border text-sm ${isDisputed
+                                      ? "bg-amber-50 border-amber-200 text-amber-700"
+                                      : "bg-teal-50 border-teal-200 text-teal-700"
+                                      }`}
                                   >
                                     <div className="text-xs font-bold uppercase tracking-wider mb-1">
                                       {isDisputed
@@ -640,14 +654,13 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
                                             <td className="py-2 text-center">
                                               {i.item_condition ? (
                                                 <span
-                                                  className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${
-                                                    i.item_condition === "OK"
-                                                      ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                                                      : i.item_condition ===
-                                                          "DAMAGED"
-                                                        ? "bg-amber-50 border-amber-300 text-amber-700"
-                                                        : "bg-red-50 border-red-300 text-red-700"
-                                                  }`}
+                                                  className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${i.item_condition === "OK"
+                                                    ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+                                                    : i.item_condition ===
+                                                      "DAMAGED"
+                                                      ? "bg-amber-50 border-amber-300 text-amber-700"
+                                                      : "bg-red-50 border-red-300 text-red-700"
+                                                    }`}
                                                 >
                                                   {i.item_condition}
                                                 </span>
@@ -704,7 +717,14 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
           />
           <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-              <h2 className="text-gray-900 font-bold">نئی چیز کی درخواست</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-gray-900 font-bold">نئی اشیاء کی درخواست</h2>
+                {form.is_emergency && (
+                  <span className="inline-flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                    Urgent
+                  </span>
+                )}
+              </div>
               <button
                 onClick={() => setShowCreate(false)}
                 className="text-gray-400 hover:text-gray-700 text-xl"
@@ -712,8 +732,48 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
                 ×
               </button>
             </div>
+            {/* ── Emergency banner ── */}
+            {form.is_emergency && (
+              <div className="bg-red-50 border-b border-red-200 px-5 py-3 flex items-center gap-2 justify-end">
+                <span className="text-red-600 text-sm font-semibold text-left">
+                  یہ درخواست براہ راست مرکزی اسٹور کو بھیجی جائے گی
+                </span>
+              </div>
+            )}
+
+
 
             <div className="p-5 space-y-4">
+
+              {/* ── Emergency toggle ── */}
+              <div
+                onClick={() =>
+                  setForm((f) => ({ ...f, is_emergency: !f.is_emergency }))
+                }
+                className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none
+              ${form.is_emergency ? "bg-red-50 border-red-400" : "bg-gray-50 border-gray-200 hover:border-red-300"}`}
+              >
+                <div className="flex items-center gap-3">
+                  <div>
+                    <p
+                      className={`text-sm font-bold ${form.is_emergency ? "text-red-700" : "text-gray-700"}`}
+                    >
+                      ہنگامی درخواست (Emergency Request)
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      سب اسٹور منیجر کی منظوری کے بغیر مرکزی اسٹور کو بھیجیں
+                    </p>
+                  </div>
+                </div>
+                <div
+                  className={`relative w-11 h-6 rounded-full transition-colors ${form.is_emergency ? "bg-red-500" : "bg-gray-300"}`}
+                >
+                  <div
+                    className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.is_emergency ? "translate-x-5" : "translate-x-0.5"}`}
+                  />
+                </div>
+              </div>
+
               {/* Store info — read-only summary */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -728,31 +788,22 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
                 </div>
                 <div>
                   <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                    کے لیے (ہیڈ آفس)
+                    کے لیے ( پٹی کیش / ہیڈ آفس)
                   </label>
-                  {mainStores.length === 1 ? (
-                    // FIX 2: auto-filled — show as read-only
-                    <input
-                      value="HeadOffice"
-                      readOnly
-                      className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
-                    />
-                  ) : (
-                    <select
-                      value={form.to_store_id}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, to_store_id: e.target.value }))
-                      }
-                      className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                    >
-                      <option value="">Select Main Store</option>
-                      {mainStores.map((s) => (
-                        <option key={s.store_id} value={s.store_id}>
-                          {s.store_name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
+                  <select
+                    value={form.to_store_id}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, to_store_id: e.target.value }))
+                    }
+                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="">Select Main Store</option>
+                    {toStore.map((s) => (
+                      <option key={s.store_id} value={s.store_id}>
+                        {s.store_name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -781,7 +832,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
                     onClick={addLine}
                     className="text-xs text-emerald-600 hover:text-emerald-500 border border-gray-300 rounded px-2 py-1"
                   >
-                    + صف شامل کریں
+                    + Add Row
                   </button>
                 </div>
 
@@ -901,10 +952,10 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
                                     si.item_name.toLowerCase().includes(q)
                                   );
                                 }).length === 0 && (
-                                  <div className="px-3 py-3 text-xs text-gray-400 text-center">
-                                    No items match your search
-                                  </div>
-                                )}
+                                    <div className="px-3 py-3 text-xs text-gray-400 text-center">
+                                      No items match your search
+                                    </div>
+                                  )}
                               </div>
                             )}
                           </div>
@@ -946,11 +997,10 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
                                 updateLine(idx, "item_name", e.target.value)
                               }
                               placeholder="Full item name"
-                              className={`w-full border rounded px-2 py-1.5 text-sm focus:outline-none ${
-                                item.selected_item_no
-                                  ? "bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed"
-                                  : "bg-white border-gray-300 text-gray-800 focus:border-emerald-500"
-                              }`}
+                              className={`w-full border rounded px-2 py-1.5 text-sm focus:outline-none ${item.selected_item_no
+                                ? "bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed"
+                                : "bg-white border-gray-300 text-gray-800 focus:border-emerald-500"
+                                }`}
                             />
                           </div>
                           <div className="col-span-2">
@@ -966,11 +1016,10 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
                                 updateLine(idx, "item_uom", e.target.value)
                               }
                               placeholder="pcs"
-                              className={`w-full border rounded px-2 py-1.5 text-sm focus:outline-none ${
-                                item.selected_item_no
-                                  ? "bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed"
-                                  : "bg-white border-gray-300 text-gray-800 focus:border-emerald-500"
-                              }`}
+                              className={`w-full border rounded px-2 py-1.5 text-sm focus:outline-none ${item.selected_item_no
+                                ? "bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed"
+                                : "bg-white border-gray-300 text-gray-800 focus:border-emerald-500"
+                                }`}
                             />
                           </div>
 
@@ -1009,9 +1058,14 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
                 <button
                   onClick={handleCreate}
                   disabled={creating}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
+                  className={`text-white text-sm font-bold px-8 py-2 rounded-lg transition-all disabled:opacity-50
+                  ${form.is_emergency ? "bg-red-600 hover:bg-red-500" : "bg-emerald-600 hover:bg-emerald-500"}`}
                 >
-                  {creating ? "Submitting..." : "Submit Request"}
+                  {creating
+                    ? "Submitting..."
+                    : form.is_emergency
+                      ? "Submit Emergency Request"
+                      : "Submit Request"}
                 </button>
               </div>
             </div>
