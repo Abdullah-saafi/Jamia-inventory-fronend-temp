@@ -271,11 +271,11 @@ export default function MainSubStoreReqs({
               />
             ) : (
               requests.map((r) => {
-                const isExpanded = detail && detail.request_id === r.request_id;
-                const isDisputed = r.status === "DISPUTED";
-                const isReceived = r.status === "RECEIVED";
-                const isClosed = r.status === "CLOSED";
-                const isEmergency = r.is_emergency;
+                const isExpanded = detail && detail.request_id === r.request_id; // Check
+                const isDisputed = r.status === "DISPUTED"; // Check
+                const isReceived = r.status === "RECEIVED"; // issue
+                const isClosed = r.status === "CLOSED"; // dont know
+                const isEmergency = r.is_emergency; // check
 
                 return (
                   <React.Fragment key={r.request_id}>

@@ -16,8 +16,6 @@ export default function RequestRow({
   openReject,
   returnItem,
   returnModalLoading,
-  // scrapItem,
-  // scrapModalLoading
 }) {
   const isExpanded = detail && detail.request_id === r.request_id;
   const needsGRN = r.status === "FULFILLED" && !r.grn_at;
@@ -28,6 +26,7 @@ export default function RequestRow({
   const hasItems = (r.item_count ?? 0) > 0;
   const hasAssets = (r.asset_count ?? 0) > 0;
   const isReturnable = r.item_type === "REUSABLE" && r.has_returnable_items && (r.status === "RECEIVED" || r.status === "PARTIALLY_RECEIVED");
+  const isEmergency = r.is_emergency;
 
   return (
     <>
@@ -36,7 +35,8 @@ export default function RequestRow({
           ? "bg-blue-50/40 hover:bg-blue-50"
           : isDisputed
             ? "bg-amber-50/40 hover:bg-amber-50"
-            : "hover:bg-gray-50"
+            : isEmergency && r.status === "APPROVED"
+              ? "bg-red-50/60 hover:bg-red-50" : "hover:bg-gray-50"
           } ${isExpanded ? "bg-gray-50" : ""}`}
         onClick={() => openDetail(r)}
       >
@@ -62,6 +62,16 @@ export default function RequestRow({
         <td className="px-4 py-3">
           <TypeBadge hasItems={hasItems} hasAssets={hasAssets} />
         </td>
+        {pageType === "mainSubStoreReqs" && (
+          <>
+            <td className="px-4 py-3 text-gray-700">
+              {r.from_store_name}
+            </td>
+            <td className="px-4 py-3 text-gray-700">
+              {r.to_store_name}
+            </td>
+          </>
+        )}
         <td className="px-4 py-3 text-gray-600">
           {r.requested_by_name || "—"}
         </td>

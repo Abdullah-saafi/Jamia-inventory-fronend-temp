@@ -22,10 +22,7 @@ import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import ReturnItemsModal from "../components/ReturnItemsModal";
 import useErrorHandler from "../components/useErrorHandler";
 import RequestDashboard from "../components/RequestDashboard";
-import SubStoreScrapModal from "../components/SubStoreScrapModal";
-import { sendScrapToMain } from "../services/api";
 
-//
 const EMPTY_LINE = {
   selected_item_no: "",
   item_search: "",
@@ -75,14 +72,6 @@ export default function SubStore() {
   const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
   const [username, setUsername] = useState("");
   const [returnItemData, setReturnItemData] = useState([]);
-  const [scrapModal, setScrapModal] = useState(false);
-  const [scrapModalLoading, setScrapModalLoading] = useState(false);
-  const [scrapForm, setScrapForm] = useState({
-    sendByName: "",
-    requestData: null,
-    note: "",
-    scrap_items: [],
-  });
   const [returnForm, setReturnForm] = useState({
     sendByName: "",
     returnData: [],
@@ -225,42 +214,6 @@ export default function SubStore() {
     }
   };
 
-  const scrapItem = async (id) => {
-    try {
-      setScrapModalLoading(true);
-
-      const response = await getRequestById(id);
-      const requestData = response.data.data;
-
-      const scrappableItems = (requestData.items || []).filter(
-        (i) => i.item_type === "USABLE" || i.item_type === "REUSABLE",
-      );
-
-      setScrapForm({
-        sendByName: auth.username,
-        requestData,
-        note: "",
-        from_sub_store: auth.store_id,
-        scrap_items: scrappableItems.map((i) => ({
-          request_item_id: i.request_item_id,
-          scrap_qty: 0,
-          max_qty:
-            Number(i.received_qty) ||
-            Number(i.fulfilled_qty) ||
-            Number(i.requested_qty) ||
-            0,
-        })),
-      });
-
-      setScrapModal(true);
-    } catch (error) {
-      const msg = handleError(error, "Failed to open scrap modal");
-      setToast({ message: msg, type: "error" });
-    } finally {
-      setScrapModalLoading(false);
-    }
-  };
-
   useEffect(() => {
     setTimeout(() => setToast(null), 7000);
   }, [toast]);
@@ -378,20 +331,20 @@ export default function SubStore() {
     });
   };
 
-  const getNextItemNo = (items = []) => {
-    if (!items.length) return "ITM-001";
-    let max = 0;
-    let prefix = "ITM-";
-    items.forEach((item) => {
-      const match = item.item_no?.match(/(\D+)(\d+)$/);
-      if (match) {
-        prefix = match[1];
-        const num = parseInt(match[2], 10);
-        if (num > max) max = num;
-      }
-    });
-    return `${prefix}${String(max + 1).padStart(3, "0")}`;
-  };
+  // const getNextItemNo = (items = []) => {
+  //   if (!items.length) return "ITM-001";
+  //   let max = 0;
+  //   let prefix = "ITM-";
+  //   items.forEach((item) => {
+  //     const match = item.item_no?.match(/(\D+)(\d+)$/);
+  //     if (match) {
+  //       prefix = match[1];
+  //       const num = parseInt(match[2], 10);
+  //       if (num > max) max = num;
+  //     }
+  //   });
+  //   return `${prefix}${String(max + 1).padStart(3, "0")}`;
+  // };
 
   // Return Items ───────────────────────────────────────────────────────────────
 
@@ -519,44 +472,12 @@ export default function SubStore() {
     (r) => r.status === "RECEIVED" && r.item_type === "REUSABLE",
   ).length;
 
-  // const paginated = requests.slice((page - 1) * pageSize, page * pageSize);
-
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message} />;
   }
 
   return (
     <div>
-      {/* // */}
-      {/* <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
-          <span className="text-gray-500 text-xs mt-0.5 bg-gray-200 rounded p-1">
-            {auth.storeName || "loading..."}
-          </span>
-          <p className="text-gray-500 text-sm mt-0.5">
-            Manage requests, track inventory, and Request from Main Store.
-          </p>
-        </div>
-        <button
-          onClick={() => {
-            const nextItemNo = getNextItemNo(storeItems);
-            setItemForm({
-              from_store_id: auth.store_id || "",
-              to_store_id:
-                mainStores.length === 1 ? mainStores[0].store_id : "",
-              requested_by_name: auth.username || "",
-              notes: "",
-              items: [{ ...EMPTY_LINE }],
-              requested_assets: [],
-            });
-            setShowCreate(true);
-          }}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
-        >
-          نئی درخواست
-        </button>
-      </div> */}
       <div className="flex gap-2 my-4">
         <button
           onClick={openReturnBack}
@@ -567,7 +488,7 @@ export default function SubStore() {
         </button>
         <button
           onClick={() => {
-            const nextItemNo = getNextItemNo(storeItems);
+            // const nextItemNo = getNextItemNo(storeItems);
             setItemForm({
               from_store_id: auth.store_id || "",
               to_store_id:
@@ -678,8 +599,6 @@ export default function SubStore() {
                   detailLoad={detailLoad}
                   openDetail={openDetail}
                   openGRN={openGRN}
-                  scrapItem={scrapItem}
-                  scrapModalLoading={scrapModalLoading}
                   grnLoading={grnLoading}
                   pageType={pageType}
                   returnItem={returnItem}
@@ -720,15 +639,7 @@ export default function SubStore() {
           setReturnForm={setReturnForm}
         />
       )}
-      {/* {scrapModal && (
-        <SubStoreScrapModal
-          scrapForm={scrapForm}
-          setScrapForm={setScrapForm}
-          handleScrap={handleScrap}
-          scrapModalLoading={scrapModalLoading}
-          setScrapModal={setScrapModal}
-        />
-      )} */}
+
       {/* Create Modal */}
       {showCreate && (
         <CreateRequestModal
