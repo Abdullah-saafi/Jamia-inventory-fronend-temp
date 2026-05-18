@@ -681,8 +681,6 @@ export default function MainStoreApprover() {
           </div>
         </div>
       )}
-
-      <Toast toast={toast} onClose={() => showToast(null)} />
     </div>
   );
 }
