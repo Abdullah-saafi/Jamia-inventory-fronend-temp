@@ -177,7 +177,7 @@ export default function MainStore() {
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded border-emerald-400 text-sm font-medium transition-colors
                   ${
                     tab === t.id
                       ? "bg-emerald-600 text-white"
@@ -215,7 +215,7 @@ export default function MainStore() {
                 }`}
             >
               {t.label}
-            </button>
+            </button> 
           ))}
         </div>
       </nav>
@@ -276,7 +276,7 @@ export default function MainStore() {
         />
       )}
 
-      <Toast toast={toast} onClose={() => setToast(null)} />
+      {/* <Toast toast={toast} onClose={() => setToast(null)} /> */}
     </div>
   );
 }

@@ -3,7 +3,6 @@ import {
   getRequestById,
   fulfillRequest,
   acceptReturnFromSub,
-  scrapByMain,
 } from "../../services/api";
 import StatusBadge from "../StatusBadge";
 import { useAuth } from "../../context/authContext";
@@ -36,7 +35,6 @@ export default function MainSubStoreReqs({
   const [detailLoad, setDL] = useState(false);
   const [fulfilling, setFulfilling] = useState(null);
   const [returnLoading, setReturnLoading] = useState(false);
-  const [scrapLoading, setScrapLoading] = useState(false);
 
   const { auth } = useAuth();
   const handleError = useErrorHandler();
@@ -103,54 +101,6 @@ export default function MainSubStoreReqs({
       setToast({ message: msg, type: "error" });
     } finally {
       setReturnLoading(false);
-    }
-  };
-
-  const handleScrap = async (data) => {
-    try {
-      setScrapLoading(true);
-      const response = await getRequestById(data.request_id);
-      const requestDetails = response.data.data;
-
-      const formattedItems = requestDetails.items.map((item) => ({
-        item_no: item.item_no,
-        quantity: item.requested_scrap_qty,
-        store_id: requestDetails.from_store_id,
-      }));
-
-      console.log("response main sub store reqs", response);
-      console.log("requestDetails main sub store reqs", requestDetails);
-      console.log("formatted items main sub store reqs", formattedItems);
-      console.log(
-        "formatted items items main sub store reqs",
-        requestDetails.items,
-      );
-
-      await scrapByMain({
-        main_store_id: auth.store_id,
-        removed_by: auth.username,
-        items: formattedItems,
-        id: requestDetails.request_id,
-      });
-
-      // setScrapLoading(false);
-
-      setToast({ message: "Items scrapped successfully", type: "success" });
-
-      // setScrapForm({
-      //    ByName: "",
-      //   requestData: null,
-      //   note: "",
-      //   scrap_items: [],
-      // });
-
-      // load();
-      onRefresh();
-    } catch (error) {
-      const msg = handleError(error, "Failed to scrap items");
-      setToast({ message: msg, type: "error" });
-    } finally {
-      setScrapLoading(false);
     }
   };
 
@@ -368,19 +318,6 @@ export default function MainSubStoreReqs({
                                   : "Accept Return"}
                               </button>
                             )}
-                          {r.status === "SCRAPPED" && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleScrap(r);
-                                console.log("Requesti ddd", r);
-                              }}
-                              disabled={scrapLoading}
-                              className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
-                            >
-                              {scrapLoading ? "..." : "Accept Scrap"}
-                            </button>
-                          )}
                         </div>
                       </td>
                     </tr>

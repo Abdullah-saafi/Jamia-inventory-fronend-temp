@@ -246,6 +246,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
         to_store_id: "",
         requested_by_name: "",
         notes: "",
+        is_emergency: false,
         items: [{ ...EMPTY_LINE }],
       });
       load();

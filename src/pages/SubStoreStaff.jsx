@@ -22,6 +22,8 @@ import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import ReturnItemsModal from "../components/ReturnItemsModal";
 import useErrorHandler from "../components/useErrorHandler";
 import RequestDashboard from "../components/RequestDashboard";
+import ToastContainer from "../components/ToastContainer";
+import { useToast } from "../context/ToastContext";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -52,7 +54,6 @@ export default function SubStore() {
   const [allRequests, setAllRequests] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState("");
-  const [toast, setToast] = useState(null);
   const [filterStatus, setFilterStatus] = useState("");
   const [filterStore, setFilterStore] = useState("");
   const [detail, setDetail] = useState(null);
@@ -72,6 +73,11 @@ export default function SubStore() {
   const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
   const [username, setUsername] = useState("");
   const [returnItemData, setReturnItemData] = useState([]);
+  const [returnBackModal, setReturnBackModal] = useState(false);
+  const [returnBackItems, setReturnBackItems] = useState([]);
+  const [returnBackLoading, setReturnBackLoading] = useState(false);
+  const [returnBackSubmitting, setReturnBackSubmitting] = useState(false);
+  const [returnBackNote, setReturnBackNote] = useState("");
   const [returnForm, setReturnForm] = useState({
     sendByName: "",
     returnData: [],
@@ -87,15 +93,10 @@ export default function SubStore() {
   });
 
   const { auth } = useAuth();
+  const {showToast} = useToast()
   const handleError = useErrorHandler();
   const pageType = "subStore";
 
-  //
-  const [returnBackModal, setReturnBackModal] = useState(false);
-  const [returnBackItems, setReturnBackItems] = useState([]);
-  const [returnBackLoading, setReturnBackLoading] = useState(false);
-  const [returnBackSubmitting, setReturnBackSubmitting] = useState(false);
-  const [returnBackNote, setReturnBackNote] = useState("");
   const openReturnBack = async () => {
     try {
       setReturnBackLoading(true);
@@ -107,7 +108,7 @@ export default function SubStore() {
       setReturnBackModal(true);
     } catch (err) {
       const msg = handleError(err, "Failed to load items");
-      setToast({ message: msg, type: "error" });
+      showToast(msg, "error");
     } finally {
       setReturnBackLoading(false);
     }
@@ -116,12 +117,12 @@ export default function SubStore() {
   const handleReturnBack = async () => {
     const selected = returnBackItems.filter((i) => Number(i.return_qty) > 0);
     if (selected.length === 0) {
-      setToast({ message: "کم از کم ایک آئٹم منتخب کریں", type: "error" });
+      showToast("کم از کم ایک آئٹم منتخب کریں", "error");
       return;
     }
     const mainStore = mainStores[0]; // or let user pick
     if (!mainStore) {
-      setToast({ message: "Main store not found", type: "error" });
+      showToast("Main store not found", "error");
       return;
     }
     try {
@@ -136,14 +137,14 @@ export default function SubStore() {
           return_qty: Number(i.return_qty),
         })),
       });
-      setToast({ message: "آئٹمز واپس بھیج دیے گئے", type: "success" });
+      showToast("آئٹمز واپس بھیج دیے گئے", "success");
       setReturnBackModal(false);
       setReturnBackItems([]);
       setReturnBackNote("");
       load();
     } catch (err) {
       const msg = handleError(err, "Failed to send items back");
-      setToast({ message: msg, type: "error" });
+      showToast(msg, "error");
     } finally {
       setReturnBackSubmitting(false);
     }
@@ -210,13 +211,9 @@ export default function SubStore() {
       setUsableItems([]);
       setReusableItems([]);
       const msg = handleError(error, "Failed to fetch items");
-      setToast({ message: msg, type: "error" });
+      showToast(msg, "error");
     }
   };
-
-  useEffect(() => {
-    setTimeout(() => setToast(null), 7000);
-  }, [toast]);
 
   useEffect(() => {
     if (auth.store_id || auth.role === "super admin") {
@@ -249,7 +246,7 @@ export default function SubStore() {
       console.log("detail", res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to open detail");
-      setToast({ message: msg, type: "error" });
+      showToast(msg, "error");
     } finally {
       setDL(false);
     }
@@ -264,7 +261,7 @@ export default function SubStore() {
       setGrnRequest(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
-      setToast({ message: msg, type: "error" });
+      showToast(msg, "error");
     } finally {
       setGrnLoading(false);
     }
@@ -285,16 +282,13 @@ export default function SubStore() {
             : payload.grn_status === "RETURN_BACK"
               ? "Deliver Returned"
               : "Delivery rejected — main store notified";
-      setToast({
-        message: label,
-        type: payload.grn_status === "RECEIVED" ? "success" : "warn",
-      });
+      showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn",);
       setGrnRequest(null);
       setDetail(null);
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit GRN");
-      setToast({ message: msg, type: "error" });
+      showToast(msg, "error");
     } finally {
       setGrnSubmitting(false);
     }
@@ -360,7 +354,7 @@ export default function SubStore() {
       setReturnModal(true);
     } catch (error) {
       const msg = handleError(error, "Failed to open return modal");
-      setToast({ message: msg, type: "error" });
+      showToast(msg, "error");
     } finally {
       setReturnModalLoading(false);
     }
@@ -391,12 +385,12 @@ export default function SubStore() {
       }));
 
       setReturnModal(false);
-      setToast({ message: "Items returned successfully", type: "success" });
+      showToast("Items returned successfully", "success");
 
       load();
     } catch (error) {
       const msg = handleError(error, "Failed to return");
-      setToast({ message: msg, type: "error" });
+      showToast(msg, "error");
     } finally {
       setReturnModalLoading(false);
     }
@@ -420,19 +414,13 @@ export default function SubStore() {
       (i) => i.item_type === "USABLE" && !i.item_uom,
     );
     if (!from_store_id || !to_store_id || !requested_by_name)
-      return setToast({
-        message: "Please fill all required fields",
-        type: "error",
-      });
+      return showToast("Please fill all required fields", "error");
     if (!hasItems && !hasAssets)
-      return setToast({
-        message: "Add at least one item or one asset",
-        type: "error",
-      });
+      return showToast("Add at least one item or one asset", "error");
     if (
       itemLines.some((i) => !i.item_name || isUOMMissing || i.requested_qty < 1)
     )
-      return setToast({ message: "Check item details", type: "error" });
+      return showToast("Check item details", "error");
 
     setCreating(true);
     try {
@@ -451,13 +439,13 @@ export default function SubStore() {
       console.log("payload of creating request", payload);
 
       await createRequest(payload);
-      setToast({ message: "Request submitted successfully", type: "success" });
+      showToast("Request submitted successfully", "success");
       setShowCreate(false);
       setItemForm({ ...EMPTY_FORM });
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to load request details");
-      setToast({ message: msg, type: "error" });
+      showToast(msg, "error");
     } finally {
       setCreating(false);
     }
@@ -504,6 +492,9 @@ export default function SubStore() {
         >
           نئی درخواست
         </button>
+        <button onClick={() => {
+          showToast("testing toast message", "success")
+        }}>Click toast</button>
       </div>
       {/* // */}
       <RequestDashboard
@@ -574,7 +565,7 @@ export default function SubStore() {
               ]}
             />
           </div>
-     
+
         </div>
       </div>
       {/* ── Table ── */}
@@ -765,12 +756,12 @@ export default function SubStore() {
                                     prev.map((i) =>
                                       i.item_id === item.item_id
                                         ? {
-                                            ...i,
-                                            return_qty: Math.max(
-                                              0,
-                                              Number(i.return_qty) - 1,
-                                            ),
-                                          }
+                                          ...i,
+                                          return_qty: Math.max(
+                                            0,
+                                            Number(i.return_qty) - 1,
+                                          ),
+                                        }
                                         : i,
                                     ),
                                   )
@@ -789,15 +780,15 @@ export default function SubStore() {
                                     prev.map((i) =>
                                       i.item_id === item.item_id
                                         ? {
-                                            ...i,
-                                            return_qty: Math.min(
-                                              Number(item.item_quantity),
-                                              Math.max(
-                                                0,
-                                                Number(e.target.value),
-                                              ),
+                                          ...i,
+                                          return_qty: Math.min(
+                                            Number(item.item_quantity),
+                                            Math.max(
+                                              0,
+                                              Number(e.target.value),
                                             ),
-                                          }
+                                          ),
+                                        }
                                         : i,
                                     ),
                                   )
@@ -810,12 +801,12 @@ export default function SubStore() {
                                     prev.map((i) =>
                                       i.item_id === item.item_id
                                         ? {
-                                            ...i,
-                                            return_qty: Math.min(
-                                              Number(item.item_quantity),
-                                              Number(i.return_qty) + 1,
-                                            ),
-                                          }
+                                          ...i,
+                                          return_qty: Math.min(
+                                            Number(item.item_quantity),
+                                            Number(i.return_qty) + 1,
+                                          ),
+                                        }
                                         : i,
                                     ),
                                   )
@@ -838,27 +829,27 @@ export default function SubStore() {
               {/* Selected summary */}
               {returnBackItems.filter((i) => Number(i.return_qty) > 0).length >
                 0 && (
-                <div className="flex gap-4 text-xs text-gray-500 bg-gray-50 rounded px-3 py-2">
-                  <span>
-                    منتخب آئٹمز:{" "}
-                    <strong className="text-gray-800">
-                      {
-                        returnBackItems.filter((i) => Number(i.return_qty) > 0)
-                          .length
-                      }
-                    </strong>
-                  </span>
-                  <span>
-                    کل مقدار:{" "}
-                    <strong className="text-emerald-600">
-                      {returnBackItems.reduce(
-                        (s, i) => s + Number(i.return_qty),
-                        0,
-                      )}
-                    </strong>
-                  </span>
-                </div>
-              )}
+                  <div className="flex gap-4 text-xs text-gray-500 bg-gray-50 rounded px-3 py-2">
+                    <span>
+                      منتخب آئٹمز:{" "}
+                      <strong className="text-gray-800">
+                        {
+                          returnBackItems.filter((i) => Number(i.return_qty) > 0)
+                            .length
+                        }
+                      </strong>
+                    </span>
+                    <span>
+                      کل مقدار:{" "}
+                      <strong className="text-emerald-600">
+                        {returnBackItems.reduce(
+                          (s, i) => s + Number(i.return_qty),
+                          0,
+                        )}
+                      </strong>
+                    </span>
+                  </div>
+                )}
               <input
                 value={returnBackNote}
                 onChange={(e) => setReturnBackNote(e.target.value)}
@@ -884,7 +875,6 @@ export default function SubStore() {
           </div>
         </div>
       )}
-      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 }
