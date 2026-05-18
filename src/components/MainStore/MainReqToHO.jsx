@@ -145,7 +145,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
           : payload.grn_status === "DISPUTED"
             ? "Issues reported — request marked DISPUTED"
             : "Delivery rejected — main store notified";
-      showToast(labelpayload.grn_status === "RECEIVED" ? "success" : "warn");
+      showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn");
       setGrnRequest(null);
       setDetail(null);
       load();
