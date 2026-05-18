@@ -4,25 +4,23 @@ import useErrorHandler from "../useErrorHandler";
 import { getStores, storeStatus } from "../../services/api";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import Pagination from "../Pagination";
-import Toast from "../Toast";
 import { useAuth } from "../../context/authContext";
 
 export default function AllStoresTab() {
 
-  const { loadStores: refreshAdminStores } = useOutletContext();
+  const { loadStores: refreshAdminStores, showToast } = useOutletContext();
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [stores, setStores] = useState([]);
   const [error, setError] = useState("");
-  const [toast, setToast] = useState("")
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [emergency,setEmergency] = useState(false);
+  const [emergency, setEmergency] = useState(false);
   const [pageSize, setPageSize] = useState(10);
 
   const handleError = useErrorHandler();
-  const {auth, setAuth} = useAuth()
+  const { auth, setAuth } = useAuth()
   const navigate = useNavigate();
 
   const loadStores = async () => {
@@ -39,10 +37,6 @@ export default function AllStoresTab() {
   };
 
   useEffect(() => {
-    setTimeout(() => setToast(null), 7000);
-  }, [toast]);
-
-  useEffect(() => {
     loadStores();
   }, []);
 
@@ -55,13 +49,11 @@ export default function AllStoresTab() {
       if (response.status === 200) {
         await loadStores();
         if (refreshAdminStores) refreshAdminStores();
-        setToast({
-          message: `Store ${status ? "activated" : "deactivated"} successfully`, type: "success"
-        });
+        showToast(`Store ${status ? "activated" : "deactivated"} successfully`, "success");
       }
     } catch (error) {
       const msg = handleError(error, "Failed to update store status");
-      setToast({ message: msg, type: "error" });
+      showToast(msg,"error" );
     } finally {
       setLoading(false);
     }
@@ -121,23 +113,6 @@ export default function AllStoresTab() {
           ↻ Refresh
         </button>
       </div>
-
-      {/* <div>
-        <p>Emergency Request:</p>
-        <button>
-          <div className={`w-16 h-8 flex items-center rounded-2xl ${emergency ? "bg-emerald-400" : "bg-gray-300"}`}
-            onClick={() => {
-              const newValue = !emergency
-              setEmergency(newValue)
-              setAuth((prev) => ({...prev, toggleEmergency: newValue}))
-              console.log("emergency!!!",auth);
-              
-            }}
-          >
-            <div className={`w-6 h-6 ml-1 mr-1 bg-white  rounded-3xl transform ease-in-out ${emergency ? "ml-auto" : "mr-auto"}`} />
-          </div>
-        </button>
-      </div> */}
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full">
@@ -259,10 +234,6 @@ export default function AllStoresTab() {
       <div className="mt-2 text-gray-400 text-[10px] uppercase font-bold px-1">
         {displayed.length} store{displayed.length !== 1 ? "s" : ""} shown
       </div>
-      <Toast
-        toast={toast}
-        onClose={() => setToast(null)}
-      />
     </div>
   );
 }

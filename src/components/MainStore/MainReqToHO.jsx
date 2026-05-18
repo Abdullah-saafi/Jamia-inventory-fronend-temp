@@ -28,7 +28,7 @@ const EMPTY_LINE = {
   requested_qty: 1,
 };
 
-export default function MainReqToHO({ loading, mainStoreError, setToast }) {
+export default function MainReqToHO({ loading, mainStoreError, showToast }) {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [toStore, setToStore] = useState([]);
@@ -92,27 +92,8 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
   };
 
   useEffect(() => {
-    setTimeout(() => setToast(null), 5000);
-  }, []);
-
-  useEffect(() => {
     if (auth.store_id || auth.role === "super admin") load();
   }, [filterStatus, filterStore, auth.store_id]);
-
-  // ── FIX 1: Load items from MAIN STORE (to_store_id), not sub store ─────────
-  // useEffect(() => {
-  //   if (form.to_store_id) {
-  //     getItems({ store_id: form.to_store_id })
-  //       .then((r) => setStoreItems(r.data.data || []))
-  //       .catch((e) => {
-  //         setStoreItems([]);
-  //         const msg = handleError(e, "Failed to load items");
-  //         setError(msg);
-  //       });
-  //   } else {
-  //     setStoreItems([]);
-  //   }
-  // }, [form.to_store_id]);
 
   // ── FIX 2: Auto-fill main store when only one exists ──────────────────────
   useEffect(() => {
@@ -134,7 +115,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
-      setToast({ message: msg, type: "error" });
+      showToast(msg,"error");
     } finally {
       setDL(false);
     }
@@ -148,7 +129,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
       setGrnRequest(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
-      setToast({ message: msg, type: "error" });
+      showToast( msg,  "error");
     } finally {
       setGrnLoading(false);
     }
@@ -164,16 +145,13 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
           : payload.grn_status === "DISPUTED"
             ? "Issues reported — request marked DISPUTED"
             : "Delivery rejected — main store notified";
-      setToast({
-        message: label,
-        type: payload.grn_status === "RECEIVED" ? "success" : "warn",
-      });
+      showToast(labelpayload.grn_status === "RECEIVED" ? "success" : "warn");
       setGrnRequest(null);
       setDetail(null);
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit GRN");
-      setToast({ message: msg, type: "error" });
+      showToast( msg, "error" );
     } finally {
       setGrnSubmitting(false);
     }
@@ -213,10 +191,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
       (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
     );
     if (!from_store_id || !to_store_id || !requested_by_name || invalid)
-      return setToast({
-        message: "Please fill all required fields",
-        type: "error",
-      });
+      return showToast("Please fill all required fields","error");
 
     setCreating(true);
     try {
@@ -239,7 +214,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
       console.log("payload", payload);
 
       await createRequest(payload);
-      setToast({ message: "Request submitted successfully", type: "success" });
+      showToast("Request submitted successfully","success");
       setShowCreate(false);
       setForm({
         from_store_id: "",
@@ -252,7 +227,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit");
-      setToast({ message: msg, type: "error" });
+      showToast(msg,"error");
     } finally {
       setCreating(false);
     }
@@ -294,13 +269,6 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
   return (
     <div>
       {/* ── Header ── */}
-
-      {/* <PendingRequestIndicator
-        pendingCount={pendingGRN}
-        filterStatus={filterStatus}
-        setFilterStatus={setFilterStatus}
-        pageType={pageType}
-      /> */}
 
       <RequestDashboard
         pageType={pageType}

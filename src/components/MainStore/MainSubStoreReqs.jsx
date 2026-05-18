@@ -25,7 +25,7 @@ export default function MainSubStoreReqs({
   setPageLimit,
   currentPage,
   onRefresh,
-  setToast,
+  showToast,
   onFilterChange,
   loading,
   mainStoreError,
@@ -55,7 +55,7 @@ export default function MainSubStoreReqs({
       console.log("r", r);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
-      setToast({ message: msg, type: "error" });
+      showToast( msg, "error");
     } finally {
       setDL(false);
     }
@@ -65,22 +65,16 @@ export default function MainSubStoreReqs({
     setFulfilling(requestId);
     try {
       if (status === "DISPUTED") {
-        setToast({
-          message: "Cannot fulfill — dispute resolution required",
-          type: "error",
-        });
+        showToast("Cannot fulfill — dispute resolution required","error");
         return;
       }
       await fulfillRequest(requestId);
-      setToast({
-        message: "Request fulfilled and inventory updated",
-        type: "success",
-      });
+      showToast( "Request fulfilled and inventory updated","success");
       setDetail(null);
       onRefresh();
     } catch (e) {
       const msg = handleError(e, "Failed to fulfill");
-      setToast({ message: msg, type: "error" });
+      showToast(msg,"error");
     } finally {
       setFulfilling(null);
     }
@@ -94,11 +88,11 @@ export default function MainSubStoreReqs({
       const requestId = response.data.data.request_id;
       console.log("requesid", requestId);
       await acceptReturnFromSub(requestId, accepted_by_name);
-      setToast({ message: "Return accepted successfully", type: "success" });
+      showToast("Return accepted successfully", "success");
       onRefresh();
     } catch (error) {
       const msg = handleError(error, "Failed to fulfill");
-      setToast({ message: msg, type: "error" });
+      showToast( msg,"error");
     } finally {
       setReturnLoading(false);
     }
@@ -110,7 +104,6 @@ export default function MainSubStoreReqs({
   };
   const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
   const approvedCount = requests.filter((r) => r.status === "APPROVED").length;
-  // const emergencyCount = requests.filter((r) => r.is_emergency && r.status === "APPROVED",).length;
   const returnBack = requests.filter((r) => r.status === "RETURN_BACK").length;
 
   return (
@@ -126,7 +119,6 @@ export default function MainSubStoreReqs({
         data={requests}
         counts={{
           pending: approvedCount,
-          // emergency: emergencyCount,
           disputed: disputedCount,
           returnBack: returnBack,
         }}
@@ -348,7 +340,7 @@ export default function MainSubStoreReqs({
                               handleFulfill,
                               fulfilling,
                               handleResolved,
-                              setToast,
+                              showToast,
                               auth.username,
                             )
                           )}

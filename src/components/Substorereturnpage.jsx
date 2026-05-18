@@ -4,7 +4,7 @@ import { useAuth } from "../../context/authContext";
 import useErrorHandler from "../useErrorHandler";
 import CheckLoadingAndError from "../CheckLoadingAndError";
 
-export default function SubStoreReturnPage({ setToast, mainStores = [] }) {
+export default function SubStoreReturnPage({ showToast, mainStores = [] }) {
   const { auth } = useAuth();
   const handleError = useErrorHandler();
 
@@ -72,11 +72,11 @@ export default function SubStoreReturnPage({ setToast, mainStores = [] }) {
 
   const handleSubmit = async () => {
     if (!toStoreId) {
-      setToast({ message: "Please select destination store", type: "error" });
+      showToast({ message: "Please select destination store", type: "error" });
       return;
     }
     if (selectedCount === 0) {
-      setToast({ message: "Please select at least one item", type: "error" });
+      showToast({ message: "Please select at least one item", type: "error" });
       return;
     }
 
@@ -93,13 +93,13 @@ export default function SubStoreReturnPage({ setToast, mainStores = [] }) {
         })),
       };
       await createReturnRequest(payload);
-      setToast({ message: "Items sent back successfully", type: "success" });
+      showToast({ message: "Items sent back successfully", type: "success" });
       setSelectedItems({});
       setNote("");
       fetchItems();
     } catch (err) {
       const msg = handleError(err, "Failed to send items back");
-      setToast({ message: msg, type: "error" });
+      showToast({ message: msg, type: "error" });
     } finally {
       setSubmitting(false);
     }

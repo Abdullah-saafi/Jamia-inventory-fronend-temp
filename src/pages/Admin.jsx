@@ -4,6 +4,7 @@ import { getStores } from "../services/api";
 import { TABS } from "../services/constants.js";
 import { useAuth } from "../context/authContext.jsx";
 import BlockedUI from "../components/BlockedUI.jsx";
+import { useToast } from "../context/ToastContext";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ export default function Admin() {
   const [stores, setStores] = useState([]);
   
   const {auth} = useAuth()
+  const {showToast} = useToast()
   const currentTab = location.pathname.split("/").pop() || "user";
 
   const loadStores = () =>
@@ -52,7 +54,7 @@ export default function Admin() {
         ))}
       </nav>
       <div className="mt-4">
-        <Outlet context={{ stores, loadStores }} />
+        <Outlet context={{ stores, loadStores, showToast }} />
       </div>
     </div>
   );

@@ -12,8 +12,8 @@ import MainStoreProcessReturns from "../components/Mainstoreprocessreturns";
 import { useAuth } from "../context/authContext";
 import useErrorHandler from "../components/useErrorHandler";
 import BlockedUI from "../components/BlockedUI";
-import Toast from "../components/Toast";
 import Scrap from "../components/MainStore/Scrap";
+import { useToast } from "../context/ToastContext";
 
 const TABS = [
   { id: "items", label: "تمام اشیاء" },
@@ -36,8 +36,6 @@ export default function MainStore() {
   // ── UI ────────────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
   const [mainStoreError, setMainStoreError] = useState("");
-  const [toast, setToast] = useState(null);
-
   // ── Pagination ────────────────────────────────────────────────────────────
   const [currentPage, setCurrentPage] = useState(1);
   const [pageLimit, setPageLimit] = useState(10);
@@ -68,6 +66,7 @@ export default function MainStore() {
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   const { auth } = useAuth();
+  const {showToast} = useToast()
   const handleError = useErrorHandler();
 
   // ── Debounce search ───────────────────────────────────────────────────────
@@ -89,7 +88,7 @@ export default function MainStore() {
             status: requestStatusFilter || undefined,
           }),
           getStores(),
-        getItems({
+          getItems({
             store_id: auth.store_id, // ← add this
             page: currentPage,
             limit: pageLimit,
@@ -133,10 +132,6 @@ export default function MainStore() {
     fetchData(false);
   }, [fetchData]);
 
-  useEffect(() => {
-    setTimeout(() => setToast(null), 3000);
-  }, [toast]);
-
   const refresh = useCallback(() => fetchData(false), [fetchData]);
 
   // ── Badge counts ──────────────────────────────────────────────────────────
@@ -178,20 +173,18 @@ export default function MainStore() {
                 key={t.id}
                 onClick={() => setTab(t.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded border-emerald-400 text-sm font-medium transition-colors
-                  ${
-                    tab === t.id
-                      ? "bg-emerald-600 text-white"
-                      : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                  ${tab === t.id
+                    ? "bg-emerald-600 text-white"
+                    : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
                   }`}
               >
                 {t.label}
                 {badge && (
                   <span
                     className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none
-                      ${
-                        tab === t.id
-                          ? "bg-white/20 text-white"
-                          : "bg-emerald-600 text-white"
+                      ${tab === t.id
+                        ? "bg-white/20 text-white"
+                        : "bg-emerald-600 text-white"
                       }`}
                   >
                     {badge}
@@ -208,14 +201,13 @@ export default function MainStore() {
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors
-                ${
-                  tab === t.id
-                    ? "bg-emerald-600 text-white"
-                    : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                ${tab === t.id
+                  ? "bg-emerald-600 text-white"
+                  : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
                 }`}
             >
               {t.label}
-            </button> 
+            </button>
           ))}
         </div>
       </nav>
@@ -226,7 +218,7 @@ export default function MainStore() {
           allItems={allItems}
           mainStores={mainStores}
           onRefresh={refresh}
-          setToast={setToast}
+          showToast={showToast}
           loading={loading}
           mainStoreError={mainStoreError}
           pagination={itemsPagination}
@@ -254,14 +246,14 @@ export default function MainStore() {
           setPageLimit={setPageLimit}
           onFilterChange={setRequestStatusFilter}
           onRefresh={refresh}
-          setToast={setToast}
+          showToast={showToast}
           loading={loading}
           mainStoreError={mainStoreError}
         />
       )}
 
       {tab === "returns" && (
-        <MainStoreProcessReturns setToast={setToast} onRefresh={refresh} />
+        <MainStoreProcessReturns showToast={showToast} onRefresh={refresh} />
       )}
 
       {tab === "ho-create" && (
@@ -270,13 +262,11 @@ export default function MainStore() {
           headOffices={headOffices}
           hoRequests={hoRequests}
           refresh={refresh}
-          setToast={setToast}
+          showToast={showToast}
           loading={loading}
           mainStoreError={mainStoreError}
         />
       )}
-
-      {/* <Toast toast={toast} onClose={() => setToast(null)} /> */}
     </div>
   );
 }

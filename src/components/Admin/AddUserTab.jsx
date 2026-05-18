@@ -13,7 +13,7 @@ import useErrorHandler from "../useErrorHandler";
 const addUser = (data) => API.post("/users/addUser", data);
 
 export default function AddUserTab() {
-  const { stores } = useOutletContext();
+  const { stores, showToast } = useOutletContext();
 
   const [form, setForm] = useState({
     name: "",
@@ -26,7 +26,6 @@ export default function AddUserTab() {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [message, setMessage] = useState("");
 
   const handleError = useErrorHandler();
 
@@ -37,7 +36,6 @@ export default function AddUserTab() {
       [name]: value,
       ...(name === "role" ? { store_id: "" } : {}),
     }));
-    setMessage("");
   };
 
   const filteredStores = stores.filter(
@@ -48,18 +46,16 @@ export default function AddUserTab() {
     const { name, email, role, store_id, password, confirmPassword } = form;
 
     if (!name || !email || !role || !store_id || !password || !confirmPassword)
-      return setMessage("براہ کرم تمام مطلوبہ خانے پُر کریں");
+      return showToast("براہ کرم تمام مطلوبہ خانے پُر کریں", "warn");
     if (password !== confirmPassword)
-      return setMessage("پاس ورڈ میچ نہیں کر رہے");
+      return showToast("پاس ورڈ میچ نہیں کر رہے", "error");
     if (password.length < 6)
-      return setMessage("پاس ورڈ کم از کم 6 حروف پر مشتمل ہونا چاہیے");
+      return showToast("پاس ورڈ کم از کم 6 حروف پر مشتمل ہونا چاہیے","warn");
 
     setLoading(true);
-    setMessage("");
-
     try {
       const res = await addUser(form);
-      setMessage(res.data.message || "صارف کا اکاؤنٹ کامیابی سے بن گیا ہے");
+      showToast(res.data.message || "صارف کا اکاؤنٹ کامیابی سے بن گیا ہے", "success");
       setForm({
         name: "",
         email: "",
@@ -70,7 +66,7 @@ export default function AddUserTab() {
       });
     } catch (e) {
       const msg = handleError(e, "Failed to add user");
-      setMessage(msg);
+      showToast(msg, "error");
     } finally {
       setLoading(false);
     }
@@ -201,19 +197,6 @@ export default function AddUserTab() {
               "نیا اکاؤنٹ بنائیں"
             )}
           </button>
-
-          {message && (
-            <div
-              className={`p-3 rounded-lg text-xs font-bold border animate-in fade-in slide-in-from-top-1 duration-300 text-center
-              ${
-                message.toLowerCase().includes("success")
-                  ? "bg-emerald-100 border-emerald-200 text-emerald-700"
-                  : "bg-red-50 border-red-100 text-red-700"
-              }`}
-            >
-              {message}
-            </div>
-          )}
         </div>
       </div>
     </div>

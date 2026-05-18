@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { getUsers, userStatus } from "../../services/api";
 import { ROLES, ROLE_LABELS } from "../../services/constants";
 import useErrorHandler from "../useErrorHandler";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import Pagination from "../Pagination";
 import Toast from "../Toast"
 
@@ -13,12 +13,13 @@ export default function AllUsersTab() {
   const [roleFilter, setRoleFilter] = useState("");
   const [storeFilter, setStoreFilter] = useState("");
   const [error, setError] = useState("");
-  const [toast, setToast] = useState("")
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
   const handleError = useErrorHandler();
   const navigate = useNavigate();
+
+  const { loadStores: refreshAdminStores, showToast } = useOutletContext();
 
   const loadUsers = async () => {
     try {
@@ -33,10 +34,6 @@ export default function AllUsersTab() {
       setLoading(false);
     }
   };
-  
-  useEffect(() => {
-    setTimeout(() => setToast(null), 7000);
-  }, [toast]);
 
   useEffect(() => {
     loadUsers();
@@ -47,13 +44,13 @@ export default function AllUsersTab() {
       setLoading(true);
       const toggledStatus = !currentStatus;
       const response = await userStatus({ id, status: toggledStatus });
-      setToast({message: response.data.message, type:"success"});
+      showToast(response.data.message,"success");
       if (response.status === 200) {
         await loadUsers();
       }
     } catch (error) {
       const msg = handleError(error, "Failed to update user");
-      setToast({message: msg, type:"error"});
+      showToast(msg, "error" );
     } finally {
       setLoading(false);
     }
@@ -215,10 +212,9 @@ export default function AllUsersTab() {
                         onClick={() => handleAction(u.id, u.is_active)}
                         disabled={loading}
                         className={`text-[10px] uppercase font-bold px-3 py-1 rounded border transition-colors
-                          ${
-                            u.is_active
-                              ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
-                              : "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
+                          ${u.is_active
+                            ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
+                            : "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
                           }`}
                       >
                         {u.is_active ? "غیر فعال کریں" : "فعال کریں"}
@@ -250,10 +246,6 @@ export default function AllUsersTab() {
       <div className="mt-2 text-gray-400 text-[10px] uppercase font-bold px-1">
         {displayed.length} user{displayed.length !== 1 ? "s" : ""} shown
       </div>
-      <Toast
-        toast={toast}
-        onClose={() => setToast(null)}
-      />
     </div>
   );
 }

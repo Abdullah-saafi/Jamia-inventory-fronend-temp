@@ -492,9 +492,6 @@ export default function SubStore() {
         >
           نئی درخواست
         </button>
-        <button onClick={() => {
-          showToast("testing toast message", "success")
-        }}>Click toast</button>
       </div>
       {/* // */}
       <RequestDashboard

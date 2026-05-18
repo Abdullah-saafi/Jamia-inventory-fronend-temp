@@ -5,7 +5,7 @@ const RenderInlineDetail = (
   onFulfill,
   fulfillingId,
   onResolved,
-  setToast,
+  showToast,
   managerName,
 ) => {
   const isDisputed = d.status === "DISPUTED";
@@ -207,7 +207,7 @@ const RenderInlineDetail = (
         <DisputeResolutionPanel
           request={d}
           onResolved={onResolved}
-          setToast={setToast}
+          showToast={showToast}
           managerName={managerName}
         />
       )}

@@ -18,13 +18,13 @@ import ApproveRejectModal from "../components/ApproveRejectModal";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import RequestDashboard from "../components/RequestDashboard";
+import { useToast } from "../context/ToastContext";
 
 export default function SubStoreManager() {
   const [requests, setRequests] = useState([]);
   const [allRequests, setAllRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [toast, setToast] = useState(null);
   const [filterStatus, setFilterStatus] = useState("");
   const [filterStore, setFilterStore] = useState("");
   const [subStores, setSubStores] = useState([]);
@@ -47,16 +47,13 @@ export default function SubStoreManager() {
   });
 
   const { auth } = useAuth();
+  const {showToast} = useToast()
   const handleError = useErrorHandler();
 
   const pageType = "subStoreManager";
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
-  useEffect(() => {
-    setTimeout(() => setToast(null), 7000);
-  }, [toast]);
 
   const load = async () => {
     setLoading(true);
@@ -115,7 +112,7 @@ export default function SubStoreManager() {
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
-      setToast({ message: msg, type: "error" });
+      showToast(msg, "error");
     } finally {
       setDL(false);
     }
@@ -135,7 +132,7 @@ export default function SubStoreManager() {
       setApproverName(auth.username || "");
     } catch (error) {
       const msg = handleError(error, "Failed to load items");
-      setToast({ message: msg, type: "error" });
+      showToast(msg,"error");
     } finally {
       setActioning(false);
     }
@@ -150,7 +147,7 @@ export default function SubStoreManager() {
       setRejectReason("");
     } catch (error) {
       const msg = handleError(error, "Failed to load request");
-      setToast({ message: msg, type: "error" });
+      showToast(msg, "error");
     } finally {
       setActioning(false);
     }
@@ -170,17 +167,14 @@ export default function SubStoreManager() {
           approved_qty: i.approved_qty,
         })),
       });
-      setToast({
-        message: "Request approved — waiting for Main Store Manager",
-        type: "success",
-      });
+      showToast("Request approved — waiting for Main Store Manager", "success");
       setApproveModal(null);
       setApproverName("");
       setEditedItems([]);
       load();
     } catch (e) {
       const msg = handleError(e, "Error approving");
-      setToast({ message: msg, type: "error" });
+      showToast(msg,"error");
     } finally {
       setActioning(false);
     }
@@ -194,14 +188,14 @@ export default function SubStoreManager() {
         approved_by_name: rejecterName,
         rejection_reason: rejectReason,
       });
-      setToast({ message: "Request rejected" });
+      showToast("Request rejected", "success");
       setRejectModal(null);
       setRejecterName("");
       setRejectReason("");
       load();
     } catch (e) {
       const msg = handleError(e, "Error rejecting");
-      setToast({ message: msg, type: "error" });
+      showToast(msg,"error");
     } finally {
       setActioning(false);
     }
@@ -362,7 +356,6 @@ export default function SubStoreManager() {
         />
       )}
 
-      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 }

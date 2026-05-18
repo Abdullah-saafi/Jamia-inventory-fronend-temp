@@ -4,14 +4,14 @@ import ToastContainer from "../components/ToastContainer";
 const ToastContext = createContext()
 
 export const ToastProvider = ({children}) => {
-    const [toasts, setToasts] = useState([])
+    const [toasts, showToasts] = useState([])
 
     const showToast = (message, type) => {
         const id = Date.now()
 
         const newToast = {id, message, type}
 
-        setToasts((prev) => [newToast, ...prev].slice(0,3))
+        showToasts((prev) => [newToast, ...prev].slice(0,3))
 
         setTimeout(() => {
             removeToast(id)
@@ -19,7 +19,7 @@ export const ToastProvider = ({children}) => {
     }
 
     const removeToast = (id) => {
-        setToasts((prev) => prev.filter((t) => t.id !== id))
+        showToasts((prev) => prev.filter((t) => t.id !== id))
     }
 
     return (

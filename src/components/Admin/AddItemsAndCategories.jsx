@@ -11,6 +11,7 @@ import {
 } from "../../services/api";
 import useErrorHandler from "../useErrorHandler";
 import Toast from "../Toast";
+import { useOutletContext } from "react-router-dom";
 
 const EMPTY_NEW_ITEM = {
   item_no: "", // --- For create item
@@ -32,11 +33,9 @@ const EMPTY_NEW_CATEGORY = {
 
 const AddItemsAndCategories = () => {
   const [activeTab, setActiveTab] = useState("item");
-
   // ── Item state ──────────────────────────────────────────────────────────
   const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
   const [mainStores, setMainStores] = useState([]);
-  const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [itemErrors, setItemErrors] = useState({});
@@ -54,6 +53,8 @@ const AddItemsAndCategories = () => {
   const [showUOMDropDown, setShowUOMDropDown] = useState(false);
   const [showInputs, setShowInputs] = useState(false);
 
+  const { showToast } = useOutletContext(); 
+
   const handleError = useErrorHandler();
 
   const fetchData = async () => {
@@ -68,7 +69,7 @@ const AddItemsAndCategories = () => {
       }
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
-      setToast({ message: msg, type: "error" });
+      showToast(msg,"error");
     } finally {
       setLoading(false);
     }
@@ -129,7 +130,7 @@ const AddItemsAndCategories = () => {
     setSubmitLoading(true);
     try {
       await createItem(newItem);
-      setToast({ message: "Item added successfully", type: "success" });
+      showToast("Item added successfully","success");
       const itemNo = await generateRandomItemNo(item_type);
       if (!itemNo) return;
       setNewItem({
@@ -139,7 +140,7 @@ const AddItemsAndCategories = () => {
       fetchData();
     } catch (e) {
       const msg = handleError(e, "Failed to add item");
-      setToast({ message: msg, type: "error" });
+      showToast( msg,"error" );
     } finally {
       setSubmitLoading(false);
     }
@@ -154,7 +155,7 @@ const AddItemsAndCategories = () => {
     setCategorySubmitLoading(true);
     try {
       await createCategory(newCategory);
-      setToast({ message: "Category added successfully", type: "success" });
+      showToast("Category added successfully", "success");
       setNewCategory(EMPTY_NEW_CATEGORY);
       fetchData();
     } catch (e) {
@@ -170,11 +171,11 @@ const AddItemsAndCategories = () => {
     setDeletingId(id);
     try {
       await deleteCategory(id);
-      setToast({ message: "Category deleted", type: "success" });
+      showToast( "Category deleted","success" );
       fetchData();
     } catch (e) {
       const msg = handleError(e, "Failed to delete category");
-      setToast({ message: msg, type: "error" });
+      showToast(msg,"error");
     } finally {
       setDeletingId(null);
     }
@@ -586,8 +587,6 @@ const AddItemsAndCategories = () => {
           </div>
         </div>
       )}
-
-      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 };

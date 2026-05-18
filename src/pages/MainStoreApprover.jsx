@@ -19,7 +19,7 @@ export default function MainStoreApprover() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [toast, setToast] = useState(null);
+  const [toast, showToast] = useState(null);
   const [filter, setFilter] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
@@ -57,7 +57,7 @@ export default function MainStoreApprover() {
   }, [filter]);
   
   useEffect(() => {
-    setTimeout(() => setToast(null), 5000);
+    setTimeout(() => showToast(null), 5000);
   }, [toast]);
 
   const openDetail = async (r) => {
@@ -72,7 +72,7 @@ export default function MainStoreApprover() {
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
-      setToast({message: msg, type:"error"});
+      showToast({message: msg, type:"error"});
     } finally {
       setDL(false);
     }
@@ -92,7 +92,7 @@ export default function MainStoreApprover() {
       setApproverName(auth.username || "");
     } catch (error) {
       const msg = handleError(error, "Failed to load items");
-      setToast({ message: msg, type: "error" });
+      showToast({ message: msg, type: "error" });
     } finally {
       setActioning(false);
     }
@@ -107,7 +107,7 @@ export default function MainStoreApprover() {
       setRejectReason("");
     } catch (error) {
       const msg = handleError(error, "Failed to load request");
-      setToast({ message: msg, type: "error" });
+      showToast({ message: msg, type: "error" });
     } finally {
       setActioning(false);
     }
@@ -124,7 +124,7 @@ export default function MainStoreApprover() {
           approved_qty: i.approved_qty,
         })),
       });
-      setToast({
+      showToast({
         message: "Request approved — Head Office will now fulfill it",
         type: "success",
       });
@@ -134,7 +134,7 @@ export default function MainStoreApprover() {
       load();
     } catch (e) {
       const msg = handleError(e, "Error approving");
-      setToast({ message: msg, type: "error" });
+      showToast({ message: msg, type: "error" });
     } finally {
       setActioning(false);
     }
@@ -148,14 +148,14 @@ export default function MainStoreApprover() {
         approved_by_name: rejecterName,
         rejection_reason: rejectReason,
       });
-      setToast({ message: "Request rejected", type: "info" });
+      showToast({ message: "Request rejected", type: "info" });
       setRejectModal(null);
       setRejecterName("");
       setRejectReason("");
       load();
     } catch (e) {
       const msg = handleError(e, "Error rejecting");
-      setToast({ message: msg, type: "error" });
+      showToast({ message: msg, type: "error" });
     } finally {
       setActioning(false);
     }
@@ -682,7 +682,7 @@ export default function MainStoreApprover() {
         </div>
       )}
 
-      <Toast toast={toast} onClose={() => setToast(null)} />
+      <Toast toast={toast} onClose={() => showToast(null)} />
     </div>
   );
 }

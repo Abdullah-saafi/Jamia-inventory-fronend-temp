@@ -5,11 +5,13 @@ import { EyeOpen, EyeClosed } from "../EyeIcons"; // Using your icon components
 import { ROLES, ROLE_STORE_MAP, inputClass, labelClass } from "../../services/constants";
 import useErrorHandler from "../useErrorHandler";
 import { useAuth } from "../../context/authContext";
+import { useToast } from "../../context/ToastContext";
 
 const EditUser = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { loading: authLoading } = useAuth();
+  const {showToast} = useToast()
   const handleError = useErrorHandler();
 
   const [form, setForm] = useState({
@@ -21,7 +23,6 @@ const EditUser = () => {
     confirmPassword: "",
   });
 
-  const [message, setMessage] = useState("");
   const [pageLoading, setPageLoading] = useState(false);
   const [stores, setStores] = useState([]);
   const [showPass, setShowPass] = useState(false);
@@ -48,7 +49,7 @@ const EditUser = () => {
       });
     } catch (error) {
       const msg = handleError(error, "Failed to load user data");
-      setMessage(msg);
+      showToast(msg, "error");
     } finally {
       setPageLoading(false);
     }
@@ -61,17 +62,17 @@ const EditUser = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (form.password && form.password !== form.confirmPassword) {
-        return setMessage("Passwords do not match");
+        return showToast("Passwords do not match", "error");
     }
 
     try {
       setPageLoading(true);
       const response = await editUserById(id, form);
-      setMessage(response.data.message || "User updated successfully");
+      showToast(response.data.message || "User updated successfully", "success");
       setTimeout(() => navigate("/admin/all-users"), 2000);
     } catch (error) {
       const msg = handleError(error, "Failed to edit user");
-      setMessage(msg);
+      showToast(msg, "error");
     } finally {
       setPageLoading(false);
     }
@@ -84,14 +85,12 @@ const EditUser = () => {
         [name]: value,
         ...(name === "role" ? { store_id: "" } : {}), 
     }));
-    if (message) setMessage("");
   };
 
   const filteredStores = stores.filter(
     (s) => s.store_type === ROLE_STORE_MAP[form.role] && s.is_active
   );
 
-  const isSuccess = message.toLowerCase().includes("success") || message.toLowerCase().includes("updated");
 
   return (
     <div className="max-w-xl animate-in fade-in duration-500">
@@ -209,17 +208,6 @@ const EditUser = () => {
               "Update User Profile"
             )}
           </button>
-
-          {/* Feedback Message */}
-          {message && (
-            <div className={`p-3 rounded-lg text-center text-[10px] font-black uppercase tracking-tight border animate-in fade-in slide-in-from-top-1
-              ${isSuccess
-                ? "bg-emerald-200 border-emerald-300 text-emerald-700" 
-                : "bg-red-200 border-red-300 text-red-500"}`}
-            >
-              {message}
-            </div>
-          )}
         </div>
       </form>
     </div>

@@ -7,7 +7,7 @@ import { useAuth } from "../context/authContext";
 const DisputeResolutionPanel = ({
   request,
   onResolved,
-  setToast,
+  showToast,
   managerName,
 }) => {
   const [processing, setProcessing] = useState(false);
@@ -26,7 +26,7 @@ const DisputeResolutionPanel = ({
 
   const handleResolve = async () => {
     if (Object.keys(itemActions).length === 0) {
-      setToast({ message: "Please select at least one action", type: "error" });
+      showToast("Please select at least one action", "error" );
       return;
     }
 
@@ -49,7 +49,7 @@ const DisputeResolutionPanel = ({
 
     } catch (error) {
       const msg = handleError(error, "Failed to perform action");
-      setToast({ message: msg, type: "error" });
+      showToast(msg,"error");
     } finally {
       setProcessing(false);
     }

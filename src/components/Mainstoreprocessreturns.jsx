@@ -20,7 +20,7 @@ const STATUS_COLORS = {
   PARTIALLY_SCRAPPED: "bg-orange-100 text-orange-700 border-orange-200",
 };
 
-export default function MainStoreProcessReturns({ setToast }) {
+export default function MainStoreProcessReturns({ showToast }) {
   const { auth } = useAuth();
   const handleError = useErrorHandler();
 
@@ -70,7 +70,7 @@ export default function MainStoreProcessReturns({ setToast }) {
       setItemActions(defaults);
     } catch (err) {
       const msg = handleError(err, "Failed to load return details");
-      setToast({ message: msg, type: "error" });
+      showToast( msg,"error");
     } finally {
       setModalLoading(false);
     }
@@ -107,15 +107,12 @@ export default function MainStoreProcessReturns({ setToast }) {
         })),
       };
       await processReturnRequest(selected.return_id, payload);
-      setToast({
-        message: "Return request processed successfully",
-        type: "success",
-      });
+      showToast("Return request processed successfully","success",);
       closeModal();
       fetchReturns();
     } catch (err) {
       const msg = handleError(err, "Failed to process return");
-      setToast({ message: msg, type: "error" });
+      showToast(msg,"error");
     } finally {
       setSubmitting(false);
     }

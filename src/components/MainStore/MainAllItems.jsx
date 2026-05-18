@@ -12,7 +12,7 @@ export default function MainAllItems({
   allItems,
   mainStores,
   onRefresh,
-  setToast,
+  showToast,
   loading,
   mainStoreError,
   pagination = { currentPage: 1, totalItems: 0, pageLimit: 10 },
@@ -52,7 +52,7 @@ export default function MainAllItems({
       setScrapModal(true);
     } catch (error) {
       const msg = handleError(error, "Failed to open scrap modal");
-      setToast({ message: msg, type: "error" });
+      showToast(msg,"error");
     } finally {
       setScrapModalLoading(false);
     }
@@ -69,11 +69,11 @@ export default function MainAllItems({
       console.log("Final Payload being sent to backend:", payload);
       await scrapByMain(payload);
       setScrapModal(false);
-      setToast({ message: "Scrap the items successfully", type: "success" });
+      showToast("Scrap the items successfully", "success");
       onRefresh();
     } catch (error) {
       const msg = handleError(error, "Failed to scrap");
-      setToast({ message: msg, type: "error" });
+      showToast( msg,"error");
     } finally {
       setScrapModalLoading(false);
     }

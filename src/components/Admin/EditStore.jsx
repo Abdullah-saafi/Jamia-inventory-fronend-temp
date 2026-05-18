@@ -4,14 +4,15 @@ import { editStoreById, getStoreById } from "../../services/api";
 import { inputClass, labelClass } from "../../services/constants";
 import useErrorHandler from "../useErrorHandler";
 import { useAuth } from "../../context/authContext";
+import { useToast } from "../../context/ToastContext";
 
 const EditStore = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { loading: authLoading } = useAuth();
+  const {showToast} = useToast()
   const handleError = useErrorHandler();
 
-  const [message, setMessage] = useState("");
   const [pageLoading, setPageLoading] = useState(false);
   
   const [form, setForm] = useState({
@@ -34,7 +35,7 @@ const EditStore = () => {
       });
     } catch (error) {
       const msg = handleError(error, "Failed to load store data");
-      setMessage(msg);
+      showToast(msg, "error");
     } finally {
       setPageLoading(false);
     }
@@ -49,11 +50,11 @@ const EditStore = () => {
     try {
       setPageLoading(true);
       const response = await editStoreById(id, form);
-      setMessage(response.data.message || "Store updated successfully");
+      showToast(response.data.message || "Store updated successfully", "success");
       setTimeout(() => navigate("/admin/all-stores"), 2000);
     } catch (error) {
       const msg = handleError(error, "Failed to edit store");
-      setMessage(msg);
+      showToast(msg, "error");
     } finally {
       setPageLoading(false);
     }
@@ -62,10 +63,7 @@ const EditStore = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: value }));
-    if (message) setMessage("");
   };
-
-  const isSuccess = message.toLowerCase().includes("success") || message.toLowerCase().includes("updated");
 
   return (
     <div className="max-w-xl animate-in fade-in duration-500">
@@ -125,7 +123,6 @@ const EditStore = () => {
             onChange={(e) => {
               const val = e.target.value.replace(/\D/g, "");
               setForm(f => ({ ...f, phone: val }));
-              if (message) setMessage("");
             }}
             placeholder="e.g. 03451234567"
             className={inputClass}
@@ -145,18 +142,6 @@ const EditStore = () => {
               "Save Branch Changes"
             )}
           </button>
-
-          {/* Status Feedback */}
-          {message && (
-            <div
-              className={`p-3 rounded-lg text-[10px] uppercase font-black border text-center animate-in fade-in slide-in-from-top-1
-                ${isSuccess
-                  ? "bg-emerald-50 border-emerald-100 text-emerald-700"
-                  : "bg-red-50 border-red-100 text-red-700"}`}
-            >
-              {message}
-            </div>
-          )}
         </div>
       </form>
     </div>
