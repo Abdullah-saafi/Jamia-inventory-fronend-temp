@@ -11,8 +11,8 @@ import Toast from "../components/Toast";
 import BlockedUI from "../components/BlockedUI";
 import useErrorHandler from "../components/useErrorHandler";
 import Pagination from "../components/Pagination";
-import StatusBadge from "../components/StatusBadge"
-import DateTimeCell from "../components/DateTimeCell"
+import StatusBadge from "../components/StatusBadge";
+import DateTimeCell from "../components/DateTimeCell";
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MainStoreApprover() {
@@ -40,7 +40,7 @@ export default function MainStoreApprover() {
   const load = async () => {
     setLoading(true);
     try {
-      const params = { direction: ["MAIN_TO_PCASH","MAIN_TO_HO"] };
+      const params = { direction: ["MAIN_TO_PCASH", "MAIN_TO_HO"] };
       if (filter) params.status = filter;
       const r = await getRequests(params);
       setRequests(r.data.data);
@@ -55,7 +55,7 @@ export default function MainStoreApprover() {
   useEffect(() => {
     load();
   }, [filter]);
-  
+
   useEffect(() => {
     setTimeout(() => showToast(null), 5000);
   }, [toast]);
@@ -72,7 +72,7 @@ export default function MainStoreApprover() {
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
-      showToast({message: msg, type:"error"});
+      showToast({ message: msg, type: "error" });
     } finally {
       setDL(false);
     }
@@ -214,12 +214,12 @@ export default function MainStoreApprover() {
             <option value="REJECTED">مسترد شدہ</option>
             <option value="FULFILLED">مکمل شدہ</option>
           </select>
-          
+
           <button
             onClick={() => {
-              setFilter("")
-              setPage(1)
-              load()
+              setFilter("");
+              setPage(1);
+              load();
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >
@@ -682,7 +682,7 @@ export default function MainStoreApprover() {
         </div>
       )}
 
-      <Toast toast={toast} onClose={() => showToast(null)} />
+      {/* <Toast toast={toast} onClose={() => showToast(null)} /> */}
     </div>
   );
 }

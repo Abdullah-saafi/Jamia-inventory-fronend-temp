@@ -1,9 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: 
-  // import.meta.env.VITE_API_URL || 
-  "http://localhost:5500/api",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5500",
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
@@ -14,12 +12,6 @@ let refreshSubscribers = [];
 
 export const setAccessTokenInApi = (token) => {
   memoryToken = token;
-
-  if (token) {
-    localStorage.setItem("accessToken", token);
-  } else {
-    localStorage.removeItem("accessToken");
-  }
 };
 
 function addRefreshSubscriber(callback) {
@@ -48,14 +40,11 @@ API.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    const isAuthRoute =
-  originalRequest.url.includes("/users/refresh") ||
-  originalRequest.url.includes("/users/login");
-
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      !isAuthRoute
+      !originalRequest.url.includes("/users/refresh") &&
+      !originalRequest.url.includes("/users/login")
     ) {
       originalRequest._retry = true;
       if (isRefreshing) {
@@ -122,7 +111,7 @@ export const approveRequest = (id, data) =>
   API.patch(`/requests/${id}/approve`, data);
 export const rejectRequest = (id, data) =>
   API.patch(`/requests/${id}/reject`, data);
-export const fulfillRequest = (id,data) => API.patch(`/requests/${id}/fulfill`, data);
+export const fulfillRequest = (id) => API.patch(`/requests/${id}/fulfill`, {});
 export const headOfficeFulfillRequest = (id, data) =>
   API.patch(`/requests/${id}/fulfill`, data);
 export const sendReturnToMain = (id, data) =>
