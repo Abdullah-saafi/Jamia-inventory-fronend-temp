@@ -14,7 +14,6 @@ import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
 import StatusBadge from "../StatusBadge";
 import DateTimeCell from "../DateTimeCell";
-import PendingRequestIndicator from "../PendingRequestIndicator";
 import StoreFilters from "../StoreFilters";
 import RequestDashboard from "../RequestDashboard";
 

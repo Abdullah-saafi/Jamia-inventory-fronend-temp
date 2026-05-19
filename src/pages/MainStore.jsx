@@ -8,11 +8,10 @@ import {
 import MainAllItems from "../components/MainStore/MainAllItems";
 import MainSubStoreReqs from "../components/MainStore/MainSubStoreReqs";
 import MainReqToHO from "../components/MainStore/MainReqToHO";
-import MainStoreProcessReturns from "../components/Mainstoreprocessreturns";
+import MainStoreProcessReturns from "../components/MainStore/MainStoreProcessReturns";
 import { useAuth } from "../context/authContext";
 import useErrorHandler from "../components/useErrorHandler";
 import BlockedUI from "../components/BlockedUI";
-import Scrap from "../components/MainStore/Scrap";
 import { useToast } from "../context/ToastContext";
 
 const TABS = [
@@ -66,7 +65,7 @@ export default function MainStore() {
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   const { auth } = useAuth();
-  const {showToast} = useToast()
+  const { showToast } = useToast()
   const handleError = useErrorHandler();
 
   // ── Debounce search ───────────────────────────────────────────────────────
@@ -172,10 +171,10 @@ export default function MainStore() {
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded border-emerald-400 text-sm font-medium transition-colors
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-all duration-200
                   ${tab === t.id
-                    ? "bg-emerald-600 text-white"
-                    : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                    ? "bg-emerald-600 text-white shadow-sm "
+                    : "text-gray-700 bg-gray-50 hover:bg-gray-100 hover:text-gray-900 border border-gray-200"
                   }`}
               >
                 {t.label}
@@ -200,10 +199,10 @@ export default function MainStore() {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors
-                ${tab === t.id
-                  ? "bg-emerald-600 text-white"
-                  : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-all duration-200
+                  ${tab === t.id
+                  ? "bg-emerald-600 text-white shadow-sm "
+                  : "text-gray-700 bg-gray-50 hover:bg-gray-100 hover:text-gray-900 border border-gray-200"
                 }`}
             >
               {t.label}
@@ -234,8 +233,6 @@ export default function MainStore() {
           setFilterType={setFilterType}
         />
       )}
-
-      {tab === "scrap" && <Scrap />}
 
       {tab === "requests" && (
         <MainSubStoreReqs

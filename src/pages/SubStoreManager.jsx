@@ -12,7 +12,6 @@ import useErrorHandler from "../components/useErrorHandler";
 import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Pagination from "../components/Pagination";
 import StoreFilters from "../components/StoreFilters";
-import PendingRequestIndicator from "../components/PendingRequestIndicator";
 import RequestRow from "../components/RequestRow";
 import ApproveRejectModal from "../components/ApproveRejectModal";
 import TableHead from "../components/TableHead";

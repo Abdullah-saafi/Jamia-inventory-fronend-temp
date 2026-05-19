@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { createItem, scrapByMain } from "../../services/api";
+import { createItem } from "../../services/api";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
 import { useAuth } from "../../context/authContext";
 import useErrorHandler from "../useErrorHandler";
 import CheckLoadingAndError from "../CheckLoadingAndError";
 import AddItemModal from "../AddItemModal";
-import ScrapModal from "../ScrapModal";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 export default function MainAllItems({
   allItems,
@@ -28,56 +28,10 @@ export default function MainAllItems({
   setFilterType,
 }) {
   const [showAddItem, setShowAddItem] = useState(false);
-  const [scrapModal, setScrapModal] = useState(false);
-  const [scrapModalLoading, setScrapModalLoading] = useState(false);
-  const [scrapData, setScrapData] = useState([]);
-  const [scrapForm, setScrapForm] = useState({
-    removed_by: "",
-    note: "",
-    main_store_id: "",
-    items: [],
-  });
+  const [showCategory, setShowCategory] = useState(false);
 
   const { auth } = useAuth();
   const handleError = useErrorHandler();
-
-  const scrap = async () => {
-    try {
-      setScrapModalLoading(true);
-      setScrapData((f) => ({
-        ...f,
-        removed_by: auth.username,
-        main_store_id: auth.store_id,
-      }));
-      setScrapModal(true);
-    } catch (error) {
-      const msg = handleError(error, "Failed to open scrap modal");
-      showToast(msg,"error");
-    } finally {
-      setScrapModalLoading(false);
-    }
-  };
-
-  const handleScrap = async (data) => {
-    try {
-      setScrapModalLoading(true);
-      const payload = {
-        ...data,
-        main_store_id: auth.store_id,
-        removed_by: auth.username,
-      };
-      console.log("Final Payload being sent to backend:", payload);
-      await scrapByMain(payload);
-      setScrapModal(false);
-      showToast("Scrap the items successfully", "success");
-      onRefresh();
-    } catch (error) {
-      const msg = handleError(error, "Failed to scrap");
-      showToast( msg,"error");
-    } finally {
-      setScrapModalLoading(false);
-    }
-  };
 
   const categories = [
     ...new Set(allItems.map((i) => i.category).filter(Boolean)),
@@ -85,60 +39,111 @@ export default function MainAllItems({
 
   return (
     <div>
- 
-
-  
       <div className="flex items-end justify-between py-2">
-        <div className="">
-          <input
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setCurrentPage(1);
-            }}
-            placeholder="Search by name or item number..."
-            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-64 shadow-sm mr-2"
-          />
-          <select
-            value={filterCategory}
-            onChange={(e) => {
-              setFilterCategory(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm mr-2"
-          >
-            <option value="">تمام زمروں</option>
-            {categories.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filterType}
-            onChange={(e) => {
-              setFilterType(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm mr-2"
-          >
-            <option value="">آئٹم کی قسم</option>
-            <option value="USABLE">USABLE</option>
-            <option value="REUSABLE">REUSABLE</option>
-          </select>
-          {(search || filterCategory || filterType) && (
-            <button
-              onClick={() => {
-                setSearch("");
-                setFilterType("");
-                setFilterCategory("");
+        <div>
+          <div className="flex gap-2">
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
                 setCurrentPage(1);
               }}
-              className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              placeholder="Search by name or item number..."
+              className="bg-white border leading-none border-gray-300 rounded px-3 py-3 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-64 shadow-sm"
+            />
+
+              {showCategory && (
+                <div className="absolute inset-0" onClick={() => setShowCategory((prev) => !prev)} />
+              )}
+            <div className="relative w-48">
+              {showCategory && (
+                <div
+                  className="absolute inset-0 z-40"
+                  onClick={() => setShowCategory(false)}
+                />
+              )}
+
+              {/* Input */}
+              <input
+                readOnly
+                value={
+                  filterCategory
+                    ? filterCategory
+                    : "تمام زمرے"
+                }
+                onClick={() => setShowCategory((prev) => !prev)}
+                className="bg-white leading-none border w-full border-gray-300 rounded pl-3 pr-10 py-3 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 cursor-pointer shadow-sm"
+              />
+
+              {/* Arrow */}
+              <div className="absolute top-1/2 -translate-y-1/2 right-3 pointer-events-none">
+                {showCategory ? (
+                  <ChevronUp size={16} className="text-gray-400" />
+                ) : (
+                  <ChevronDown size={16} className="text-gray-400" />
+                )}
+              </div>
+
+              {/* Dropdown */}
+              {showCategory && (
+                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+
+                  {/* Default option */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilterCategory("");
+                      setShowCategory(false);
+                    }}
+                    className=" text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 border-b border-gray-100"
+                  >
+                    تمام زمرے
+                  </button>
+
+                  {/* Category list */}
+                  {categories.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => {
+                        setFilterCategory(c);
+                        setShowCategory(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <select
+              value={filterType}
+              onChange={(e) => {
+                setFilterType(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-white border border-gray-300 rounded px-3 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm mr-2"
             >
-              Clear
-            </button>
-          )}
+              <option value="">آئٹم کی قسم</option>
+              <option value="USABLE">USABLE</option>
+              <option value="REUSABLE">REUSABLE</option>
+            </select>
+            {(search || filterCategory || filterType) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilterType("");
+                  setFilterCategory("");
+                  setCurrentPage(1);
+                }}
+                className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
           <button
             onClick={() => {
               setSearch("");
@@ -258,7 +263,7 @@ export default function MainAllItems({
                         ).toFixed(0)}
                       </span>
                     </td>
-                        <td className="px-4 py-3 font-mono text-gray-400 text-xs">
+                    <td className="px-4 py-3 font-mono text-gray-400 text-xs">
                       {Number(i.min_quantity) ?? "0"}
                     </td>
                     <td className="px-4 py-3">
@@ -271,9 +276,9 @@ export default function MainAllItems({
                         {Number(i.scrap_qty) || "0"}
                       </span>
                     </td>
-              
 
-                
+
+
                     <td className="px-4 py-3">
                       <span
                         className={`text-xs font-semibold ${isLow ? "text-red-500" : "text-emerald-600"}`}
@@ -287,17 +292,6 @@ export default function MainAllItems({
             )}
           </tbody>
         </table>
-
-        {scrapModal && (
-          <ScrapModal
-            handleScrap={handleScrap}
-            scrapModalLoading={scrapModalLoading}
-            setScrapModal={setScrapModal}
-            scrapData={scrapData}
-            setScrapForm={setScrapForm}
-            scrapForm={scrapForm}
-          />
-        )}
 
         <Pagination
           currentPage={pagination.currentPage}

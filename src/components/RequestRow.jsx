@@ -72,9 +72,13 @@ export default function RequestRow({
           </div>
         </td>
 
-        <td className="px-4 py-3">
-          <TypeBadge hasItems={hasItems} hasAssets={hasAssets} />
-        </td>
+        {(pageType === "subStore" || pageType === "subStoreManager") && (
+          <>
+            <td className="px-4 py-3">
+              <TypeBadge hasItems={hasItems} hasAssets={hasAssets} />
+            </td>
+          </>
+        )}
         {pageType === "mainSubStoreReqs" && (
           <>
             <td className="px-4 py-3 text-gray-700">

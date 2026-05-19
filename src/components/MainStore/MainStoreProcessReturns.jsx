@@ -1,17 +1,12 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../context/authContext";
-import useErrorHandler from "../components/useErrorHandler";
-import CheckLoadingAndError from "../components/CheckLoadingAndError";
-
-// Add these to your api.js:
-// export const getReturnRequests = (params) => API.get("/returns", { params });
-// export const getReturnRequestById = (id) => API.get(`/returns/${id}`);
-// export const processReturnRequest = (id, data) => API.patch(`/returns/${id}/process`, data);
+import { useAuth } from "../../context/authContext";
+import useErrorHandler from "../useErrorHandler";
+import CheckLoadingAndError from "../CheckLoadingAndError";
 import {
   getReturnRequests,
   getReturnRequestById,
   processReturnRequest,
-} from "../services/api";
+} from "../../services/api";
 
 const STATUS_COLORS = {
   PENDING: "bg-yellow-100 text-yellow-700 border-yellow-200",
@@ -28,12 +23,10 @@ export default function MainStoreProcessReturns({ showToast }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState("");
-
-  // Detail / process modal
-  const [selected, setSelected] = useState(null); // full return request with items
+  const [selected, setSelected] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [itemActions, setItemActions] = useState({}); // { return_item_id: { action, note } }
+  const [itemActions, setItemActions] = useState({});
 
   useEffect(() => {
     fetchReturns();

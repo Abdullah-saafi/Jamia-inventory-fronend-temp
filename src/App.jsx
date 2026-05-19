@@ -18,7 +18,6 @@ import AddStoreTab from "./components/Admin/AddStoreTab";
 import NotFound from "./pages/NotFound";
 import EditUser from "./components/Admin/EditUser";
 import EditStore from "./components/Admin/EditStore";
-import Scrap from "./components/MainStore/Scrap";
 import AddItemsAndCategories from "./components/Admin/AddItemsAndCategories";
 import { useEffect } from "react";
 import { ToastProvider } from "./context/ToastContext";
