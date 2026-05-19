@@ -93,7 +93,7 @@ export default function SubStore() {
   });
 
   const { auth } = useAuth();
-  const {showToast} = useToast()
+  const { showToast } = useToast();
   const handleError = useErrorHandler();
   const pageType = "subStore";
 
@@ -127,6 +127,18 @@ export default function SubStore() {
     }
     try {
       setReturnBackSubmitting(true);
+      console.log("FROM STORE:", auth.store_id);
+      console.log("TO STORE:", mainStore.store_id);
+      console.log("USER:", auth.username);
+      console.log("NOTE:", returnBackNote);
+
+      console.log(
+        "ITEMS:",
+        selected.map((i) => ({
+          item_id: i.item_id,
+          return_qty: Number(i.return_qty),
+        })),
+      );
       await createReturnRequest({
         from_store_id: auth.store_id,
         to_store_id: mainStore.store_id,
@@ -141,6 +153,7 @@ export default function SubStore() {
       setReturnBackModal(false);
       setReturnBackItems([]);
       setReturnBackNote("");
+
       load();
     } catch (err) {
       const msg = handleError(err, "Failed to send items back");
@@ -233,7 +246,6 @@ export default function SubStore() {
 
   // ─── Detail ───────────────────────────────────────────────────────────────
   const openDetail = async (r) => {
-    console.log("r is here", r);
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
       return;
@@ -243,7 +255,6 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-      console.log("detail", res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to open detail");
       showToast(msg, "error");
@@ -270,8 +281,6 @@ export default function SubStore() {
   const handleGRNSubmit = async (payload) => {
     setGrnSubmitting(true);
     try {
-      console.log("payload", payload);
-      console.log("paylod id", grnRequest.request_id);
       await submitGRN(grnRequest.request_id, payload);
 
       const label =
@@ -282,7 +291,7 @@ export default function SubStore() {
             : payload.grn_status === "RETURN_BACK"
               ? "Deliver Returned"
               : "Delivery rejected — main store notified";
-      showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn",);
+      showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn");
       setGrnRequest(null);
       setDetail(null);
       load();
@@ -294,7 +303,6 @@ export default function SubStore() {
     }
   };
 
-  // ─── Form helpers ─────────────────────────────────────────────────────────
   const addLine = () =>
     setItemForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_LINE }] }));
 
@@ -324,23 +332,6 @@ export default function SubStore() {
       return { ...f, items };
     });
   };
-
-  // const getNextItemNo = (items = []) => {
-  //   if (!items.length) return "ITM-001";
-  //   let max = 0;
-  //   let prefix = "ITM-";
-  //   items.forEach((item) => {
-  //     const match = item.item_no?.match(/(\D+)(\d+)$/);
-  //     if (match) {
-  //       prefix = match[1];
-  //       const num = parseInt(match[2], 10);
-  //       if (num > max) max = num;
-  //     }
-  //   });
-  //   return `${prefix}${String(max + 1).padStart(3, "0")}`;
-  // };
-
-  // Return Items ───────────────────────────────────────────────────────────────
 
   const returnItem = async (id) => {
     try {
@@ -374,8 +365,6 @@ export default function SubStore() {
           }))
           .filter((i) => i.returned_qty > 0),
       };
-
-      console.log("payload", payload);
 
       await sendReturnToMain(id, payload);
       setReturnForm(() => ({
@@ -436,7 +425,6 @@ export default function SubStore() {
         ),
         requested_assets: requested_assets.map((a) => a.asset_id),
       };
-      console.log("payload of creating request", payload);
 
       await createRequest(payload);
       showToast("Request submitted successfully", "success");
@@ -562,7 +550,6 @@ export default function SubStore() {
               ]}
             />
           </div>
-
         </div>
       </div>
       {/* ── Table ── */}
@@ -753,12 +740,12 @@ export default function SubStore() {
                                     prev.map((i) =>
                                       i.item_id === item.item_id
                                         ? {
-                                          ...i,
-                                          return_qty: Math.max(
-                                            0,
-                                            Number(i.return_qty) - 1,
-                                          ),
-                                        }
+                                            ...i,
+                                            return_qty: Math.max(
+                                              0,
+                                              Number(i.return_qty) - 1,
+                                            ),
+                                          }
                                         : i,
                                     ),
                                   )
@@ -777,15 +764,15 @@ export default function SubStore() {
                                     prev.map((i) =>
                                       i.item_id === item.item_id
                                         ? {
-                                          ...i,
-                                          return_qty: Math.min(
-                                            Number(item.item_quantity),
-                                            Math.max(
-                                              0,
-                                              Number(e.target.value),
+                                            ...i,
+                                            return_qty: Math.min(
+                                              Number(item.item_quantity),
+                                              Math.max(
+                                                0,
+                                                Number(e.target.value),
+                                              ),
                                             ),
-                                          ),
-                                        }
+                                          }
                                         : i,
                                     ),
                                   )
@@ -798,12 +785,12 @@ export default function SubStore() {
                                     prev.map((i) =>
                                       i.item_id === item.item_id
                                         ? {
-                                          ...i,
-                                          return_qty: Math.min(
-                                            Number(item.item_quantity),
-                                            Number(i.return_qty) + 1,
-                                          ),
-                                        }
+                                            ...i,
+                                            return_qty: Math.min(
+                                              Number(item.item_quantity),
+                                              Number(i.return_qty) + 1,
+                                            ),
+                                          }
                                         : i,
                                     ),
                                   )
@@ -826,27 +813,27 @@ export default function SubStore() {
               {/* Selected summary */}
               {returnBackItems.filter((i) => Number(i.return_qty) > 0).length >
                 0 && (
-                  <div className="flex gap-4 text-xs text-gray-500 bg-gray-50 rounded px-3 py-2">
-                    <span>
-                      منتخب آئٹمز:{" "}
-                      <strong className="text-gray-800">
-                        {
-                          returnBackItems.filter((i) => Number(i.return_qty) > 0)
-                            .length
-                        }
-                      </strong>
-                    </span>
-                    <span>
-                      کل مقدار:{" "}
-                      <strong className="text-emerald-600">
-                        {returnBackItems.reduce(
-                          (s, i) => s + Number(i.return_qty),
-                          0,
-                        )}
-                      </strong>
-                    </span>
-                  </div>
-                )}
+                <div className="flex gap-4 text-xs text-gray-500 bg-gray-50 rounded px-3 py-2">
+                  <span>
+                    منتخب آئٹمز:{" "}
+                    <strong className="text-gray-800">
+                      {
+                        returnBackItems.filter((i) => Number(i.return_qty) > 0)
+                          .length
+                      }
+                    </strong>
+                  </span>
+                  <span>
+                    کل مقدار:{" "}
+                    <strong className="text-emerald-600">
+                      {returnBackItems.reduce(
+                        (s, i) => s + Number(i.return_qty),
+                        0,
+                      )}
+                    </strong>
+                  </span>
+                </div>
+              )}
               <input
                 value={returnBackNote}
                 onChange={(e) => setReturnBackNote(e.target.value)}

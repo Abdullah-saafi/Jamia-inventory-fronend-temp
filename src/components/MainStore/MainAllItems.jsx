@@ -52,7 +52,7 @@ export default function MainAllItems({
       setScrapModal(true);
     } catch (error) {
       const msg = handleError(error, "Failed to open scrap modal");
-      showToast(msg,"error");
+      showToast(msg, "error");
     } finally {
       setScrapModalLoading(false);
     }
@@ -66,14 +66,13 @@ export default function MainAllItems({
         main_store_id: auth.store_id,
         removed_by: auth.username,
       };
-      console.log("Final Payload being sent to backend:", payload);
       await scrapByMain(payload);
       setScrapModal(false);
       showToast("Scrap the items successfully", "success");
       onRefresh();
     } catch (error) {
       const msg = handleError(error, "Failed to scrap");
-      showToast( msg,"error");
+      showToast(msg, "error");
     } finally {
       setScrapModalLoading(false);
     }
@@ -85,9 +84,6 @@ export default function MainAllItems({
 
   return (
     <div>
- 
-
-  
       <div className="flex items-end justify-between py-2">
         <div className="">
           <input
@@ -258,7 +254,7 @@ export default function MainAllItems({
                         ).toFixed(0)}
                       </span>
                     </td>
-                        <td className="px-4 py-3 font-mono text-gray-400 text-xs">
+                    <td className="px-4 py-3 font-mono text-gray-400 text-xs">
                       {Number(i.min_quantity) ?? "0"}
                     </td>
                     <td className="px-4 py-3">
@@ -271,9 +267,7 @@ export default function MainAllItems({
                         {Number(i.scrap_qty) || "0"}
                       </span>
                     </td>
-              
 
-                
                     <td className="px-4 py-3">
                       <span
                         className={`text-xs font-semibold ${isLow ? "text-red-500" : "text-emerald-600"}`}
