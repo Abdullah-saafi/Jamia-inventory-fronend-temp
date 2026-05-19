@@ -220,14 +220,14 @@ const ReturnModal = ({
                             onClick={() => setReturnBackModal(false)}
                             className="flex-1 text-gray-500 text-sm py-2 border border-gray-300 rounded hover:bg-gray-50"
                         >
-                            Cancel
+                            منسوخ کریں
                         </button>
                         <button
                             onClick={handleReturnBack}
                             disabled={returnBackSubmitting}
                             className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-sm font-semibold py-2 rounded transition-colors"
                         >
-                            {returnBackSubmitting ? "Sending..." : "Send Return"}
+                            {returnBackSubmitting ? "بھیج رہے ہیں..." : "واپس بھیجیں"}
                         </button>
                     </div>
                 </div>

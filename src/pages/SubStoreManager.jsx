@@ -214,7 +214,7 @@ export default function SubStoreManager() {
           <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
           <span className="text-gray-500 text-xs mt-0.5 bg-gray-200 rounded p-1">{auth.storeName || "loading..."}</span>
           <p className="text-gray-500 text-sm mt-0.5">
-            Review and approve or reject staff item requests
+            اسٹاف کی آئٹم درخواستوں کا جائزہ لیں اور انہیں منظور یا مسترد کریں
           </p>
         </div>
       </div>
@@ -285,7 +285,9 @@ export default function SubStoreManager() {
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <TableHead />
+            <TableHead
+              pageType={pageType}
+            />
           </thead>
           <tbody>
             {(loading || error || requests.length === 0) ? (

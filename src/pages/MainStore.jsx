@@ -149,8 +149,7 @@ export default function MainStore() {
       <div className="mb-4">
         <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
         <p className="text-gray-500 text-sm mt-0.5">
-          Manage sub store requests, track inventory flow, and request from Head
-          Office
+          سب اسٹور کی درخواستوں کا انتظام کریں، انوینٹری کے بہاؤ کو ٹریک کریں، اور ہیڈ آفس سے درخواست کریں
         </p>
       </div>
 

@@ -7,6 +7,7 @@ import useErrorHandler from "../useErrorHandler";
 import CheckLoadingAndError from "../CheckLoadingAndError";
 import AddItemModal from "../AddItemModal";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import TableHead from "../TableHead";
 
 export default function MainAllItems({
   allItems,
@@ -33,6 +34,8 @@ export default function MainAllItems({
   const { auth } = useAuth();
   const handleError = useErrorHandler();
 
+  const pageType = "mainAllItems"
+
   const categories = [
     ...new Set(allItems.map((i) => i.category).filter(Boolean)),
   ];
@@ -48,7 +51,7 @@ export default function MainAllItems({
                 setSearch(e.target.value);
                 setCurrentPage(1);
               }}
-              placeholder="Search by name or item number..."
+              placeholder="آئٹم کے نام یا نمبر سے تلاش کریں..."
               className="bg-white border leading-none border-gray-300 rounded px-3 py-3 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-64 shadow-sm"
             />
 
@@ -180,31 +183,9 @@ export default function MainAllItems({
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm mt-1">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              {[
-                "آئٹم نمبر",
-                "نام",
-                "زمرہ",
-                "اکائی",
-                "آئٹم کی قسم",
-                "مرکزی اسٹور کا اسٹاک",
-                "ذیلی اسٹورز کو بھیجا گیا",
-                "بھیجی جا رہی",
-                "باقی اسٹاک",
-                // "اسکریپ شدہ مقدار",
-                "کم از کم اسٹاک",
-                "واپس آئٹمز",
-                "اسکریپ",
-                "حالت",
-              ].map((h) => (
-                <th
-                  key={h}
-                  className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
+            <TableHead
+              pageType={pageType}
+            />
           </thead>
           <tbody>
             {loading || mainStoreError || allItems.length === 0 ? (

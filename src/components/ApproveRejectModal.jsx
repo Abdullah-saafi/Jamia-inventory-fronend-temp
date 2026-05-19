@@ -24,7 +24,7 @@ const ApproveRejectModal = ({ setApproveModal, approveModal, approverName, setAp
                 <div className="p-5 space-y-4">
                     <div>
                         <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                            Your Name *
+                            آپ کا نام *
                         </label>
                         <input
                             value={action === "Approve" ? approverName : rejecterName}
@@ -40,14 +40,14 @@ const ApproveRejectModal = ({ setApproveModal, approveModal, approverName, setAp
                     {action === "Approve" && (
                         <div>
                             <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
-                                Adjust quantities if needed
+                                اگر ضرورت ہو تو مقدار میں تبدیلی کریں
                             </div>
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b border-gray-200 text-gray-400 text-xs">
-                                        <th className="text-left pb-2">Item</th>
-                                        <th className="text-center pb-2">Requested</th>
-                                        <th className="text-center pb-2">Approve Qty</th>
+                                        <th className="text-left pb-2">آئٹم</th>
+                                        <th className="text-center pb-2">درخواست کردہ</th>
+                                        <th className="text-center pb-2">منظور شدہ مقدار</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -92,13 +92,13 @@ const ApproveRejectModal = ({ setApproveModal, approveModal, approverName, setAp
                     {action === "Reject" && (
                         <div>
                             <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                                Rejection Reason *
+                                مسترد کرنے کی وجہ *
                             </label>
                             <textarea
                                 value={rejectReason}
                                 onChange={(e) => setRejectReason(e.target.value)}
                                 rows={3}
-                                placeholder="Explain why this request is rejected"
+                                placeholder="وضاحت کریں کہ یہ درخواست کیوں مسترد کی جا رہی ہے"
                                 className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-red-400 resize-none"
                             />
                         </div>
@@ -112,14 +112,14 @@ const ApproveRejectModal = ({ setApproveModal, approveModal, approverName, setAp
                             }}
                             className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
                         >
-                            Cancel
+                            منسوخ کریں
                         </button>
                         <button
                             onClick={action === "Approve" ? handleApprove : handleReject}
                             disabled={action === "Approve" ? actioning || !approverName.trim() : actioning || !rejecterName.trim() || !rejectReason.trim()}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
+                            className={`text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40 ${action === "Approve" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-red-600 hover:bg-red-500"}`}
                         >
-                            {action === "Approve" ? actioning ? "Processing..." : "Confirm Approve" : actioning ? "Rejecting..." : "Confirm Reject"}
+                            {action === "Approve" ? actioning ? "Processing..." : "منظوری کی تصدیق کریں" : actioning ? "Rejecting..." : "مسترد کرنے کی تصدیق کریں"}
                         </button>
                     </div>
                 </div>

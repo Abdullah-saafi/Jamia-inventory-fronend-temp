@@ -293,7 +293,7 @@ export default function RequestRow({
 
                 <div>
                   <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
-                    Items
+                    آئٹمز
                   </div>
                   <ItemsTable
                     items={detail?.items || []}

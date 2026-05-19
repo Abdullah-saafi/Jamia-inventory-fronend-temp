@@ -16,6 +16,8 @@ import StatusBadge from "../StatusBadge";
 import DateTimeCell from "../DateTimeCell";
 import StoreFilters from "../StoreFilters";
 import RequestDashboard from "../RequestDashboard";
+import TableHead from "../TableHead";
+import CreateRequestModal from "../CreateRequestModal";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -26,6 +28,15 @@ const EMPTY_LINE = {
   item_uom: "",
   requested_qty: 1,
 };
+
+const EMPTY_FORM = {
+  from_store_id: "",
+  to_store_id: "",
+  requested_by_name: "",
+  notes: "",
+  is_emergency: false,
+  items: [{ ...EMPTY_LINE }],
+}
 
 export default function MainReqToHO({ loading, mainStoreError, showToast }) {
   const [subStores, setSubStores] = useState([]);
@@ -46,16 +57,11 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
+  const [reusableItems, setReusableItems] = useState([]);
+  const [usableItems, setUsableItems] = useState([]);
   const handleError = useErrorHandler();
 
-  const [form, setForm] = useState({
-    from_store_id: "",
-    to_store_id: "",
-    requested_by_name: "",
-    notes: "",
-    is_emergency: false,
-    items: [{ ...EMPTY_LINE }],
-  });
+  const [form, setForm] = useState({...EMPTY_FORM});
 
   const { auth } = useAuth();
   const pageType = "mainReqToHO";
@@ -76,10 +82,15 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
         getRequests(params),
         getItems({ store_id: mainStores })
       ]);
+      const items = iRes.data.data || []
       const all = sRes.data.data;
       setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
       setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
-      setStoreItems(iRes.data.data || [])
+      setStoreItems(items)
+      const reusable = items.filter((i) => i.item_type === "REUSABLE");
+      const usable = items.filter((i) => i.item_type === "USABLE");
+      setReusableItems(reusable);
+      setUsableItems(usable);
       setToStore(all.filter((s) => s.store_type === "PETTY_CASH" || s.store_type === "HEAD_OFFICE"))
       setRequests(rRes.data.data);
     } catch (error) {
@@ -114,7 +125,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
-      showToast(msg,"error");
+      showToast(msg, "error");
     } finally {
       setDL(false);
     }
@@ -128,7 +139,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       setGrnRequest(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
-      showToast( msg,  "error");
+      showToast(msg, "error");
     } finally {
       setGrnLoading(false);
     }
@@ -150,7 +161,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit GRN");
-      showToast( msg, "error" );
+      showToast(msg, "error");
     } finally {
       setGrnSubmitting(false);
     }
@@ -184,13 +195,14 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
     });
   };
 
-  const handleCreate = async () => {
+  const handleCreate = async (e) => {
+    e.preventDefault();
     const { from_store_id, to_store_id, requested_by_name, items } = form;
     const invalid = items.some(
       (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
     );
     if (!from_store_id || !to_store_id || !requested_by_name || invalid)
-      return showToast("Please fill all required fields","error");
+      return showToast("Please fill all required fields", "error");
 
     setCreating(true);
     try {
@@ -213,7 +225,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       console.log("payload", payload);
 
       await createRequest(payload);
-      showToast("Request submitted successfully","success");
+      showToast("Request submitted successfully", "success");
       setShowCreate(false);
       setForm({
         from_store_id: "",
@@ -226,7 +238,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit");
-      showToast(msg,"error");
+      showToast(msg, "error");
     } finally {
       setCreating(false);
     }
@@ -235,30 +247,6 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
   const pendingGRN = requests.filter(
     (r) => r.status === "FULFILLED" && !r.grn_at,
   ).length;
-
-  // Auto-detect main store name for display
-  const mainStoreName =
-    mainStores.find((s) => s.store_id === form.to_store_id)?.store_name || "";
-  const myStoreName =
-    subStores.find((s) => s.store_id === auth.store_id)?.store_name || "";
-
-  const getNextItemNo = (items = []) => {
-    if (!items.length) return "ITM-001";
-
-    const nums = items
-      .map((i) => {
-        const match = i.item_no?.match(/\d+$/);
-        return match ? parseInt(match[0], 10) : 0;
-      })
-      .filter(Boolean);
-
-    const max = nums.length ? Math.max(...nums) : 0;
-
-    const prefixMatch = items[0]?.item_no?.match(/^\D+/);
-    const prefix = prefixMatch ? prefixMatch[0] : "ITM-";
-
-    return `${prefix}${String(max + 1).padStart(3, "0")}`;
-  };
 
   const paginatedRequests = requests.slice(
     (page - 1) * pageSize,
@@ -284,7 +272,6 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => {
-            const nextItemNo = getNextItemNo(storeItems);
 
             setForm({
               from_store_id: auth.store_id || "",
@@ -294,8 +281,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
               notes: "",
               items: [
                 {
-                  ...EMPTY_LINE,
-                  item_no: nextItemNo, // 👈 auto-fill here
+                  ...EMPTY_LINE
                 },
               ],
             });
@@ -368,24 +354,9 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              {[
-                "درخواست نمبر",
-                "درخواست کنندہ",
-                "درخواست کا وقت",
-                "حالت",
-                "منظوری کا وقت",
-                "مکمل ہونے کا وقت",
-                "",
-              ].map((h) => (
-                <th
-                  key={h}
-                  className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
+            <TableHead
+              pageType={pageType}
+            />
           </thead>
           <tbody>
             {loading || pageLoading ? (
@@ -678,367 +649,384 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
 
       {/* ── Create Request Modal ── */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/30"
-            onClick={() => setShowCreate(false)}
-          />
-          <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-              <div className="flex items-center gap-2">
-                <h2 className="text-gray-900 font-bold">نئی اشیاء کی درخواست</h2>
-                {form.is_emergency && (
-                  <span className="inline-flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                    Urgent
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={() => setShowCreate(false)}
-                className="text-gray-400 hover:text-gray-700 text-xl"
-              >
-                ×
-              </button>
-            </div>
-            {/* ── Emergency banner ── */}
-            {form.is_emergency && (
-              <div className="bg-red-50 border-b border-red-200 px-5 py-3 flex items-center gap-2 justify-end">
-                <span className="text-red-600 text-sm font-semibold text-left">
-                  یہ درخواست براہ راست مرکزی اسٹور کو بھیجی جائے گی
-                </span>
-              </div>
-            )}
+        <CreateRequestModal
+          itemForm={form} 
+          setItemForm={setForm} 
+          mainStores={mainStores} 
+          storeItems={storeItems} 
+          reusableItems={reusableItems} 
+          usableItems={usableItems}
+          onClose={() => setShowCreate(false)}
+          onSubmit={handleCreate}
+          addLine={addLine}
+          removeLine={removeLine}
+          updateLine={updateLine}
+          creating={creating}
+          EMPTY_FORM={EMPTY_FORM}
+          pageType={pageType}
+          toStore={toStore}
+        />
+        // <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        //   <div
+        //     className="absolute inset-0 bg-black/30"
+        //     onClick={() => setShowCreate(false)}
+        //   />
+        //   <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        //     <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+        //       <div className="flex items-center gap-2">
+        //         <h2 className="text-gray-900 font-bold">نئی اشیاء کی درخواست</h2>
+        //         {form.is_emergency && (
+        //           <span className="inline-flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+        //             Urgent
+        //           </span>
+        //         )}
+        //       </div>
+        //       <button
+        //         onClick={() => setShowCreate(false)}
+        //         className="text-gray-400 hover:text-gray-700 text-xl"
+        //       >
+        //         ×
+        //       </button>
+        //     </div>
+        //     {/* ── Emergency banner ── */}
+        //     {form.is_emergency && (
+        //       <div className="bg-red-50 border-b border-red-200 px-5 py-3 flex items-center gap-2 justify-end">
+        //         <span className="text-red-600 text-sm font-semibold text-left">
+        //           یہ درخواست براہ راست مرکزی اسٹور کو بھیجی جائے گی
+        //         </span>
+        //       </div>
+        //     )}
 
 
 
-            <div className="p-5 space-y-4">
+        //     <div className="p-5 space-y-4">
 
-              {/* ── Emergency toggle ── */}
-              <div
-                onClick={() =>
-                  setForm((f) => ({ ...f, is_emergency: !f.is_emergency }))
-                }
-                className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none
-              ${form.is_emergency ? "bg-red-50 border-red-400" : "bg-gray-50 border-gray-200 hover:border-red-300"}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div>
-                    <p
-                      className={`text-sm font-bold ${form.is_emergency ? "text-red-700" : "text-gray-700"}`}
-                    >
-                      ہنگامی درخواست (Emergency Request)
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      سب اسٹور منیجر کی منظوری کے بغیر مرکزی اسٹور کو بھیجیں
-                    </p>
-                  </div>
-                </div>
-                <div
-                  className={`relative w-11 h-6 rounded-full transition-colors ${form.is_emergency ? "bg-red-500" : "bg-gray-300"}`}
-                >
-                  <div
-                    className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.is_emergency ? "translate-x-5" : "translate-x-0.5"}`}
-                  />
-                </div>
-              </div>
+        //       {/* ── Emergency toggle ── */}
+        //       <div
+        //         onClick={() =>
+        //           setForm((f) => ({ ...f, is_emergency: !f.is_emergency }))
+        //         }
+        //         className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none
+        //       ${form.is_emergency ? "bg-red-50 border-red-400" : "bg-gray-50 border-gray-200 hover:border-red-300"}`}
+        //       >
+        //         <div className="flex items-center gap-3">
+        //           <div>
+        //             <p
+        //               className={`text-sm font-bold ${form.is_emergency ? "text-red-700" : "text-gray-700"}`}
+        //             >
+        //               ہنگامی درخواست (Emergency Request)
+        //             </p>
+        //             <p className="text-xs text-gray-400 mt-0.5">
+        //               سب اسٹور منیجر کی منظوری کے بغیر مرکزی اسٹور کو بھیجیں
+        //             </p>
+        //           </div>
+        //         </div>
+        //         <div
+        //           className={`relative w-11 h-6 rounded-full transition-colors ${form.is_emergency ? "bg-red-500" : "bg-gray-300"}`}
+        //         >
+        //           <div
+        //             className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.is_emergency ? "translate-x-5" : "translate-x-0.5"}`}
+        //           />
+        //         </div>
+        //       </div>
 
-              {/* Store info — read-only summary */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                    درخواست کنندہ
-                  </label>
-                  <input
-                    value={form.requested_by_name}
-                    readOnly
-                    className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                    کے لیے ( پٹی کیش / ہیڈ آفس)
-                  </label>
-                  <select
-                    value={form.to_store_id}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, to_store_id: e.target.value }))
-                    }
-                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                  >
-                    <option value="">Select Main Store</option>
-                    {toStore.map((s) => (
-                      <option key={s.store_id} value={s.store_id}>
-                        {s.store_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+        //       {/* Store info — read-only summary */}
+        //       <div className="grid grid-cols-2 gap-3">
+        //         <div>
+        //           <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+        //             درخواست کنندہ
+        //           </label>
+        //           <input
+        //             value={form.requested_by_name}
+        //             readOnly
+        //             className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
+        //           />
+        //         </div>
+        //         <div>
+        //           <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+        //             کے لیے ( پٹی کیش / ہیڈ آفس)
+        //           </label>
+        //           <select
+        //             value={form.to_store_id}
+        //             onChange={(e) =>
+        //               setForm((f) => ({ ...f, to_store_id: e.target.value }))
+        //             }
+        //             className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+        //           >
+        //             <option value="">Select Main Store</option>
+        //             {toStore.map((s) => (
+        //               <option key={s.store_id} value={s.store_id}>
+        //                 {s.store_name}
+        //               </option>
+        //             ))}
+        //           </select>
+        //         </div>
+        //       </div>
 
-              <div>
-                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  نوٹس
-                </label>
-                <textarea
-                  value={form.notes}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, notes: e.target.value }))
-                  }
-                  rows={2}
-                  placeholder="Optional reason or note"
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none"
-                />
-              </div>
+        //       <div>
+        //         <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+        //           نوٹس
+        //         </label>
+        //         <textarea
+        //           value={form.notes}
+        //           onChange={(e) =>
+        //             setForm((f) => ({ ...f, notes: e.target.value }))
+        //           }
+        //           rows={2}
+        //           placeholder="Optional reason or note"
+        //           className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none"
+        //         />
+        //       </div>
 
-              {/* Items section */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-gray-500 text-xs font-semibold uppercase">
-                    چیزیں
-                  </span>
-                  <button
-                    onClick={addLine}
-                    className="text-xs text-emerald-600 hover:text-emerald-500 border border-gray-300 rounded px-2 py-1"
-                  >
-                    + Add Row
-                  </button>
-                </div>
+        //       {/* Items section */}
+        //       <div>
+        //         <div className="flex items-center justify-between mb-2">
+        //           <span className="text-gray-500 text-xs font-semibold uppercase">
+        //             چیزیں
+        //           </span>
+        //           <button
+        //             onClick={addLine}
+        //             className="text-xs text-emerald-600 hover:text-emerald-500 border border-gray-300 rounded px-2 py-1"
+        //           >
+        //             + Add Row
+        //           </button>
+        //         </div>
 
-                {/* FIX 1: show message until main store is selected */}
-                {!form.to_store_id ? (
-                  <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">
-                    Select a Main Store first to load available items
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {form.items.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="bg-gray-50 rounded-lg p-3 border border-gray-200"
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                            Item {idx + 1}
-                          </span>
-                          <button
-                            onClick={() => removeLine(idx)}
-                            disabled={form.items.length === 1}
-                            className="text-red-400 hover:text-red-500 disabled:opacity-30 text-lg font-bold leading-none"
-                          >
-                            ×
-                          </button>
-                        </div>
+        //         {/* FIX 1: show message until main store is selected */}
+        //         {!form.to_store_id ? (
+        //           <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">
+        //             Select a Main Store first to load available items
+        //           </div>
+        //         ) : (
+        //           <div className="space-y-3">
+        //             {form.items.map((item, idx) => (
+        //               <div
+        //                 key={idx}
+        //                 className="bg-gray-50 rounded-lg p-3 border border-gray-200"
+        //               >
+        //                 <div className="flex items-center justify-between mb-3">
+        //                   <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+        //                     Item {idx + 1}
+        //                   </span>
+        //                   <button
+        //                     onClick={() => removeLine(idx)}
+        //                     disabled={form.items.length === 1}
+        //                     className="text-red-400 hover:text-red-500 disabled:opacity-30 text-lg font-bold leading-none"
+        //                   >
+        //                     ×
+        //                   </button>
+        //                 </div>
 
-                        {/* Catalogue search dropdown */}
-                        <div className="mb-3">
-                          <label className="text-gray-500 text-xs mb-1 block">
-                            Select from catalogue ({storeItems.length} items
-                            available)
-                          </label>
-                          <div className="relative mt-1.5">
-                            <input
-                              value={item.item_search}
-                              onChange={(e) => {
-                                updateLine(idx, "item_search", e.target.value);
-                                updateLine(idx, "_showDropdown", true);
-                              }}
-                              onFocus={() =>
-                                updateLine(idx, "_showDropdown", true)
-                              }
-                              onBlur={() =>
-                                setTimeout(
-                                  () => updateLine(idx, "_showDropdown", false),
-                                  150,
-                                )
-                              }
-                              placeholder="Search by item name or number…"
-                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                            />
-                            {item._showDropdown && (
-                              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                                <div
-                                  className="px-3 py-2 text-xs text-gray-400 hover:bg-gray-50 cursor-pointer border-b border-gray-100"
-                                  onMouseDown={() => {
-                                    updateLine(idx, "selected_item_no", "");
-                                    updateLine(idx, "item_search", "");
-                                    updateLine(idx, "_showDropdown", false);
-                                  }}
-                                >
-                                  — Not listed / enter manually —
-                                </div>
-                                {storeItems
-                                  .filter((si) => {
-                                    const q = (
-                                      item.item_search || ""
-                                    ).toLowerCase();
-                                    return (
-                                      !q ||
-                                      si.item_no.toLowerCase().includes(q) ||
-                                      si.item_name.toLowerCase().includes(q)
-                                    );
-                                  })
-                                  .map((si) => (
-                                    <div
-                                      key={si.item_id}
-                                      onMouseDown={() => {
-                                        updateLine(
-                                          idx,
-                                          "selected_item_no",
-                                          si.item_no,
-                                        );
-                                        updateLine(
-                                          idx,
-                                          "item_search",
-                                          `${si.item_no} — ${si.item_name}`,
-                                        );
-                                        updateLine(idx, "_showDropdown", false);
-                                      }}
-                                      className={`px-3 py-2 cursor-pointer hover:bg-emerald-50 border-t border-gray-100 flex items-center justify-between ${item.selected_item_no === si.item_no ? "bg-emerald-50" : ""}`}
-                                    >
-                                      <div>
-                                        <span className="font-mono text-emerald-600 text-xs font-bold">
-                                          {si.item_no}
-                                        </span>
-                                        <span className="text-gray-700 text-xs ml-2">
-                                          {si.item_name}
-                                        </span>
-                                      </div>
-                                      <div className="text-gray-400 text-xs">
-                                        {parseFloat(
-                                          si.item_quantity || 0,
-                                        ).toFixed(0)}
-                                      </div>
-                                    </div>
-                                  ))}
-                                {storeItems.filter((si) => {
-                                  const q = (
-                                    item.item_search || ""
-                                  ).toLowerCase();
-                                  return (
-                                    !q ||
-                                    si.item_no.toLowerCase().includes(q) ||
-                                    si.item_name.toLowerCase().includes(q)
-                                  );
-                                }).length === 0 && (
-                                    <div className="px-3 py-3 text-xs text-gray-400 text-center">
-                                      No items match your search
-                                    </div>
-                                  )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
+        //                 {/* Catalogue search dropdown */}
+        //                 <div className="mb-3">
+        //                   <label className="text-gray-500 text-xs mb-1 block">
+        //                     Select from catalogue ({storeItems.length} items
+        //                     available)
+        //                   </label>
+        //                   <div className="relative mt-1.5">
+        //                     <input
+        //                       value={item.item_search}
+        //                       onChange={(e) => {
+        //                         updateLine(idx, "item_search", e.target.value);
+        //                         updateLine(idx, "_showDropdown", true);
+        //                       }}
+        //                       onFocus={() =>
+        //                         updateLine(idx, "_showDropdown", true)
+        //                       }
+        //                       onBlur={() =>
+        //                         setTimeout(
+        //                           () => updateLine(idx, "_showDropdown", false),
+        //                           150,
+        //                         )
+        //                       }
+        //                       placeholder="Search by item name or number…"
+        //                       className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+        //                     />
+        //                     {item._showDropdown && (
+        //                       <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+        //                         <div
+        //                           className="px-3 py-2 text-xs text-gray-400 hover:bg-gray-50 cursor-pointer border-b border-gray-100"
+        //                           onMouseDown={() => {
+        //                             updateLine(idx, "selected_item_no", "");
+        //                             updateLine(idx, "item_search", "");
+        //                             updateLine(idx, "_showDropdown", false);
+        //                           }}
+        //                         >
+        //                           — Not listed / enter manually —
+        //                         </div>
+        //                         {storeItems
+        //                           .filter((si) => {
+        //                             const q = (
+        //                               item.item_search || ""
+        //                             ).toLowerCase();
+        //                             return (
+        //                               !q ||
+        //                               si.item_no.toLowerCase().includes(q) ||
+        //                               si.item_name.toLowerCase().includes(q)
+        //                             );
+        //                           })
+        //                           .map((si) => (
+        //                             <div
+        //                               key={si.item_id}
+        //                               onMouseDown={() => {
+        //                                 updateLine(
+        //                                   idx,
+        //                                   "selected_item_no",
+        //                                   si.item_no,
+        //                                 );
+        //                                 updateLine(
+        //                                   idx,
+        //                                   "item_search",
+        //                                   `${si.item_no} — ${si.item_name}`,
+        //                                 );
+        //                                 updateLine(idx, "_showDropdown", false);
+        //                               }}
+        //                               className={`px-3 py-2 cursor-pointer hover:bg-emerald-50 border-t border-gray-100 flex items-center justify-between ${item.selected_item_no === si.item_no ? "bg-emerald-50" : ""}`}
+        //                             >
+        //                               <div>
+        //                                 <span className="font-mono text-emerald-600 text-xs font-bold">
+        //                                   {si.item_no}
+        //                                 </span>
+        //                                 <span className="text-gray-700 text-xs ml-2">
+        //                                   {si.item_name}
+        //                                 </span>
+        //                               </div>
+        //                               <div className="text-gray-400 text-xs">
+        //                                 {parseFloat(
+        //                                   si.item_quantity || 0,
+        //                                 ).toFixed(0)}
+        //                               </div>
+        //                             </div>
+        //                           ))}
+        //                         {storeItems.filter((si) => {
+        //                           const q = (
+        //                             item.item_search || ""
+        //                           ).toLowerCase();
+        //                           return (
+        //                             !q ||
+        //                             si.item_no.toLowerCase().includes(q) ||
+        //                             si.item_name.toLowerCase().includes(q)
+        //                           );
+        //                         }).length === 0 && (
+        //                             <div className="px-3 py-3 text-xs text-gray-400 text-center">
+        //                               No items match your search
+        //                             </div>
+        //                           )}
+        //                       </div>
+        //                     )}
+        //                   </div>
+        //                 </div>
 
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="flex-1 h-px bg-gray-200" />
-                          <span className="text-gray-400 text-xs">
-                            چیز کی تفصیلات
-                          </span>
-                          <div className="flex-1 h-px bg-gray-200" />
-                        </div>
+        //                 <div className="flex items-center gap-2 mb-3">
+        //                   <div className="flex-1 h-px bg-gray-200" />
+        //                   <span className="text-gray-400 text-xs">
+        //                     چیز کی تفصیلات
+        //                   </span>
+        //                   <div className="flex-1 h-px bg-gray-200" />
+        //                 </div>
 
-                        <div className="grid grid-cols-12 gap-2">
-                          <div className="col-span-2">
-                            <label className="text-gray-500 text-xs mb-1 block">
-                              چیز نمبر
-                            </label>
-                            <input
-                              readOnly
-                              value={item.item_no}
-                              onChange={(e) =>
-                                updateLine(idx, "item_no", e.target.value)
-                              }
-                              placeholder="ITM-001"
-                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                            />
-                          </div>
-                          <div className="col-span-5">
-                            <label className="text-gray-500 text-xs mb-1 block">
-                              چیز کا نام
-                            </label>
-                            {/* FIX 2: read-only when selected from catalogue */}
-                            <input
-                              value={item.item_name}
-                              readOnly={!!item.selected_item_no}
-                              onChange={(e) =>
-                                !item.selected_item_no &&
-                                updateLine(idx, "item_name", e.target.value)
-                              }
-                              placeholder="Full item name"
-                              className={`w-full border rounded px-2 py-1.5 text-sm focus:outline-none ${item.selected_item_no
-                                ? "bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed"
-                                : "bg-white border-gray-300 text-gray-800 focus:border-emerald-500"
-                                }`}
-                            />
-                          </div>
-                          <div className="col-span-2">
-                            <label className="text-gray-500 text-xs mb-1 block">
-                              UOM *
-                            </label>
-                            {/* FIX 2: read-only when selected from catalogue */}
-                            <input
-                              value={item.item_uom}
-                              readOnly={!!item.selected_item_no}
-                              onChange={(e) =>
-                                !item.selected_item_no &&
-                                updateLine(idx, "item_uom", e.target.value)
-                              }
-                              placeholder="pcs"
-                              className={`w-full border rounded px-2 py-1.5 text-sm focus:outline-none ${item.selected_item_no
-                                ? "bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed"
-                                : "bg-white border-gray-300 text-gray-800 focus:border-emerald-500"
-                                }`}
-                            />
-                          </div>
+        //                 <div className="grid grid-cols-12 gap-2">
+        //                   <div className="col-span-2">
+        //                     <label className="text-gray-500 text-xs mb-1 block">
+        //                       چیز نمبر
+        //                     </label>
+        //                     <input
+        //                       readOnly
+        //                       value={item.item_no}
+        //                       onChange={(e) =>
+        //                         updateLine(idx, "item_no", e.target.value)
+        //                       }
+        //                       placeholder="ITM-001"
+        //                       className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+        //                     />
+        //                   </div>
+        //                   <div className="col-span-5">
+        //                     <label className="text-gray-500 text-xs mb-1 block">
+        //                       چیز کا نام
+        //                     </label>
+        //                     {/* FIX 2: read-only when selected from catalogue */}
+        //                     <input
+        //                       value={item.item_name}
+        //                       readOnly={!!item.selected_item_no}
+        //                       onChange={(e) =>
+        //                         !item.selected_item_no &&
+        //                         updateLine(idx, "item_name", e.target.value)
+        //                       }
+        //                       placeholder="Full item name"
+        //                       className={`w-full border rounded px-2 py-1.5 text-sm focus:outline-none ${item.selected_item_no
+        //                         ? "bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed"
+        //                         : "bg-white border-gray-300 text-gray-800 focus:border-emerald-500"
+        //                         }`}
+        //                     />
+        //                   </div>
+        //                   <div className="col-span-2">
+        //                     <label className="text-gray-500 text-xs mb-1 block">
+        //                       UOM *
+        //                     </label>
+        //                     {/* FIX 2: read-only when selected from catalogue */}
+        //                     <input
+        //                       value={item.item_uom}
+        //                       readOnly={!!item.selected_item_no}
+        //                       onChange={(e) =>
+        //                         !item.selected_item_no &&
+        //                         updateLine(idx, "item_uom", e.target.value)
+        //                       }
+        //                       placeholder="pcs"
+        //                       className={`w-full border rounded px-2 py-1.5 text-sm focus:outline-none ${item.selected_item_no
+        //                         ? "bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed"
+        //                         : "bg-white border-gray-300 text-gray-800 focus:border-emerald-500"
+        //                         }`}
+        //                     />
+        //                   </div>
 
-                          <div className="col-span-2">
-                            <label className="text-gray-500 text-xs mb-1 block">
-                              مقدار
-                            </label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={item.requested_qty}
-                              onChange={(e) =>
-                                updateLine(
-                                  idx,
-                                  "requested_qty",
-                                  +e.target.value,
-                                )
-                              }
-                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+        //                   <div className="col-span-2">
+        //                     <label className="text-gray-500 text-xs mb-1 block">
+        //                       مقدار
+        //                     </label>
+        //                     <input
+        //                       type="number"
+        //                       min="1"
+        //                       value={item.requested_qty}
+        //                       onChange={(e) =>
+        //                         updateLine(
+        //                           idx,
+        //                           "requested_qty",
+        //                           +e.target.value,
+        //                         )
+        //                       }
+        //                       className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+        //                     />
+        //                   </div>
+        //                 </div>
+        //               </div>
+        //             ))}
+        //           </div>
+        //         )}
+        //       </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
-                <button
-                  onClick={() => setShowCreate(false)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCreate}
-                  disabled={creating}
-                  className={`text-white text-sm font-bold px-8 py-2 rounded-lg transition-all disabled:opacity-50
-                  ${form.is_emergency ? "bg-red-600 hover:bg-red-500" : "bg-emerald-600 hover:bg-emerald-500"}`}
-                >
-                  {creating
-                    ? "Submitting..."
-                    : form.is_emergency
-                      ? "Submit Emergency Request"
-                      : "Submit Request"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        //       <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
+        //         <button
+        //           onClick={() => setShowCreate(false)}
+        //           className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
+        //         >
+        //           Cancel
+        //         </button>
+        //         <button
+        //           onClick={handleCreate}
+        //           disabled={creating}
+        //           className={`text-white text-sm font-bold px-8 py-2 rounded-lg transition-all disabled:opacity-50
+        //           ${form.is_emergency ? "bg-red-600 hover:bg-red-500" : "bg-emerald-600 hover:bg-emerald-500"}`}
+        //         >
+        //           {creating
+        //             ? "Submitting..."
+        //             : form.is_emergency
+        //               ? "Submit Emergency Request"
+        //               : "Submit Request"}
+        //         </button>
+        //       </div>
+        //     </div>
+        //   </div>
+        // </div>
       )}
     </div>
   );

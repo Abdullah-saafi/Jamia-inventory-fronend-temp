@@ -30,12 +30,11 @@ const EMPTY_LINE = {
   selected_item_no: "",
   item_search: "",
   _showDropdown: false,
-  item_id: 0,
+  // item_id: 0,
   item_no: "",
   item_name: "",
   item_uom: "",
   requested_qty: 1,
-  item_type: "abc",
 };
 
 const EMPTY_FORM = {
@@ -45,7 +44,6 @@ const EMPTY_FORM = {
   notes: "",
   is_emergency: false,
   items: [{ ...EMPTY_LINE }],
-  requested_assets: [],
 };
 
 export default function SubStore() {
@@ -390,7 +388,6 @@ export default function SubStore() {
       to_store_id,
       requested_by_name,
       items,
-      requested_assets = [],
     } = itemForm;
 
     const itemLines = items.filter((i) => i.item_no);
@@ -420,7 +417,6 @@ export default function SubStore() {
         items: itemLines.map(
           ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
         ),
-        requested_assets: requested_assets.map((a) => a.asset_id),
       };
       console.log("payload of creating request", payload);
 
@@ -458,7 +454,7 @@ export default function SubStore() {
           <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
           <span className="text-gray-500 text-xs mt-0.5 bg-gray-200 rounded p-1">{auth.storeName || "loading..."}</span>
           <p className="text-gray-500 text-sm mt-0.5">
-            Create request and verify your delivery
+            درخواست بنائیں اور اپنی ڈیلیوری کی تصدیق کریں
           </p>
         </div>
       </div>
@@ -480,7 +476,6 @@ export default function SubStore() {
               requested_by_name: auth.username || "",
               notes: "",
               items: [{ ...EMPTY_LINE }],
-              requested_assets: [],
             });
             setShowCreate(true);
           }}
@@ -640,6 +635,7 @@ export default function SubStore() {
           updateLine={updateLine}
           creating={creating}
           EMPTY_FORM={EMPTY_FORM}
+          pageType={pageType}
         />
       )}
       {returnBackModal && (
