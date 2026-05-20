@@ -7,19 +7,22 @@ import {
 } from "../services/api";
 import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import { useAuth } from "../context/authContext";
-import Toast from "../components/Toast";
+import { useToast } from "../context/ToastContext";
 import BlockedUI from "../components/BlockedUI";
 import useErrorHandler from "../components/useErrorHandler";
 import Pagination from "../components/Pagination";
 import StatusBadge from "../components/StatusBadge"
 import DateTimeCell from "../components/DateTimeCell"
+import RequestDashboard from "../components/RequestDashboard";
+import StoreFilters from "../components/StoreFilters";
+import TableHead from "../components/TableHead";
+import CheckLoadingAndError from "../components/CheckLoadingAndError";
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MainStoreApprover() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [toast, showToast] = useState(null);
   const [filter, setFilter] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
@@ -34,13 +37,15 @@ export default function MainStoreApprover() {
   const [pageSize, setPageSize] = useState(10);
 
   const { auth } = useAuth();
+  const { showToast } = useToast()
 
   const handleError = useErrorHandler();
+  const pageType = "mainStoreApprover"
 
   const load = async () => {
     setLoading(true);
     try {
-      const params = { direction: ["MAIN_TO_PCASH","MAIN_TO_HO"] };
+      const params = { direction: ["MAIN_TO_PCASH", "MAIN_TO_HO"] };
       if (filter) params.status = filter;
       const r = await getRequests(params);
       setRequests(r.data.data);
@@ -55,10 +60,6 @@ export default function MainStoreApprover() {
   useEffect(() => {
     load();
   }, [filter]);
-  
-  useEffect(() => {
-    setTimeout(() => showToast(null), 5000);
-  }, [toast]);
 
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
@@ -72,7 +73,7 @@ export default function MainStoreApprover() {
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
-      showToast({message: msg, type:"error"});
+      showToast(msg, "error");
     } finally {
       setDL(false);
     }
@@ -92,7 +93,7 @@ export default function MainStoreApprover() {
       setApproverName(auth.username || "");
     } catch (error) {
       const msg = handleError(error, "Failed to load items");
-      showToast({ message: msg, type: "error" });
+      showToast(msg, "error");
     } finally {
       setActioning(false);
     }
@@ -107,7 +108,7 @@ export default function MainStoreApprover() {
       setRejectReason("");
     } catch (error) {
       const msg = handleError(error, "Failed to load request");
-      showToast({ message: msg, type: "error" });
+      showToast(msg, "error");
     } finally {
       setActioning(false);
     }
@@ -124,17 +125,14 @@ export default function MainStoreApprover() {
           approved_qty: i.approved_qty,
         })),
       });
-      showToast({
-        message: "Request approved — Head Office will now fulfill it",
-        type: "success",
-      });
+      showToast("Request approved — Head Office will now fulfill it", "success");
       setApproveModal(null);
       setApproverName("");
       setEditedItems([]);
       load();
     } catch (e) {
       const msg = handleError(e, "Error approving");
-      showToast({ message: msg, type: "error" });
+      showToast(msg, "error");
     } finally {
       setActioning(false);
     }
@@ -148,14 +146,14 @@ export default function MainStoreApprover() {
         approved_by_name: rejecterName,
         rejection_reason: rejectReason,
       });
-      showToast({ message: "Request rejected", type: "info" });
+      showToast("Request rejected", "info");
       setRejectModal(null);
       setRejecterName("");
       setRejectReason("");
       load();
     } catch (e) {
       const msg = handleError(e, "Error rejecting");
-      showToast({ message: msg, type: "error" });
+      showToast(msg, "error");
     } finally {
       setActioning(false);
     }
@@ -166,11 +164,6 @@ export default function MainStoreApprover() {
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message} />;
   }
-
-  const paginatedRequests = requests.slice(
-    (page - 1) * pageSize,
-    page * pageSize,
-  );
 
   return (
     <div>
@@ -185,36 +178,27 @@ export default function MainStoreApprover() {
       </div>
 
       {/* ── Pending alert ── */}
-      {pendingCount > 0 && filter !== "PENDING" && (
-        <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 flex items-center justify-between">
-          <span className="text-yellow-700 text-sm font-semibold" dir="rtl">
-            {pendingCount} {pendingCount > 1 ? "درخواستیں" : "درخواست"} آپ کی
-            منظوری کی منتظر {pendingCount > 1 ? "ہیں" : "ہے"}
-          </span>
-          <button
-            onClick={() => setFilter("PENDING")}
-            className="text-xs border border-gray-300 text-gray-600 hover:text-gray-900 rounded px-3 py-1"
-          >
-            Show Pending
-          </button>
-        </div>
-      )}
+      <RequestDashboard
+        pageType={pageType}
+        setFilterStatus={setFilter}
+        filterStatus={filter}
+        counts={{
+          pending: pendingCount,
+          returnBack: 0,
+          emergency: 0,
+          disputed: 0
+        }}
+      />
 
       {/* ── Filter ── */}
       <div className="flex h-full py-2 items-end justify-between">
         <div>
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-          >
-            <option value="">تمام حالتیں</option>
-            <option value="PENDING">زیر التواء</option>
-            <option value="APPROVED">منظور شدہ</option>
-            <option value="REJECTED">مسترد شدہ</option>
-            <option value="FULFILLED">مکمل شدہ</option>
-          </select>
-          
+          <StoreFilters
+            filterStatus={filter}
+            setFilterStatus={setFilter}
+            pageType={pageType}
+          />
+
           <button
             onClick={() => {
               setFilter("")
@@ -263,50 +247,19 @@ export default function MainStoreApprover() {
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              {[
-                "درخواست نمبر",
-                "درخواست کنندہ",
-                "درخواست کا وقت",
-                "حالت",
-                "منظوری کا وقت",
-                "مکمل ہونے کا وقت",
-                "عملیات",
-              ].map((h) => (
-                <th
-                  key={h}
-                  className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
+            <TableHead
+              pageType={pageType}
+            />
           </thead>
           <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12">
-                  <div className="flex justify-center">
-                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                  </div>
-                </td>
-              </tr>
-            ) : error ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12">
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
-                    {error}
-                  </div>
-                </td>
-              </tr>
-            ) : requests.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-400">
-                  No requests found.
-                </td>
-              </tr>
+            {(loading || error || requests.length === 0) ? (
+              <CheckLoadingAndError
+                loading={loading}
+                error={error}
+                requests={requests}
+              />
             ) : (
-              paginatedRequests.map((r) => {
+              requests.map((r) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
                 return (
                   <>

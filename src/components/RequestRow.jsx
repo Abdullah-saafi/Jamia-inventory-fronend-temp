@@ -2,6 +2,7 @@ import StatusBadge from "../components/StatusBadge";
 import DateTimeCell from "../components/DateTimeCell";
 import ItemsTable from "../components/ItemsTable";
 import TypeBadge from "./TypeBadge";
+import { useAuth } from "../context/authContext";
 
 export default function RequestRow({
   r,
@@ -23,6 +24,11 @@ export default function RequestRow({
   handleResolved,
   showToast,
   username,
+  setInstantRequest,
+  instantRequest,
+  getDetail,
+  setItemForm,
+  EMPTY_LINE,
 }) {
   const isExpanded = detail && detail.request_id === r.request_id;
   const needsGRN = r.status === "FULFILLED" && !r.grn_at;
@@ -35,6 +41,8 @@ export default function RequestRow({
   const isReturnable = r.item_type === "REUSABLE" && r.has_returnable_items && (r.status === "RECEIVED" || r.status === "PARTIALLY_RECEIVED");
   const isEmergency = r.is_emergency;
   const isClosed = r.status === "CLOSED";
+
+  const { auth } = useAuth()
 
   return (
     <>
@@ -187,6 +195,23 @@ export default function RequestRow({
                 {fulfilling === r.request_id ? "..." : "Fulfill"}
               </button>
             )}
+            {/* Temporary */}
+            {pageType === "mainSubStoreReqs" && (
+              <button onClick={(e) => {
+                e.stopPropagation();
+                setItemForm({
+                  from_store_id: auth.store_id || "",
+                  requested_by_name: auth.username || "",
+                  to_store_id: "",
+                  notes: "",
+                  is_emergency: false,
+                  items: [{ ...EMPTY_LINE }],
+                })
+                getDetail(r)
+                console.log("clicked")
+
+              }}>Instant Request</button>
+            )}
             {(pageType === "mainSubStoreReqs" && r.item_type === "REUSABLE" && r.status === "RETURN_BACK") && (
               <button
                 onClick={(e) => {
@@ -300,7 +325,6 @@ export default function RequestRow({
                     isDisputed={isDisputed}
                     isReceived={isReceived}
                     isReturned={isReturned}
-                    // mainSubStoreReqs props
                     d={detail}
                     detailLoad={detailLoad}
                     handleFulfill={handleFulfill}

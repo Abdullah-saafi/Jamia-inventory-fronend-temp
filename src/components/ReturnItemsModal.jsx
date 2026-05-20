@@ -1,16 +1,16 @@
-const ReturnItemsModal = ({ 
+const ReturnItemsModal = ({
     setReturnModal,
     handleReturn,
     returnModalLoading,
     returnForm,
     setReturnForm
-    }) => {
+}) => {
 
     const handleQtyChange = (idx, newValue) => {
         const originalQty = Number(returnForm.returnData.items[idx].received_qty);
         let value = Number(newValue);
-        console.log("qty",originalQty);
-        
+        console.log("qty", originalQty);
+
 
         if (value < 0) value = 0;
         if (value > originalQty) value = originalQty;
@@ -19,7 +19,7 @@ const ReturnItemsModal = ({
             ...updatedData.items[idx],
             return_qty_input: value
         };
-        setReturnForm((f) => ({...f, returnData: updatedData}));
+        setReturnForm((f) => ({ ...f, returnData: updatedData }));
     };
 
     return (
@@ -57,25 +57,19 @@ const ReturnItemsModal = ({
                         />
                     </div>
                     <div>
-                        {/* <button onClick={() => {
-                            console.log("returnForm",returnForm);
-                            
-                        }}>
-                            click
-                        </button> */}
                     </div>
                     <div>
-                            <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                                Note *
-                            </label>
-                            <textarea
-                                value={returnForm.note}
-                                onChange={(e) => setReturnForm((f) => ({...f, note: e.target.value}))}
-                                rows={3}
-                                placeholder="Any note"
-                                className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-red-400 resize-none"
-                            />
-                        </div>
+                        <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+                            Note *
+                        </label>
+                        <textarea
+                            value={returnForm.note}
+                            onChange={(e) => setReturnForm((f) => ({ ...f, note: e.target.value }))}
+                            rows={3}
+                            placeholder="Any note"
+                            className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-red-400 resize-none"
+                        />
+                    </div>
                     <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
                         Adjust quantities if needed
                     </div>

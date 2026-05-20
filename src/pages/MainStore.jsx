@@ -31,10 +31,11 @@ export default function MainStore() {
   const [headOffices, setHeadOffices] = useState([]);
   const [hoRequests, setHoRequests] = useState([]);
   const [pendingReturns, setPendingReturns] = useState(0);
+  const [mainStoreError, setMainStoreError] = useState("");
+  const [toStore, setToStore] = useState([]);
 
   // ── UI ────────────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
-  const [mainStoreError, setMainStoreError] = useState("");
   // ── Pagination ────────────────────────────────────────────────────────────
   const [currentPage, setCurrentPage] = useState(1);
   const [pageLimit, setPageLimit] = useState(10);
@@ -107,6 +108,7 @@ export default function MainStore() {
         setPendingReturns(retRes.data.data?.length || 0);
 
         const allStores = sRes.data.data;
+        setToStore(allStores.filter((s) => s.store_type === "PETTY_CASH" || s.store_type === "HEAD_OFFICE"))
         setMainStores(allStores.filter((s) => s.store_type === "MAIN_STORE"));
         setHeadOffices(allStores.filter((s) => s.store_type === "HEAD_OFFICE"));
       } catch (error) {
@@ -245,6 +247,8 @@ export default function MainStore() {
           showToast={showToast}
           loading={loading}
           mainStoreError={mainStoreError}
+          mainStores={mainStores}
+          toStore={toStore}
         />
       )}
 

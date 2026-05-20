@@ -19,6 +19,10 @@ const pages = {
   mainReqToHO: {
     page: "mainReqToHO",
     store: false
+  },
+  mainStoreApprover: {
+    page: "mainStoreApprover",
+    store: false
   }
 }
 

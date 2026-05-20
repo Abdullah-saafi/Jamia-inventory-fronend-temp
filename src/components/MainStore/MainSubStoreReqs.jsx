@@ -16,6 +16,27 @@ import CheckLoadingAndError from "../CheckLoadingAndError";
 import RequestDashboard from "../RequestDashboard";
 import RequestRow from "../RequestRow";
 import TableHead from "../TableHead";
+import InstantRestockModal from "../InstantRestockModal";
+
+const EMPTY_LINE = {
+  selected_item_no: "",
+  item_search: "",
+  _showDropdown: false,
+  item_no: "",
+  item_name: "",
+  item_uom: "",
+  requested_qty: 1,
+  images: [],
+};
+
+const EMPTY_FORM = {
+  from_store_id: "",
+  to_store_id: "",
+  requested_by_name: "",
+  notes: "",
+  is_emergency: false,
+  items: [{ ...EMPTY_LINE }],
+};
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MainSubStoreReqs({
@@ -29,12 +50,17 @@ export default function MainSubStoreReqs({
   onFilterChange,
   loading,
   mainStoreError,
+  mainStores,
+  toStore
 }) {
   const [reqFilter, setReqFilter] = useState("APPROVED");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [fulfilling, setFulfilling] = useState(null);
   const [returnLoading, setReturnLoading] = useState(false);
+  const [instantRequest, setInstantRequest] = useState(null);
+  const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
+  const [creating, setCreating] = useState(false);
 
   const { auth } = useAuth();
   const handleError = useErrorHandler();
@@ -53,6 +79,21 @@ export default function MainSubStoreReqs({
       setDetail(res.data.data);
       console.log("detail", res.data.data);
       console.log("r", r);
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data");
+      showToast(msg, "error");
+    } finally {
+      setDL(false);
+    }
+  };
+
+  const getDetail = async (r) => {
+    if (instantRequest && instantRequest.request_id === r.request_id) {
+      return;
+    }
+    try {
+      const res = await getRequestById(r.request_id);
+      setInstantRequest(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
       showToast(msg, "error");
@@ -97,6 +138,72 @@ export default function MainSubStoreReqs({
       setReturnLoading(false);
     }
   };
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    const {
+      from_store_id,
+      to_store_id,
+      requested_by_name,
+      items,
+    } = itemForm;
+
+    const itemLines = items.filter((i) => i.item_no);
+    const hasItems = itemLines.length > 0;
+
+    const isUOMMissing = itemLines.some(
+      (i) => i.item_type === "USABLE" && !i.item_uom,
+    );
+    if (!from_store_id || !to_store_id || !requested_by_name)
+      return showToast("Please fill all required fields", "error");
+    if (!hasItems && !hasAssets)
+      return showToast("Add at least one item or one asset", "error");
+    if (
+      itemLines.some((i) => !i.item_name || isUOMMissing || i.requested_qty < 1)
+    )
+      return showToast("Check item details", "error");
+
+    setCreating(true);
+    try {
+      const payload = {
+        from_store_id,
+        to_store_id,
+        requested_by_name,
+        notes: itemForm.notes,
+        is_emergency: itemForm.is_emergency,
+        direction: "SUB_TO_MAIN",
+        items: itemLines.map(
+          ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
+        ),
+      };
+
+      // const formData = new FormData();
+      // formData.append("from_store_id", itemForm.from_store_id);
+      // formData.append("to_store_id", itemForm.to_store_id);
+      // formData.append("requested_by_name", itemForm.requested_by_name);
+      // formData.append("notes", itemForm.notes);
+      // formData.append("is_emergency", itemForm.is_emergency);
+      // formData.append("direction", payload.direction);
+      // formData.append("items", JSON.stringify(payload.items));
+      // itemForm.images.forEach((img) => {
+      //   formData.append("images", img);
+      // });
+
+      await createRequest(payload);
+      showToast("Request submitted successfully", "success");
+      setShowCreate(false);
+      setItemForm({ ...EMPTY_FORM });
+      load();
+    } catch (e) {
+      const msg = handleError(e, "Failed to load request details");
+      showToast(msg, "error");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const removeLine = (idx) =>
+    setItemForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
 
   const handleResolved = () => {
     setDetail(null);
@@ -182,7 +289,7 @@ export default function MainSubStoreReqs({
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <TableHead pageType={pageType}/>
+            <TableHead pageType={pageType} />
           </thead>
           <tbody>
             {loading || mainStoreError || requests.length === 0 ? (
@@ -207,6 +314,11 @@ export default function MainSubStoreReqs({
                   handleResolved={handleResolved}
                   showToast={showToast}
                   username={auth.username}
+                  setInstantRequest={setInstantRequest}
+                  instantRequest={instantRequest}
+                  getDetail={getDetail}
+                  setItemForm={setItemForm}
+                  EMPTY_LINE={EMPTY_LINE}
                 />
               ))
             )}
@@ -228,6 +340,18 @@ export default function MainSubStoreReqs({
           }}
         />
       </div>
+      {instantRequest && (
+        <InstantRestockModal
+          items={instantRequest}
+          setItemForm={setItemForm}
+          itemForm={itemForm}
+          onClose={() => setInstantRequest(null)}
+          onSumbit={handleCreate}
+          toStore={toStore}
+          removeLine={removeLine}
+          creating={creating}
+        />
+      )}
     </div>
   );
 }

@@ -98,7 +98,7 @@ export default function CreateRequestModal({
                 className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
               />
             </div>
-            {pageType === "subStore" ? (
+            {pageType === "subStore" && (
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                   بھیجیں(مرکزی اسٹور)
@@ -126,7 +126,8 @@ export default function CreateRequestModal({
                   </select>
                 )}
               </div>
-            ) : (
+            )}
+            {pageType === "mainReqToHO" && (
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                   کے لیے ( پٹی کیش / ہیڈ آفس)
@@ -222,7 +223,7 @@ export default function CreateRequestModal({
 
               {!itemForm.to_store_id ? (
                 <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">
-                  دستیاب اشیاء دیکھنے کے لیے پہلے مرکزی اسٹور کا انتخاب کریں
+                  {pageType === "subStore" ? "دستیاب اشیاء دیکھنے کے لیے پہلے مرکزی اسٹور کا انتخاب کریں" : "دستیاب اشیاء دیکھنے کے لیے پہلے سورس کا انتخاب کریں"}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -372,6 +373,24 @@ export default function CreateRequestModal({
                             className="w-full bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
                           />
                         </div>
+                      </div>
+                      <div>
+                        <label className="text-gray-500 text-xs font-semibold block mb-1">
+                          تصاویر شامل کریں (اختیاری)
+                        </label>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files)
+                            setItemForm((f) => ({
+                              ...f,
+                              images: files
+                            }))
+                          }}
+                          className="w-full text-sm"
+                        />
                       </div>
                     </div>
                   ))}

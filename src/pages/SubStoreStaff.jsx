@@ -41,7 +41,7 @@ const EMPTY_FORM = {
   to_store_id: "",
   requested_by_name: "",
   notes: "",
-  is_emergency: false,
+  images: [],
   items: [{ ...EMPTY_LINE }],
 };
 
@@ -91,7 +91,7 @@ export default function SubStore() {
   });
 
   const { auth } = useAuth();
-  const {showToast} = useToast()
+  const { showToast } = useToast()
   const handleError = useErrorHandler();
   const pageType = "subStore";
 
@@ -381,7 +381,7 @@ export default function SubStore() {
 
   // ─── Submit ───────────────────────────────────────────────────────────────
   const handleCreate = async (e) => {
-    e?.preventDefault();
+    e.preventDefault();
     const {
       from_store_id,
       to_store_id,
@@ -417,7 +417,18 @@ export default function SubStore() {
           ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
         ),
       };
-      console.log("payload of creating request", payload);
+
+      // const formData = new FormData();
+      // formData.append("from_store_id", itemForm.from_store_id);
+      // formData.append("to_store_id", itemForm.to_store_id);
+      // formData.append("requested_by_name", itemForm.requested_by_name);
+      // formData.append("notes", itemForm.notes);
+      // formData.append("is_emergency", itemForm.is_emergency);
+      // formData.append("direction", payload.direction);
+      // formData.append("items", JSON.stringify(payload.items));
+      // itemForm.images.forEach((img) => {
+      //   formData.append("images", img);
+      // });
 
       await createRequest(payload);
       showToast("Request submitted successfully", "success");
@@ -474,6 +485,7 @@ export default function SubStore() {
                 mainStores.length === 1 ? mainStores[0].store_id : "",
               requested_by_name: auth.username || "",
               notes: "",
+              images: [],
               items: [{ ...EMPTY_LINE }],
             });
             setShowCreate(true);
