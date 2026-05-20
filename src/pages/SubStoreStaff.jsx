@@ -30,7 +30,6 @@ const EMPTY_LINE = {
   selected_item_no: "",
   item_search: "",
   _showDropdown: false,
-  // item_id: 0,
   item_no: "",
   item_name: "",
   item_uom: "",

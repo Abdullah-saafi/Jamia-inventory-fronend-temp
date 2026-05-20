@@ -181,9 +181,11 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
         if (value) {
           const found = storeItems.find((i) => i.item_no === value);
           if (found) {
+            items[idx].item_id = found.item_id;
             items[idx].item_no = found.item_no;
             items[idx].item_name = found.item_name;
             items[idx].item_uom = found.item_uom;
+            items[idx].item_type = found.item_type;
           }
         } else {
           items[idx].item_no = "";
