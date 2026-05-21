@@ -244,10 +244,10 @@ export default function MainAllItems({
                         ).toFixed(0)}
                       </span>
                     </td>
-                    {/* <td className="px-4 py-3 font-mono text-gray-400 text-xs">
+                    <td className="px-4 py-3 font-mono text-gray-400 text-xs">
                       {Number(i.min_quantity) ?? "0"}
                     </td>
-                    <td className="px-4 py-3">
+                    {/* <td className="px-4 py-3">
                       <span className="font-mono text-xs font-bold text-orange-500">
                         {Number(i.returned_qty) || "0"}
                       </span>
