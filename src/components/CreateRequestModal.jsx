@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import API, { resendItems } from "../services/api";
+import { useState } from "react";
+import API from "../services/api";
 import { useAuth } from "../context/authContext";
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export default function CreateRequestModal({
   itemForm,
@@ -14,61 +16,319 @@ export default function CreateRequestModal({
   removeLine,
   updateLine,
   creating,
+  setCreating,
   EMPTY_FORM,
   usableItems,
   pageType,
   toStore,
   showToast,
 }) {
-  // ── Asset section state ────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("items");
   const { auth } = useAuth();
-  const uploadLock = useRef(false);
 
- const handleSubmit = async (e) => {
+  // ── Upload via backend ────────────────────────────────────────────────────
+  const uploadImages = async (files) => {
+    const uploadedUrls = [];
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append("image", file);
+      const response = await API.post("/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      if (!response.data?.image_url) {
+        throw new Error("Upload failed: no URL returned");
+      }
+      uploadedUrls.push(response.data.image_url);
+    }
+    return uploadedUrls;
+  };
+
+  // ── Shared file change handler (used by both tabs) ────────────────────────
+  const handleFileChange = (e, idx) => {
+    const files = Array.from(e.target.files);
+
+    // Size validation
+    const oversized = files.filter((f) => f.size > MAX_FILE_SIZE);
+    if (oversized.length > 0) {
+      showToast("ہر تصویر 5MB سے کم ہونی چاہیے", "warn");
+      e.target.value = null;
+      return;
+    }
+
+    setItemForm((f) => {
+      const updatedItems = [...f.items];
+      const currentImages = updatedItems[idx].images || [];
+
+      const newFiles = files.filter(
+        (file) =>
+          !currentImages.some(
+            (img) =>
+              img.name === file.name &&
+              img.size === file.size &&
+              img.lastModified === file.lastModified,
+          ),
+      );
+
+      const total = currentImages.length + newFiles.length;
+      if (total > 3) {
+        showToast("Maximum 3 images allowed per item", "warn");
+        return f;
+      }
+
+      updatedItems[idx] = {
+        ...updatedItems[idx],
+        images: [...currentImages, ...newFiles],
+      };
+
+      return { ...f, items: updatedItems };
+    });
+
+    e.target.value = null;
+  };
+
+  // ── Remove image ──────────────────────────────────────────────────────────
+  const handleRemoveImage = (idx, imgIdx) => {
+    setItemForm((f) => {
+      const updatedItems = [...f.items];
+      updatedItems[idx] = {
+        ...updatedItems[idx],
+        images: updatedItems[idx].images.filter((_, i) => i !== imgIdx),
+      };
+      return { ...f, items: updatedItems };
+    });
+  };
+
+  // ── Submit ────────────────────────────────────────────────────────────────
+const handleSubmit = async (e) => {
   e.preventDefault();
   setCreating(true);
-
   try {
-    // 1. Upload images for each item first
     const itemsWithUrls = await Promise.all(
       itemForm.items.map(async (item) => {
         let image_url = null;
-
         if (item.images && item.images.length > 0) {
-          const urls = await uploadImages(item.images); // call your existing fn
-          image_url = urls[0] ?? null; // backend stores one URL per item
+          const urls = await uploadImages([item.images[0]]); 
+          image_url = urls[0] ?? null;
         }
-
-        return {
-          ...item,
-          image_url,         // attach the uploaded URL
-          images: undefined, // don't send File objects to backend
-        };
-      })
+        const { images, _showDropdown, item_search, ...rest } = item;
+        return { ...rest, image_url };
+      }),
     );
 
-    // 2. Submit the request with resolved URLs
-    const payload = {
-      ...itemForm,
-      items: itemsWithUrls,
-    };
+    const payload = { ...itemForm, items: itemsWithUrls,direction: "SUB_TO_MAIN", };
+    console.log("PAYLOAD BEING SENT:", JSON.stringify(payload, null, 2)); // ← add this
 
     await API.post("/requests", payload);
     onClose();
     showToast("Request submitted!", "success");
-
   } catch (err) {
-    showToast("Submission failed", "error");
+    console.error("ERROR RESPONSE:", err.response?.data); // ← and this
+    showToast("Submission failed: " + (err.message || "unknown error"), "error");
   } finally {
     setCreating(false);
   }
 };
 
+  // ── Reusable image upload UI ──────────────────────────────────────────────
+  const ImageUploadSection = ({ item, idx }) => (
+    <div className="mt-3">
+      <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
+        تصاویر شامل کریں (اختیاری)
+      </label>
+
+      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-white hover:bg-gray-100 hover:border-gray-400 transition-colors group">
+        <div className="flex flex-col items-center justify-center pt-3 pb-3">
+          <svg
+            className="w-6 h-6 mb-1 text-gray-400 group-hover:text-gray-500 transition-colors"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+          <p className="text-xs text-gray-500 font-medium">
+            تصویر منتخب کرنے کے لیے یہاں کلک کریں
+          </p>
+          <p className="text-[10px] text-gray-400 mt-0.5">
+            PNG, JPG (زیادہ سے زیادہ 3 تصاویر، ہر ایک 5MB سے کم)
+          </p>
+        </div>
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={(e) => handleFileChange(e, idx)}
+          className="hidden"
+        />
+      </label>
+
+      {item.images && item.images.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-2">
+          {item.images.map((img, imgIdx) => (
+            <div key={imgIdx} className="relative flex items-center">
+              <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                {img.name}
+              </span>
+              <button
+                type="button"
+                onClick={() => handleRemoveImage(idx, imgIdx)}
+                className="ml-1 text-red-500 hover:text-red-700"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {item.images?.length > 0 && (
+        <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded w-fit font-medium">
+          <span>{item.images.length} تصویر منتخب کر لی گئی ہے</span>
+        </div>
+      )}
+    </div>
+  );
+
+  // ── Item card (shared between both tabs) ──────────────────────────────────
+  const ItemCard = ({ item, idx, catalogItems, catalogLabel }) => (
+    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+          آئٹم {idx + 1}
+        </span>
+        <button
+          type="button"
+          onClick={() => removeLine(idx)}
+          disabled={itemForm.items.length === 1}
+          className="text-red-400 hover:text-red-500 disabled:opacity-30 text-lg font-bold leading-none"
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Search */}
+      <div className="mb-3">
+        <label className="text-gray-500 text-xs mb-1 block">
+          {catalogLabel}
+        </label>
+        <div className="relative mt-1.5">
+          <input
+            value={item.item_search}
+            onChange={(e) => {
+              updateLine(idx, "item_search", e.target.value);
+              updateLine(idx, "_showDropdown", true);
+            }}
+            onFocus={() => updateLine(idx, "_showDropdown", true)}
+            onBlur={() =>
+              setTimeout(() => updateLine(idx, "_showDropdown", false), 150)
+            }
+            placeholder="...آئٹم کے نام یا نمبر سے تلاش کریں"
+            className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+          />
+          {item._showDropdown && (
+            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+              {catalogItems
+                .filter((si) => {
+                  const q = (item.item_search || "").toLowerCase();
+                  return (
+                    !q ||
+                    si.item_no.toLowerCase().includes(q) ||
+                    si.item_name.toLowerCase().includes(q)
+                  );
+                })
+                .map((si) => (
+                  <div
+                    key={si.item_id}
+                    onMouseDown={() => {
+                      updateLine(idx, "selected_item_no", si.item_no);
+                      updateLine(idx, "item_search", `${si.item_no} — ${si.item_name}`);
+                      updateLine(idx, "_showDropdown", false);
+                    }}
+                    className={`px-3 py-2 cursor-pointer hover:bg-emerald-50 border-t border-gray-100 flex items-center justify-between ${item.selected_item_no === si.item_no ? "bg-emerald-50" : ""}`}
+                  >
+                    <div>
+                      <span className="font-mono text-emerald-600 text-xs font-bold">
+                        {si.item_no}
+                      </span>
+                      <span className="text-gray-700 text-xs ml-2">
+                        {si.item_name}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-gray-400 text-xs">آئٹم کی تفصیلات</span>
+        <div className="flex-1 h-px bg-gray-200" />
+      </div>
+
+      <div className="grid grid-cols-12 gap-2">
+        <div className="col-span-3">
+          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
+            اشیاء نمبر
+          </label>
+          <input
+            value={item.item_no}
+            readOnly
+            className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none"
+          />
+        </div>
+        <div className="col-span-5">
+          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
+            نام
+          </label>
+          <input
+            value={item.item_name}
+            readOnly
+            className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none"
+          />
+        </div>
+        <div className="col-span-2">
+          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
+            اکائی
+          </label>
+          <input
+            value={item.item_uom}
+            readOnly
+            className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none"
+          />
+        </div>
+        <div className="col-span-2">
+          <label className="text-[10px] uppercase font-bold mb-1 block text-emerald-600">
+            مقدار
+          </label>
+          <input
+            type="number"
+            min={1}
+            value={item.requested_qty}
+            onChange={(e) =>
+              updateLine(idx, "requested_qty", parseFloat(e.target.value) || 0)
+            }
+            className="w-full bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
+          />
+        </div>
+      </div>
+
+      <ImageUploadSection item={item} idx={idx} />
+    </div>
+  );
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <h2 className="text-gray-900 font-bold">نئی اشیاء کی درخواست</h2>
@@ -78,15 +338,12 @@ export default function CreateRequestModal({
               </span>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-700 text-xl"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl">
             ×
           </button>
         </div>
 
-        {/* ── Emergency banner ── */}
+        {/* Emergency banner */}
         {itemForm.is_emergency && (
           <div className="bg-red-50 border-b border-red-200 px-5 py-3 flex items-center gap-2 justify-end">
             <span className="text-red-600 text-sm font-semibold text-left">
@@ -95,39 +352,31 @@ export default function CreateRequestModal({
           </div>
         )}
 
-        <form onSubmit={onSubmit} className="p-5 space-y-4">
-          {/* ── Emergency toggle ── */}
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {/* Emergency toggle */}
           {pageType === "mainReqToHO" && (
             <div
               onClick={() =>
                 setItemForm((f) => ({ ...f, is_emergency: !f.is_emergency }))
               }
               className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none
-              ${itemForm.is_emergency ? "bg-red-50 border-red-400" : "bg-gray-50 border-gray-200 hover:border-red-300"}`}
+                ${itemForm.is_emergency ? "bg-red-50 border-red-400" : "bg-gray-50 border-gray-200 hover:border-red-300"}`}
             >
-              <div className="flex items-center gap-3">
-                <div>
-                  <p
-                    className={`text-sm font-bold ${itemForm.is_emergency ? "text-red-700" : "text-gray-700"}`}
-                  >
-                    ہنگامی درخواست (Emergency Request)
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    سب اسٹور منیجر کی منظوری کے بغیر مرکزی اسٹور کو بھیجیں
-                  </p>
-                </div>
+              <div>
+                <p className={`text-sm font-bold ${itemForm.is_emergency ? "text-red-700" : "text-gray-700"}`}>
+                  ہنگامی درخواست (Emergency Request)
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  سب اسٹور منیجر کی منظوری کے بغیر مرکزی اسٹور کو بھیجیں
+                </p>
               </div>
-              <div
-                className={`relative w-11 h-6 rounded-full transition-colors ${itemForm.is_emergency ? "bg-red-500" : "bg-gray-300"}`}
-              >
-                <div
-                  className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${itemForm.is_emergency ? "translate-x-5" : "translate-x-0.5"}`}
-                />
+              <div className={`relative w-11 h-6 rounded-full transition-colors ${itemForm.is_emergency ? "bg-red-500" : "bg-gray-300"}`}>
+                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${itemForm.is_emergency ? "translate-x-5" : "translate-x-0.5"}`} />
               </div>
             </div>
           )}
 
-          {/* ── Store + requester row ── */}
+          {/* Store + requester row */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
@@ -191,32 +440,29 @@ export default function CreateRequestModal({
             )}
           </div>
 
-          {/* ── Notes ── */}
+          {/* Notes */}
           <div>
             <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
               ہدایت یا نوٹس
             </label>
             <textarea
               value={itemForm.notes}
-              onChange={(e) =>
-                setItemForm((f) => ({ ...f, notes: e.target.value }))
-              }
+              onChange={(e) => setItemForm((f) => ({ ...f, notes: e.target.value }))}
               rows={2}
               placeholder="اختیاری وجہ یا نوٹ"
               className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none"
             />
           </div>
 
-          {/* ── Tab switcher ── */}
+          {/* Tab switcher */}
           <div className="flex rounded-lg border border-gray-200 overflow-hidden">
             <button
               type="button"
               onClick={() => {
                 setActiveTab("items");
                 setItemForm((prev) => ({
-                  // ← use prev, not EMPTY_FORM spread
                   ...EMPTY_FORM,
-                  to_store_id: prev.to_store_id, // ← keep whatever was selected
+                  to_store_id: prev.to_store_id,
                   requested_by_name: auth.username || "",
                   from_store_id: auth.store_id || "",
                 }));
@@ -232,7 +478,7 @@ export default function CreateRequestModal({
                 setActiveTab("assets");
                 setItemForm((prev) => ({
                   ...EMPTY_FORM,
-                  to_store_id: prev.to_store_id, // ← same fix here
+                  to_store_id: prev.to_store_id,
                   requested_by_name: auth.username || "",
                   from_store_id: auth.store_id || "",
                 }));
@@ -244,15 +490,11 @@ export default function CreateRequestModal({
             </button>
           </div>
 
-          {/* ══════════════════════════════════════════════════════════
-              CONSUMABLE ITEMS TAB
-          ══════════════════════════════════════════════════════════ */}
+          {/* ── CONSUMABLE ITEMS TAB ── */}
           {activeTab === "items" && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-500 text-xs font-semibold uppercase">
-                  آئٹمز
-                </span>
+                <span className="text-gray-500 text-xs font-semibold uppercase">آئٹمز</span>
                 <button
                   type="button"
                   onClick={addLine}
@@ -264,276 +506,31 @@ export default function CreateRequestModal({
 
               {!itemForm.to_store_id ? (
                 <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">
-                  {pageType === "subStore" ? "دستیاب اشیاء دیکھنے کے لیے پہلے مرکزی اسٹور کا انتخاب کریں" : "دستیاب اشیاء دیکھنے کے لیے پہلے سورس کا انتخاب کریں"}
+                  {pageType === "subStore"
+                    ? "دستیاب اشیاء دیکھنے کے لیے پہلے مرکزی اسٹور کا انتخاب کریں"
+                    : "دستیاب اشیاء دیکھنے کے لیے پہلے سورس کا انتخاب کریں"}
                 </div>
               ) : (
                 <div className="space-y-3">
                   {itemForm.items.map((item, idx) => (
-                    <div
+                    <ItemCard
                       key={idx}
-                      className="bg-gray-50 rounded-lg p-3 border border-gray-200"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                          آئٹم {idx + 1}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeLine(idx)}
-                          disabled={itemForm.items.length === 1}
-                          className="text-red-400 hover:text-red-500 disabled:opacity-30 text-lg font-bold leading-none"
-                        >
-                          ×
-                        </button>
-                      </div>
-
-                      {/* Search */}
-                      <div className="mb-3">
-                        <label className="text-gray-500 text-xs mb-1 block">
-                          کیٹلاگ سے منتخب کریں ({usableItems.length} آئٹم دستیاب ہے)
-                        </label>
-                        <div className="relative mt-1.5">
-                          <input
-                            value={item.item_search}
-                            onChange={(e) => {
-                              updateLine(idx, "item_search", e.target.value);
-                              updateLine(idx, "_showDropdown", true);
-                            }}
-                            onFocus={() =>
-                              updateLine(idx, "_showDropdown", true)
-                            }
-                            onBlur={() =>
-                              setTimeout(
-                                () => updateLine(idx, "_showDropdown", false),
-                                150,
-                              )
-                            }
-                            placeholder="...آئٹم کے نام یا نمبر سے تلاش کریں"
-                            className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                          />
-                          {item._showDropdown && (
-                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                              {usableItems
-                                .filter((si) => {
-                                  const q = (
-                                    item.item_search || ""
-                                  ).toLowerCase();
-                                  return (
-                                    !q ||
-                                    si.item_no.toLowerCase().includes(q) ||
-                                    si.item_name.toLowerCase().includes(q)
-                                  );
-                                })
-                                .map((si) => (
-                                  <div
-                                    key={si.item_id}
-                                    onMouseDown={() => {
-                                      updateLine(
-                                        idx,
-                                        "selected_item_no",
-                                        si.item_no,
-                                      );
-                                      updateLine(
-                                        idx,
-                                        "item_search",
-                                        `${si.item_no} — ${si.item_name}`,
-                                      );
-                                      updateLine(idx, "_showDropdown", false);
-                                    }}
-                                    className={`px-3 py-2 cursor-pointer hover:bg-emerald-50 border-t border-gray-100 flex items-center justify-between ${item.selected_item_no === si.item_no ? "bg-emerald-50" : ""}`}
-                                  >
-                                    <div>
-                                      <span className="font-mono text-emerald-600 text-xs font-bold">
-                                        {si.item_no}
-                                      </span>
-                                      <span className="text-gray-700 text-xs ml-2">
-                                        {si.item_name}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="flex-1 h-px bg-gray-200" />
-                        <span className="text-gray-400 text-xs">
-                          آئٹم کی تفصیلات
-                        </span>
-                        <div className="flex-1 h-px bg-gray-200" />
-                      </div>
-
-                      <div className="grid grid-cols-12 gap-2">
-                        <div className="col-span-3">
-                          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
-                            اشیاء نمبر
-                          </label>
-                          <input
-                            value={item.item_no}
-                            readOnly
-                            className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none"
-                          />
-                        </div>
-                        <div className="col-span-5">
-                          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
-                            نام
-                          </label>
-                          <input
-                            value={item.item_name}
-                            readOnly
-                            className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none"
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
-                            اکائی
-                          </label>
-                          <input
-                            value={item.item_uom}
-                            readOnly
-                            className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none"
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <label className="text-[10px] uppercase font-bold mb-1 block text-emerald-600">
-                            مقدار
-                          </label>
-                          <input
-                            type="number"
-                            min={1}
-                            value={item.requested_qty}
-                            onChange={(e) =>
-                              updateLine(
-                                idx,
-                                "requested_qty",
-                                parseFloat(e.target.value) || 0,
-                              )
-                            }
-                            className="w-full bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-3">
-                        <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
-                          تصاویر شامل کریں (اختیاری)
-                        </label>
-
-                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-white hover:bg-gray-100 hover:border-gray-400 transition-colors group">
-                          <div className="flex flex-col items-center justify-center pt-3 pb-3">
-                            <svg
-                              className="w-6 h-6 mb-1 text-gray-400 group-hover:text-gray-500 transition-colors"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 002-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <p className="text-xs text-gray-500 font-medium">
-                              تصویر منتخب کرنے کے لیے یہاں کلک کریں
-                            </p>
-                            <p className="text-[10px] text-gray-400 mt-0.5">
-                              PNG, JPG (زیادہ سے زیادہ 3 تصاویر)
-                            </p>
-                          </div>
-
-                          <input
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={(e) => {
-                              const files = Array.from(e.target.files);
-
-                              setItemForm((f) => {
-                                const updatedItems = [...f.items];
-                                const currentImages = updatedItems[idx].images || [];
-
-                                const newFiles = files.filter(
-                                  (file) =>
-                                    !currentImages.some(
-                                      (img) =>
-                                        img.name === file.name &&
-                                        img.size === file.size &&
-                                        img.lastModified === file.lastModified
-                                    )
-                                );
-
-                                const total = currentImages.length + newFiles.length;
-
-                                if (total > 3) {
-                                  showToast("Maximum 3 images allowed per item", "warn");
-                                  return f;
-                                }
-
-                                updatedItems[idx].images = [...currentImages, ...newFiles];
-
-                                return {
-                                  ...f,
-                                  items: updatedItems
-                                };
-                              });
-
-                              e.target.value = null;
-                            }}
-                            className="hidden"
-                          />
-                        </label>
-                        {item.images && item.images.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {item.images.map((img, imgIdx) => (
-                              <div key={imgIdx} className="relative">
-                                <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                                  {img.name}
-                                </span>
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setItemForm((f) => {
-                                      const updatedItems = [...f.items];
-                                      updatedItems[idx].images =
-                                        updatedItems[idx].images.filter((_, i) => i !== imgIdx);
-
-                                      return {
-                                        ...f,
-                                        items: updatedItems
-                                      };
-                                    });
-                                  }}
-                                  className="ml-1 text-red-500"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Elegant File Count Badge */}
-                        {item.images?.length > 0 && (
-                          <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded w-fit font-medium">
-                            <span>{item.images.length} تصویر منتخب کر لی گئی ہے</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                      item={item}
+                      idx={idx}
+                      catalogItems={usableItems}
+                      catalogLabel={`کیٹلاگ سے منتخب کریں (${usableItems.length} آئٹم دستیاب ہے)`}
+                    />
                   ))}
                 </div>
               )}
             </div>
           )}
 
-          {/* ══════════════════════════════════════════════════════════
-              ASSETS TAB
-          ══════════════════════════════════════════════════════════ */}
+          {/* ── ASSETS TAB ── */}
           {activeTab === "assets" && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-500 text-xs font-semibold uppercase">
-                  آئٹمز
-                </span>
+                <span className="text-gray-500 text-xs font-semibold uppercase">آئٹمز</span>
                 <button
                   type="button"
                   onClick={addLine}
@@ -550,263 +547,28 @@ export default function CreateRequestModal({
               ) : (
                 <div className="space-y-3">
                   {itemForm.items.map((item, idx) => (
-                    <div
+                    <ItemCard
                       key={idx}
-                      className="bg-gray-50 rounded-lg p-3 border border-gray-200"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                          آئٹم {idx + 1}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeLine(idx)}
-                          disabled={itemForm.items.length === 1}
-                          className="text-red-400 hover:text-red-500 disabled:opacity-30 text-lg font-bold leading-none"
-                        >
-                          ×
-                        </button>
-                      </div>
-
-                      {/* Search */}
-                      <div className="mb-3">
-                        <label className="text-gray-500 text-xs mb-1 block">
-                          کیٹلاگ سے منتخب کریں ({reusableItems.length} آئٹم
-                          دستیاب ہے)
-                        </label>
-                        <div className="relative mt-1.5">
-                          <input
-                            value={item.item_search}
-                            onChange={(e) => {
-                              updateLine(idx, "item_search", e.target.value);
-                              updateLine(idx, "_showDropdown", true);
-                            }}
-                            onFocus={() =>
-                              updateLine(idx, "_showDropdown", true)
-                            }
-                            onBlur={() =>
-                              setTimeout(
-                                () => updateLine(idx, "_showDropdown", false),
-                                150,
-                              )
-                            }
-                            placeholder="...آئٹم کے نام یا نمبر سے تلاش کریں"
-                            className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                          />
-                          {item._showDropdown && (
-                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                              {reusableItems
-                                .filter((si) => {
-                                  const q = (
-                                    item.item_search || ""
-                                  ).toLowerCase();
-                                  return (
-                                    !q ||
-                                    si.item_no.toLowerCase().includes(q) ||
-                                    si.item_name.toLowerCase().includes(q)
-                                  );
-                                })
-                                .map((si) => (
-                                  <div
-                                    key={si.item_id}
-                                    onMouseDown={() => {
-                                      updateLine(
-                                        idx,
-                                        "selected_item_no",
-                                        si.item_no,
-                                      );
-                                      updateLine(
-                                        idx,
-                                        "item_search",
-                                        `${si.item_no} — ${si.item_name}`,
-                                      );
-                                      updateLine(idx, "_showDropdown", false);
-                                    }}
-                                    className={`px-3 py-2 cursor-pointer hover:bg-emerald-50 border-t border-gray-100 flex items-center justify-between ${item.selected_item_no === si.item_no ? "bg-emerald-50" : ""}`}
-                                  >
-                                    <div>
-                                      <span className="font-mono text-emerald-600 text-xs font-bold">
-                                        {si.item_no}
-                                      </span>
-                                      <span className="text-gray-700 text-xs ml-2">
-                                        {si.item_name}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="flex-1 h-px bg-gray-200" />
-                        <span className="text-gray-400 text-xs">
-                          آئٹم کی تفصیلات
-                        </span>
-                        <div className="flex-1 h-px bg-gray-200" />
-                      </div>
-
-                      <div className="grid grid-cols-12 gap-2">
-                        <div className="col-span-3">
-                          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
-                            اشیاء نمبر
-                          </label>
-                          <input
-                            value={item.item_no}
-                            readOnly
-                            className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none"
-                          />
-                        </div>
-                        <div className="col-span-5">
-                          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
-                            نام
-                          </label>
-                          <input
-                            value={item.item_name}
-                            readOnly
-                            className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none"
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block text-emerald-600">
-                            مقدار
-                          </label>
-                          <input
-                            type="number"
-                            min={1}
-                            value={item.requested_qty}
-                            onChange={(e) =>
-                              updateLine(
-                                idx,
-                                "requested_qty",
-                                parseFloat(e.target.value) || 0,
-                              )
-                            }
-                            className="w-full bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-3">
-                        <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
-                          تصاویر شامل کریں (اختیاری)
-                        </label>
-
-                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-white hover:bg-gray-100 hover:border-gray-400 transition-colors group">
-                          <div className="flex flex-col items-center justify-center pt-3 pb-3">
-                            <svg
-                              className="w-6 h-6 mb-1 text-gray-400 group-hover:text-gray-500 transition-colors"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 002-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            <p className="text-xs text-gray-500 font-medium">
-                              تصویر منتخب کرنے کے لیے یہاں کلک کریں
-                            </p>
-                            <p className="text-[10px] text-gray-400 mt-0.5">
-                              PNG, JPG (زیادہ سے زیادہ 3 تصاویر)
-                            </p>
-                          </div>
-
-                          <input
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={(e) => {
-                              const files = Array.from(e.target.files);
-
-                              setItemForm((f) => {
-                                const updatedItems = [...f.items];
-                                const currentImages = updatedItems[idx].images || [];
-
-                                const newFiles = files.filter(
-                                  (file) =>
-                                    !currentImages.some(
-                                      (img) =>
-                                        img.name === file.name &&
-                                        img.size === file.size &&
-                                        img.lastModified === file.lastModified
-                                    )
-                                );
-
-                                if (currentImages.length + newFiles.length > 3) {
-                                  showToast("Maximum 3 images allowed per item", "warn");
-                                  return f;
-                                }
-
-                                updatedItems[idx].images = [...currentImages, ...newFiles];
-
-                                return {
-                                  ...f,
-                                  items: updatedItems
-                                };
-                              });
-
-                              e.target.value = null;
-                            }}
-                            className="hidden"
-                          />
-                        </label>
-                        {item.images && item.images.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {item.images.map((img, imgIdx) => (
-                              <div key={imgIdx} className="relative">
-                                <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                                  {img.name}
-                                </span>
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setItemForm((f) => {
-                                      const updatedItems = [...f.items];
-                                      updatedItems[idx].images =
-                                        updatedItems[idx].images.filter((_, i) => i !== imgIdx);
-
-                                      return {
-                                        ...f,
-                                        items: updatedItems
-                                      };
-                                    });
-                                  }}
-                                  className="ml-1 text-red-500"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Elegant File Count Badge */}
-                        {item.images?.length > 0 && (
-                          <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded w-fit font-medium">
-                            <span>{item.images.length} تصویر منتخب کر لی گئی ہے</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                      item={item}
+                      idx={idx}
+                      catalogItems={reusableItems}
+                      catalogLabel={`کیٹلاگ سے منتخب کریں (${reusableItems.length} آئٹم دستیاب ہے)`}
+                    />
                   ))}
                 </div>
               )}
             </div>
           )}
 
-          {/* ── Submit row ── */}
+          {/* Submit row */}
           <div className="pt-4 flex items-center justify-between gap-3 border-t border-gray-100">
-            {/* Summary pills */}
             <div className="flex items-center gap-2 text-xs text-gray-400">
               {itemForm.items?.length > 0 && (
                 <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded">
-                  {itemForm.items.length} آئٹم
-                  {itemForm.items.length > 1 ? "s" : ""}
+                  {itemForm.items.length} آئٹم{itemForm.items.length > 1 ? "s" : ""}
                 </span>
               )}
             </div>
-
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -830,7 +592,7 @@ export default function CreateRequestModal({
             </div>
           </div>
         </form>
-      </div >
-    </div >
+      </div>
+    </div>
   );
 }

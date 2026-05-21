@@ -210,6 +210,7 @@
                       <td className="px-4 py-3 text-gray-800 font-semibold">
                         {i.item_name}
                       </td>
+
                       <td className="px-4 py-3 text-gray-500 text-xs">
                         {i.category || "—"}
                       </td>

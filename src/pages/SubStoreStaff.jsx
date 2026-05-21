@@ -637,6 +637,7 @@ export default function SubStore() {
           updateLine={updateLine}
           creating={creating}
           EMPTY_FORM={EMPTY_FORM}
+           setCreating={setCreating}  
           pageType={pageType}
           showToast={showToast}
         />
