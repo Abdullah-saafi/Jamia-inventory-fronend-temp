@@ -24,17 +24,17 @@ import useErrorHandler from "../components/useErrorHandler";
 import RequestDashboard from "../components/RequestDashboard";
 import ToastContainer from "../components/ToastContainer";
 import { useToast } from "../context/ToastContext";
+import ReturnModal from "../components/ReturnModal";
 
 const EMPTY_LINE = {
   selected_item_no: "",
   item_search: "",
   _showDropdown: false,
-  item_id: 0,
   item_no: "",
   item_name: "",
   item_uom: "",
+  images: [],
   requested_qty: 1,
-  item_type: "abc",
 };
 
 const EMPTY_FORM = {
@@ -42,9 +42,7 @@ const EMPTY_FORM = {
   to_store_id: "",
   requested_by_name: "",
   notes: "",
-  is_emergency: false,
   items: [{ ...EMPTY_LINE }],
-  requested_assets: [],
 };
 
 export default function SubStore() {
@@ -93,7 +91,7 @@ export default function SubStore() {
   });
 
   const { auth } = useAuth();
-  const { showToast } = useToast();
+  const { showToast } = useToast()
   const handleError = useErrorHandler();
   const pageType = "subStore";
 
@@ -387,13 +385,12 @@ export default function SubStore() {
 
   // ─── Submit ───────────────────────────────────────────────────────────────
   const handleCreate = async (e) => {
-    e?.preventDefault();
+    e.preventDefault();
     const {
       from_store_id,
       to_store_id,
       requested_by_name,
       items,
-      requested_assets = [],
     } = itemForm;
 
     const itemLines = items.filter((i) => i.item_no);
@@ -404,8 +401,8 @@ export default function SubStore() {
     );
     if (!from_store_id || !to_store_id || !requested_by_name)
       return showToast("Please fill all required fields", "error");
-    if (!hasItems && !hasAssets)
-      return showToast("Add at least one item or one asset", "error");
+    if (!hasItems)
+      return showToast("Add at least one item", "error");
     if (
       itemLines.some((i) => !i.item_name || isUOMMissing || i.requested_qty < 1)
     )
@@ -423,7 +420,6 @@ export default function SubStore() {
         items: itemLines.map(
           ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
         ),
-        requested_assets: requested_assets.map((a) => a.asset_id),
       };
 
       await createRequest(payload);
@@ -454,25 +450,35 @@ export default function SubStore() {
 
   return (
     <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
+          <span className="text-gray-500 text-xs mt-0.5 bg-gray-200 rounded p-1">{auth.storeName || "loading..."}</span>
+          <p className="text-gray-500 text-sm mt-0.5">
+            درخواست بنائیں اور اپنی ڈیلیوری کی تصدیق کریں
+          </p>
+        </div>
+      </div>
+
       <div className="flex gap-2 my-4">
         <button
           onClick={openReturnBack}
           disabled={returnBackLoading}
           className="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
         >
-          {returnBackLoading ? "لوڈ ہو رہا ہے..." : "آئٹم واپس کریں "}
+          {returnBackLoading ? "Loading..." : "آئٹم واپس کریں "}
         </button>
         <button
           onClick={() => {
-            // const nextItemNo = getNextItemNo(storeItems);
             setItemForm({
               from_store_id: auth.store_id || "",
               to_store_id:
                 mainStores.length === 1 ? mainStores[0].store_id : "",
               requested_by_name: auth.username || "",
               notes: "",
+              images: [],
               items: [{ ...EMPTY_LINE }],
-              requested_assets: [],
             });
             setShowCreate(true);
           }}
@@ -556,7 +562,7 @@ export default function SubStore() {
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <TableHead />
+            <TableHead pageType={pageType} />
           </thead>
           <tbody>
             {pageLoading || error || requests.length === 0 ? (
@@ -631,6 +637,8 @@ export default function SubStore() {
           updateLine={updateLine}
           creating={creating}
           EMPTY_FORM={EMPTY_FORM}
+          pageType={pageType}
+          showToast={showToast}
         />
       )}
       {returnBackModal && (

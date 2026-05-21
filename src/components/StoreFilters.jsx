@@ -19,6 +19,10 @@ const pages = {
   mainReqToHO: {
     page: "mainReqToHO",
     store: false
+  },
+  mainStoreApprover: {
+    page: "mainStoreApprover",
+    store: false
   }
 }
 
@@ -107,7 +111,7 @@ export default function StoreFilters({
                   setShowStoreDropdown((prev) => !prev)
                   setShowDropdown(false)
                 }}
-                className="bg-white border w-full border-gray-300 rounded pl-3 pr-10 py-1 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 cursor-pointer"
+                className="bg-white border w-full border-gray-300 rounded pr-10 py-1 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 cursor-pointer"
               />
 
               {/* Arrow Icon */}

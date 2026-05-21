@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import API, { resendItems } from "../services/api";
 import { useAuth } from "../context/authContext";
 
@@ -16,10 +16,14 @@ export default function CreateRequestModal({
   creating,
   EMPTY_FORM,
   usableItems,
+  pageType,
+  toStore,
+  showToast,
 }) {
   // ── Asset section state ────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("items");
   const { auth } = useAuth();
+  const uploadLock = useRef(false);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -44,43 +48,45 @@ export default function CreateRequestModal({
         </div>
 
         {/* ── Emergency banner ── */}
-        {/* {itemForm.is_emergency && (
+        {itemForm.is_emergency && (
           <div className="bg-red-50 border-b border-red-200 px-5 py-3 flex items-center gap-2 justify-end">
             <span className="text-red-600 text-sm font-semibold text-left">
               یہ درخواست براہ راست مرکزی اسٹور کو بھیجی جائے گی
             </span>
           </div>
-        )} */}
+        )}
 
         <form onSubmit={onSubmit} className="p-5 space-y-4">
           {/* ── Emergency toggle ── */}
-          {/* <div
-            onClick={() =>
-              setItemForm((f) => ({ ...f, is_emergency: !f.is_emergency }))
-            }
-            className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none
+          {pageType === "mainReqToHO" && (
+            <div
+              onClick={() =>
+                setItemForm((f) => ({ ...f, is_emergency: !f.is_emergency }))
+              }
+              className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none
               ${itemForm.is_emergency ? "bg-red-50 border-red-400" : "bg-gray-50 border-gray-200 hover:border-red-300"}`}
-          >
-            <div className="flex items-center gap-3">
-              <div>
-                <p
-                  className={`text-sm font-bold ${itemForm.is_emergency ? "text-red-700" : "text-gray-700"}`}
-                >
-                  ہنگامی درخواست (Emergency Request)
-                </p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  سب اسٹور منیجر کی منظوری کے بغیر مرکزی اسٹور کو بھیجیں
-                </p>
+            >
+              <div className="flex items-center gap-3">
+                <div>
+                  <p
+                    className={`text-sm font-bold ${itemForm.is_emergency ? "text-red-700" : "text-gray-700"}`}
+                  >
+                    ہنگامی درخواست (Emergency Request)
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    سب اسٹور منیجر کی منظوری کے بغیر مرکزی اسٹور کو بھیجیں
+                  </p>
+                </div>
+              </div>
+              <div
+                className={`relative w-11 h-6 rounded-full transition-colors ${itemForm.is_emergency ? "bg-red-500" : "bg-gray-300"}`}
+              >
+                <div
+                  className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${itemForm.is_emergency ? "translate-x-5" : "translate-x-0.5"}`}
+                />
               </div>
             </div>
-            <div
-              className={`relative w-11 h-6 rounded-full transition-colors ${itemForm.is_emergency ? "bg-red-500" : "bg-gray-300"}`}
-            >
-              <div
-                className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${itemForm.is_emergency ? "translate-x-5" : "translate-x-0.5"}`}
-              />
-            </div>
-          </div> */}
+          )}
 
           {/* ── Store + requester row ── */}
           <div className="grid grid-cols-2 gap-3">
@@ -94,17 +100,40 @@ export default function CreateRequestModal({
                 className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
               />
             </div>
-            <div>
-              <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                بھیجیں(مرکزی اسٹور)
-              </label>
-              {mainStores.length === 1 ? (
-                <input
-                  value={mainStores[0].store_name}
-                  readOnly
-                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
-                />
-              ) : (
+            {pageType === "subStore" && (
+              <div>
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+                  بھیجیں(مرکزی اسٹور)
+                </label>
+                {mainStores.length === 1 ? (
+                  <input
+                    value={mainStores[0].store_name}
+                    readOnly
+                    className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
+                  />
+                ) : (
+                  <select
+                    value={itemForm.to_store_id}
+                    onChange={(e) =>
+                      setItemForm((f) => ({ ...f, to_store_id: e.target.value }))
+                    }
+                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="">Select Main Store</option>
+                    {mainStores.map((s) => (
+                      <option key={s.store_id} value={s.store_id}>
+                        {s.store_name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+            {pageType === "mainReqToHO" && (
+              <div>
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+                  کے لیے ( پٹی کیش / ہیڈ آفس)
+                </label>
                 <select
                   value={itemForm.to_store_id}
                   onChange={(e) =>
@@ -113,14 +142,14 @@ export default function CreateRequestModal({
                   className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                 >
                   <option value="">Select Main Store</option>
-                  {mainStores.map((s) => (
+                  {toStore.map((s) => (
                     <option key={s.store_id} value={s.store_id}>
                       {s.store_name}
                     </option>
                   ))}
                 </select>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* ── Notes ── */}
@@ -134,7 +163,7 @@ export default function CreateRequestModal({
                 setItemForm((f) => ({ ...f, notes: e.target.value }))
               }
               rows={2}
-              placeholder="Optional reason or note"
+              placeholder="اختیاری وجہ یا نوٹ"
               className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none"
             />
           </div>
@@ -156,7 +185,7 @@ export default function CreateRequestModal({
               className={`flex-1 py-2 text-sm font-semibold transition-colors
                 ${activeTab === "items" ? "bg-emerald-600 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
             >
-              Consumable Items
+              استعمال ہونے والی اشیاء
             </button>
             <button
               type="button"
@@ -172,14 +201,7 @@ export default function CreateRequestModal({
               className={`flex-1 py-2 text-sm font-semibold transition-colors border-l border-gray-200
                 ${activeTab === "assets" ? "bg-blue-600 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
             >
-              Non-Consumable Items
-              {(itemForm.requested_assets || []).length > 0 && (
-                <span
-                  className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${activeTab === "assets" ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"}`}
-                >
-                  {itemForm.requested_assets.length}
-                </span>
-              )}
+              مستقل استعمال کی اشیاء
             </button>
           </div>
 
@@ -190,20 +212,20 @@ export default function CreateRequestModal({
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-gray-500 text-xs font-semibold uppercase">
-                  Items
+                  آئٹمز
                 </span>
                 <button
                   type="button"
                   onClick={addLine}
                   className="text-xs text-emerald-600 hover:text-emerald-500 border border-gray-300 rounded px-2 py-1"
                 >
-                  + Add Row
+                  + قطار شامل کریں
                 </button>
               </div>
 
               {!itemForm.to_store_id ? (
                 <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">
-                  Select a Main Store first to load available items
+                  {pageType === "subStore" ? "دستیاب اشیاء دیکھنے کے لیے پہلے مرکزی اسٹور کا انتخاب کریں" : "دستیاب اشیاء دیکھنے کے لیے پہلے سورس کا انتخاب کریں"}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -214,7 +236,7 @@ export default function CreateRequestModal({
                     >
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                          Item {idx + 1}
+                          آئٹم {idx + 1}
                         </span>
                         <button
                           type="button"
@@ -229,8 +251,7 @@ export default function CreateRequestModal({
                       {/* Search */}
                       <div className="mb-3">
                         <label className="text-gray-500 text-xs mb-1 block">
-                          Select from catalogue ({usableItems.length} items
-                          available)
+                          کیٹلاگ سے منتخب کریں ({usableItems.length} آئٹم دستیاب ہے)
                         </label>
                         <div className="relative mt-1.5">
                           <input
@@ -248,7 +269,7 @@ export default function CreateRequestModal({
                                 150,
                               )
                             }
-                            placeholder="Search by item name or number…"
+                            placeholder="...آئٹم کے نام یا نمبر سے تلاش کریں"
                             className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                           />
                           {item._showDropdown && (
@@ -300,7 +321,7 @@ export default function CreateRequestModal({
                       <div className="flex items-center gap-2 mb-3">
                         <div className="flex-1 h-px bg-gray-200" />
                         <span className="text-gray-400 text-xs">
-                          item details
+                          آئٹم کی تفصیلات
                         </span>
                         <div className="flex-1 h-px bg-gray-200" />
                       </div>
@@ -308,7 +329,7 @@ export default function CreateRequestModal({
                       <div className="grid grid-cols-12 gap-2">
                         <div className="col-span-3">
                           <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
-                            Item No
+                            اشیاء نمبر
                           </label>
                           <input
                             value={item.item_no}
@@ -318,7 +339,7 @@ export default function CreateRequestModal({
                         </div>
                         <div className="col-span-5">
                           <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
-                            Name
+                            نام
                           </label>
                           <input
                             value={item.item_name}
@@ -328,7 +349,7 @@ export default function CreateRequestModal({
                         </div>
                         <div className="col-span-2">
                           <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
-                            UOM
+                            اکائی
                           </label>
                           <input
                             value={item.item_uom}
@@ -338,7 +359,7 @@ export default function CreateRequestModal({
                         </div>
                         <div className="col-span-2">
                           <label className="text-[10px] uppercase font-bold mb-1 block text-emerald-600">
-                            Qty
+                            مقدار
                           </label>
                           <input
                             type="number"
@@ -355,6 +376,109 @@ export default function CreateRequestModal({
                           />
                         </div>
                       </div>
+                      <div className="mt-3">
+                        <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
+                          تصاویر شامل کریں (اختیاری)
+                        </label>
+
+                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-white hover:bg-gray-100 hover:border-gray-400 transition-colors group">
+                          <div className="flex flex-col items-center justify-center pt-3 pb-3">
+                            <svg
+                              className="w-6 h-6 mb-1 text-gray-400 group-hover:text-gray-500 transition-colors"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 002-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <p className="text-xs text-gray-500 font-medium">
+                              تصویر منتخب کرنے کے لیے یہاں کلک کریں
+                            </p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">
+                              PNG, JPG (زیادہ سے زیادہ 3 تصاویر)
+                            </p>
+                          </div>
+
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files);
+
+                              setItemForm((f) => {
+                                const updatedItems = [...f.items];
+                                const currentImages = updatedItems[idx].images || [];
+
+                                const newFiles = files.filter(
+                                  (file) =>
+                                    !currentImages.some(
+                                      (img) =>
+                                        img.name === file.name &&
+                                        img.size === file.size &&
+                                        img.lastModified === file.lastModified
+                                    )
+                                );
+
+                                const total = currentImages.length + newFiles.length;
+
+                                if (total > 3) {
+                                  showToast("Maximum 3 images allowed per item", "warn");
+                                  return f;
+                                }
+
+                                updatedItems[idx].images = [...currentImages, ...newFiles];
+
+                                return {
+                                  ...f,
+                                  items: updatedItems
+                                };
+                              });
+
+                              e.target.value = null;
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                        {item.images && item.images.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {item.images.map((img, imgIdx) => (
+                              <div key={imgIdx} className="relative">
+                                <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                  {img.name}
+                                </span>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setItemForm((f) => {
+                                      const updatedItems = [...f.items];
+                                      updatedItems[idx].images =
+                                        updatedItems[idx].images.filter((_, i) => i !== imgIdx);
+
+                                      return {
+                                        ...f,
+                                        items: updatedItems
+                                      };
+                                    });
+                                  }}
+                                  className="ml-1 text-red-500"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Elegant File Count Badge */}
+                        {item.images?.length > 0 && (
+                          <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded w-fit font-medium">
+                            <span>{item.images.length} تصویر منتخب کر لی گئی ہے</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -369,20 +493,20 @@ export default function CreateRequestModal({
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-gray-500 text-xs font-semibold uppercase">
-                  Items
+                  آئٹمز
                 </span>
                 <button
                   type="button"
                   onClick={addLine}
                   className="text-xs text-emerald-600 hover:text-emerald-500 border border-gray-300 rounded px-2 py-1"
                 >
-                  + Add Row
+                  + قطار شامل کریں
                 </button>
               </div>
 
               {!itemForm.to_store_id ? (
                 <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">
-                  Select a Main Store first to load available items
+                  دستیاب اشیاء دیکھنے کے لیے پہلے مرکزی اسٹور کا انتخاب کریں
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -393,7 +517,7 @@ export default function CreateRequestModal({
                     >
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                          Item {idx + 1}
+                          آئٹم {idx + 1}
                         </span>
                         <button
                           type="button"
@@ -408,8 +532,8 @@ export default function CreateRequestModal({
                       {/* Search */}
                       <div className="mb-3">
                         <label className="text-gray-500 text-xs mb-1 block">
-                          Select from catalogue ({reusableItems.length} items
-                          available)
+                          کیٹلاگ سے منتخب کریں ({reusableItems.length} آئٹم
+                          دستیاب ہے)
                         </label>
                         <div className="relative mt-1.5">
                           <input
@@ -427,7 +551,7 @@ export default function CreateRequestModal({
                                 150,
                               )
                             }
-                            placeholder="Search by item name or number…"
+                            placeholder="...آئٹم کے نام یا نمبر سے تلاش کریں"
                             className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                           />
                           {item._showDropdown && (
@@ -479,7 +603,7 @@ export default function CreateRequestModal({
                       <div className="flex items-center gap-2 mb-3">
                         <div className="flex-1 h-px bg-gray-200" />
                         <span className="text-gray-400 text-xs">
-                          item details
+                          آئٹم کی تفصیلات
                         </span>
                         <div className="flex-1 h-px bg-gray-200" />
                       </div>
@@ -487,7 +611,7 @@ export default function CreateRequestModal({
                       <div className="grid grid-cols-12 gap-2">
                         <div className="col-span-3">
                           <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
-                            Item No
+                            اشیاء نمبر
                           </label>
                           <input
                             value={item.item_no}
@@ -497,7 +621,7 @@ export default function CreateRequestModal({
                         </div>
                         <div className="col-span-5">
                           <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
-                            Name
+                            نام
                           </label>
                           <input
                             value={item.item_name}
@@ -507,7 +631,7 @@ export default function CreateRequestModal({
                         </div>
                         <div className="col-span-2">
                           <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block text-emerald-600">
-                            Qty
+                            مقدار
                           </label>
                           <input
                             type="number"
@@ -524,6 +648,107 @@ export default function CreateRequestModal({
                           />
                         </div>
                       </div>
+                      <div className="mt-3">
+                        <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
+                          تصاویر شامل کریں (اختیاری)
+                        </label>
+
+                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-white hover:bg-gray-100 hover:border-gray-400 transition-colors group">
+                          <div className="flex flex-col items-center justify-center pt-3 pb-3">
+                            <svg
+                              className="w-6 h-6 mb-1 text-gray-400 group-hover:text-gray-500 transition-colors"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 002-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <p className="text-xs text-gray-500 font-medium">
+                              تصویر منتخب کرنے کے لیے یہاں کلک کریں
+                            </p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">
+                              PNG, JPG (زیادہ سے زیادہ 3 تصاویر)
+                            </p>
+                          </div>
+
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files);
+
+                              setItemForm((f) => {
+                                const updatedItems = [...f.items];
+                                const currentImages = updatedItems[idx].images || [];
+
+                                const newFiles = files.filter(
+                                  (file) =>
+                                    !currentImages.some(
+                                      (img) =>
+                                        img.name === file.name &&
+                                        img.size === file.size &&
+                                        img.lastModified === file.lastModified
+                                    )
+                                );
+
+                                if (currentImages.length + newFiles.length > 3) {
+                                  showToast("Maximum 3 images allowed per item", "warn");
+                                  return f;
+                                }
+
+                                updatedItems[idx].images = [...currentImages, ...newFiles];
+
+                                return {
+                                  ...f,
+                                  items: updatedItems
+                                };
+                              });
+
+                              e.target.value = null;
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                        {item.images && item.images.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {item.images.map((img, imgIdx) => (
+                              <div key={imgIdx} className="relative">
+                                <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                  {img.name}
+                                </span>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setItemForm((f) => {
+                                      const updatedItems = [...f.items];
+                                      updatedItems[idx].images =
+                                        updatedItems[idx].images.filter((_, i) => i !== imgIdx);
+
+                                      return {
+                                        ...f,
+                                        items: updatedItems
+                                      };
+                                    });
+                                  }}
+                                  className="ml-1 text-red-500"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Elegant File Count Badge */}
+                        {item.images?.length > 0 && (
+                          <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded w-fit font-medium">
+                            <span>{item.images.length} تصویر منتخب کر لی گئی ہے</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -537,14 +762,8 @@ export default function CreateRequestModal({
             <div className="flex items-center gap-2 text-xs text-gray-400">
               {itemForm.items?.length > 0 && (
                 <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded">
-                  {itemForm.items.length} item
+                  {itemForm.items.length} آئٹم
                   {itemForm.items.length > 1 ? "s" : ""}
-                </span>
-              )}
-              {itemForm.requested_assets?.length > 0 && (
-                <span className="bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded">
-                  {itemForm.requested_assets.length} asset
-                  {itemForm.requested_assets.length > 1 ? "s" : ""}
                 </span>
               )}
             </div>
@@ -553,9 +772,9 @@ export default function CreateRequestModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700"
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
               >
-                Cancel
+                منسوخ کریں
               </button>
               <button
                 type="submit"
@@ -564,15 +783,15 @@ export default function CreateRequestModal({
                   ${itemForm.is_emergency ? "bg-red-600 hover:bg-red-500" : "bg-emerald-600 hover:bg-emerald-500"}`}
               >
                 {creating
-                  ? "Submitting..."
+                  ? "جمع کیا جا رہا ہے..."
                   : itemForm.is_emergency
-                    ? "Submit Emergency Request"
-                    : "Submit Request"}
+                    ? "ہنگامی درخواست جمع کرائیں"
+                    : "درخواست جمع کرائیں"}
               </button>
             </div>
           </div>
         </form>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }

@@ -11,11 +11,32 @@ import React from "react";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
 import DateTimeCell from "../DateTimeCell";
-import RenderInlineDetail from "../RenderInlineDetail";
-import PendingRequestIndicator from "../PendingRequestIndicator";
 import StoreFilters from "../StoreFilters";
 import CheckLoadingAndError from "../CheckLoadingAndError";
 import RequestDashboard from "../RequestDashboard";
+import RequestRow from "../RequestRow";
+import TableHead from "../TableHead";
+import InstantRestockModal from "../InstantRestockModal";
+
+const EMPTY_LINE = {
+  selected_item_no: "",
+  item_search: "",
+  _showDropdown: false,
+  item_no: "",
+  item_name: "",
+  item_uom: "",
+  requested_qty: 1,
+  images: [],
+};
+
+const EMPTY_FORM = {
+  from_store_id: "",
+  to_store_id: "",
+  requested_by_name: "",
+  notes: "",
+  is_emergency: false,
+  items: [{ ...EMPTY_LINE }],
+};
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MainSubStoreReqs({
@@ -29,12 +50,17 @@ export default function MainSubStoreReqs({
   onFilterChange,
   loading,
   mainStoreError,
+  mainStores,
+  toStore
 }) {
   const [reqFilter, setReqFilter] = useState("APPROVED");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [fulfilling, setFulfilling] = useState(null);
   const [returnLoading, setReturnLoading] = useState(false);
+  const [instantRequest, setInstantRequest] = useState(null);
+  const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
+  const [creating, setCreating] = useState(false);
 
   const { auth } = useAuth();
   const handleError = useErrorHandler();
@@ -55,7 +81,29 @@ export default function MainSubStoreReqs({
       console.log("r", r);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
-      showToast( msg, "error");
+      showToast(msg, "error");
+    } finally {
+      setDL(false);
+    }
+  };
+
+  const getDetail = async (r) => {
+    if (instantRequest && instantRequest.request_id === r.request_id) {
+      return;
+    }
+    try {
+      const res = await getRequestById(r.request_id);
+      setInstantRequest(res.data.data);
+      setItemForm((prev) => ({
+        ...prev,
+        items: res.data.data.items.map(item => ({
+          ...item,
+          images: [] // initialize per item
+        }))
+      }))
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data");
+      showToast(msg, "error");
     } finally {
       setDL(false);
     }
@@ -65,16 +113,16 @@ export default function MainSubStoreReqs({
     setFulfilling(requestId);
     try {
       if (status === "DISPUTED") {
-        showToast("Cannot fulfill — dispute resolution required","error");
+        showToast("Cannot fulfill — dispute resolution required", "error");
         return;
       }
       await fulfillRequest(requestId);
-      showToast( "Request fulfilled and inventory updated","success");
+      showToast("Request fulfilled and inventory updated", "success");
       setDetail(null);
       onRefresh();
     } catch (e) {
       const msg = handleError(e, "Failed to fulfill");
-      showToast(msg,"error");
+      showToast(msg, "error");
     } finally {
       setFulfilling(null);
     }
@@ -92,11 +140,77 @@ export default function MainSubStoreReqs({
       onRefresh();
     } catch (error) {
       const msg = handleError(error, "Failed to fulfill");
-      showToast( msg,"error");
+      showToast(msg, "error");
     } finally {
       setReturnLoading(false);
     }
   };
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    const {
+      from_store_id,
+      to_store_id,
+      requested_by_name,
+      items,
+    } = itemForm;
+
+    const itemLines = items.filter((i) => i.item_no);
+    const hasItems = itemLines.length > 0;
+
+    const isUOMMissing = itemLines.some(
+      (i) => i.item_type === "USABLE" && !i.item_uom,
+    );
+    if (!from_store_id || !to_store_id || !requested_by_name)
+      return showToast("Please fill all required fields", "error");
+    if (!hasItems && !hasAssets)
+      return showToast("Add at least one item or one asset", "error");
+    if (
+      itemLines.some((i) => !i.item_name || isUOMMissing || i.requested_qty < 1)
+    )
+      return showToast("Check item details", "error");
+
+    setCreating(true);
+    try {
+      const payload = {
+        from_store_id,
+        to_store_id,
+        requested_by_name,
+        notes: itemForm.notes,
+        is_emergency: itemForm.is_emergency,
+        direction: "SUB_TO_MAIN",
+        items: itemLines.map(
+          ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
+        ),
+      };
+
+      // const formData = new FormData();
+      // formData.append("from_store_id", itemForm.from_store_id);
+      // formData.append("to_store_id", itemForm.to_store_id);
+      // formData.append("requested_by_name", itemForm.requested_by_name);
+      // formData.append("notes", itemForm.notes);
+      // formData.append("is_emergency", itemForm.is_emergency);
+      // formData.append("direction", payload.direction);
+      // formData.append("items", JSON.stringify(payload.items));
+      // itemForm.images.forEach((img) => {
+      //   formData.append("images", img);
+      // });
+
+      await createRequest(payload);
+      showToast("Request submitted successfully", "success");
+      setShowCreate(false);
+      setItemForm({ ...EMPTY_FORM });
+      load();
+    } catch (e) {
+      const msg = handleError(e, "Failed to load request details");
+      showToast(msg, "error");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const removeLine = (idx) =>
+    setItemForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
 
   const handleResolved = () => {
     setDetail(null);
@@ -182,27 +296,7 @@ export default function MainSubStoreReqs({
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              {[
-                "درخواست نمبر",
-                "اسٹور سے",
-                " مرکزی اسٹور کو   ",
-                "درخواست کنندہ",
-                "منظور کنندہ",
-                "مکمل کرنے والا",
-                "درخواست کی تاریخ",
-                "تکمیل کی تاریخ",
-                "حالت",
-                "عملیات",
-              ].map((h) => (
-                <th
-                  key={h}
-                  className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
+            <TableHead pageType={pageType} />
           </thead>
           <tbody>
             {loading || mainStoreError || requests.length === 0 ? (
@@ -212,144 +306,28 @@ export default function MainSubStoreReqs({
                 requests={requests}
               />
             ) : (
-              requests.map((r) => {
-                const isExpanded = detail && detail.request_id === r.request_id; // Check
-                const isDisputed = r.status === "DISPUTED"; // Check
-                const isReceived = r.status === "RECEIVED"; // issue
-                const isClosed = r.status === "CLOSED"; // dont know
-                const isEmergency = r.is_emergency; // check
-
-                return (
-                  <React.Fragment key={r.request_id}>
-                    <tr
-                      className={`border-b border-gray-100 cursor-pointer transition-colors ${
-                        isEmergency && r.status === "APPROVED"
-                          ? "bg-red-50/60 hover:bg-red-50"
-                          : isDisputed
-                            ? "bg-amber-50/50 hover:bg-amber-50"
-                            : isReceived
-                              ? "bg-teal-50/30 hover:bg-teal-50"
-                              : isClosed
-                                ? "bg-gray-50/50 hover:bg-gray-100"
-                                : "hover:bg-gray-50"
-                      } ${isExpanded ? "bg-gray-50" : ""}`}
-                      onClick={() => openDetail(r)}
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono text-emerald-600 text-xs font-bold">
-                            {r.request_no}
-                          </span>
-                          {/* Emergency badge */}
-                          {isEmergency && (
-                            <span className="bg-red-100 text-red-600 text-xs font-bold rounded px-1.5 py-0.5 border border-red-200">
-                              URGENT
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {r.from_store_name}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {r.to_store_name}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500">
-                        {r.requested_by_name || "—"}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500">
-                        {r.approved_by_name || "—"}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500">
-                        {r.fulfilled_by_name || "—"}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500">
-                        <DateTimeCell ts={r.created_at} />
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        <DateTimeCell ts={r.fulfilled_at} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={r.status} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-1 items-center">
-                          <span
-                            className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
-                          >
-                            {isExpanded ? "▲ Hide" : "▼ View"}
-                          </span>
-                          {r.status === "APPROVED" && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleFulfill(r.request_id);
-                              }}
-                              className={`text-white text-sm font-semibold px-2.5 ml-2 py-1.5 rounded disabled:opacity-40 ${
-                                isEmergency
-                                  ? "bg-red-500 hover:bg-red-600"
-                                  : "bg-blue-600 hover:bg-blue-500"
-                              }`}
-                              disabled={fulfilling === r.request_id}
-                            >
-                              {fulfilling === r.request_id ? "..." : "Fulfill"}
-                            </button>
-                          )}
-                          {r.item_type === "REUSABLE" &&
-                            r.status === "RETURN_BACK" && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleAcceptReturn(r.request_id);
-                                }}
-                                className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
-                                disabled={returnLoading}
-                              >
-                                {fulfilling === r.request_id
-                                  ? "..."
-                                  : "Accept Return"}
-                              </button>
-                            )}
-                        </div>
-                      </td>
-                    </tr>
-                    {isExpanded && (
-                      <tr
-                        className={`border-b-2 ${
-                          isEmergency && r.status === "APPROVED"
-                            ? "bg-red-50/20 border-red-300"
-                            : isDisputed
-                              ? "bg-amber-50/20 border-amber-300"
-                              : isReceived
-                                ? "bg-teal-50/20 border-teal-300"
-                                : isClosed
-                                  ? "bg-gray-50 border-gray-300"
-                                  : "bg-gray-50 border-emerald-200"
-                        }`}
-                      >
-                        <td colSpan={10} className="px-6 py-4">
-                          {detailLoad ? (
-                            <div className="flex justify-center py-6">
-                              <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                            </div>
-                          ) : (
-                            detail &&
-                            RenderInlineDetail(
-                              detail,
-                              detailLoad,
-                              handleFulfill,
-                              fulfilling,
-                              handleResolved,
-                              showToast,
-                              auth.username,
-                            )
-                          )}
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })
+              requests.map((r) => (
+                <RequestRow
+                  key={r.request_id}
+                  r={r}
+                  detail={detail}
+                  detailLoad={detailLoad}
+                  openDetail={openDetail}
+                  pageType={pageType}
+                  handleFulfill={handleFulfill}
+                  fulfilling={fulfilling}
+                  handleAcceptReturn={handleAcceptReturn}
+                  returnLoading={returnLoading}
+                  handleResolved={handleResolved}
+                  showToast={showToast}
+                  username={auth.username}
+                  setInstantRequest={setInstantRequest}
+                  instantRequest={instantRequest}
+                  getDetail={getDetail}
+                  setItemForm={setItemForm}
+                  EMPTY_LINE={EMPTY_LINE}
+                />
+              ))
             )}
           </tbody>
         </table>
@@ -369,6 +347,19 @@ export default function MainSubStoreReqs({
           }}
         />
       </div>
+      {instantRequest && (
+        <InstantRestockModal
+          items={instantRequest}
+          setItemForm={setItemForm}
+          itemForm={itemForm}
+          onClose={() => setInstantRequest(null)}
+          onSumbit={handleCreate}
+          toStore={toStore}
+          removeLine={removeLine}
+          creating={creating}
+          showToast={showToast}
+        />
+      )}
     </div>
   );
 }

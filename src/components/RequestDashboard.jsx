@@ -14,14 +14,26 @@ const RequestDashboard = ({
 
   return (
     <div className="flex flex-wrap gap-4 mb-6 justify-evenly">
-      {/* Pending / Fulfill Card */}
-      {(pageType === "subStore" || pageType === "subStoreManager" || pageType === "mainReqToHO") && (
+      {/* Fulfill Card */}
+      {(pageType === "subStore" || pageType === "mainReqToHO") && (
         <StatusCard
           title="منظوری کی منتظر"
           count={counts.pending}
           colorClass="bg-blue-500"
-          isActive={filterStatus === (pageType === "subStore" || pageType === "mainReqToHO" ? "FULFILLED" : "PENDING")}
-          onClick={() => handleFilter(pageType === "subStore" || pageType === "mainReqToHO" ? "FULFILLED" : "PENDING")}
+          isActive={filterStatus === "FULFILLED"}
+          onClick={() => handleFilter("FULFILLED")}
+        />
+      )}
+
+
+      {/* Pending Card */}
+      {(pageType === "subStoreManager" || pageType === "mainStoreApprover") && (
+        <StatusCard 
+          title="منظوری کی منتظر"
+          count={counts.pending}
+          colorClass="bg-blue-500"
+          isActive={filterStatus === "PENDING"}
+          onClick={() => handleFilter("PENDING")}
         />
       )}
 

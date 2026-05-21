@@ -1,239 +1,533 @@
 import { useEffect, useState } from "react";
+import { createReturnRequest } from "../services/api";
 import {
+  getStores,
+  getItems,
+  createRequest,
   getRequests,
   getRequestById,
-  approveRequest,
-  rejectRequest,
+  submitGRN,
+  sendReturnToMain,
 } from "../services/api";
-import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import { useAuth } from "../context/authContext";
+import GRNModal from "../components/GRNModal";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Toast from "../components/Toast";
-import BlockedUI from "../components/BlockedUI";
-import useErrorHandler from "../components/useErrorHandler";
+import StoreFilters from "../components/StoreFilters";
 import Pagination from "../components/Pagination";
-import StatusBadge from "../components/StatusBadge";
-import DateTimeCell from "../components/DateTimeCell";
+import CreateRequestModal from "../components/CreateRequestModal";
+import RequestRow from "../components/RequestRow";
+import TableHead from "../components/TableHead";
+import CheckLoadingAndError from "../components/CheckLoadingAndError";
+import ReturnItemsModal from "../components/ReturnItemsModal";
+import useErrorHandler from "../components/useErrorHandler";
+import RequestDashboard from "../components/RequestDashboard";
+import ToastContainer from "../components/ToastContainer";
+import { useToast } from "../context/ToastContext";
 
-// ── Main component ────────────────────────────────────────────────────────────
-export default function MainStoreApprover() {
+const EMPTY_LINE = {
+  selected_item_no: "",
+  item_search: "",
+  _showDropdown: false,
+  item_id: 0,
+  item_no: "",
+  item_name: "",
+  item_uom: "",
+  requested_qty: 1,
+  item_type: "abc",
+};
+
+const EMPTY_FORM = {
+  from_store_id: "",
+  to_store_id: "",
+  requested_by_name: "",
+  notes: "",
+  is_emergency: false,
+  items: [{ ...EMPTY_LINE }],
+  requested_assets: [],
+};
+
+export default function SubStore() {
+  const [subStores, setSubStores] = useState([]);
+  const [mainStores, setMainStores] = useState([]);
   const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [allRequests, setAllRequests] = useState([]);
+  const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState("");
-  const [toast, showToast] = useState(null);
-  const [filter, setFilter] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterStore, setFilterStore] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
-  const [approveModal, setApproveModal] = useState(null);
-  const [approverName, setApproverName] = useState("");
-  const [editedItems, setEditedItems] = useState([]);
-  const [actioning, setActioning] = useState(false);
-  const [rejectModal, setRejectModal] = useState(null);
-  const [rejecterName, setRejecterName] = useState("");
-  const [rejectReason, setRejectReason] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
+  const [storeItems, setStoreItems] = useState([]);
+  const [reusableItems, setReusableItems] = useState([]);
+  const [usableItems, setUsableItems] = useState([]);
+  const [creating, setCreating] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [grnRequest, setGrnRequest] = useState(null);
+  const [grnLoading, setGrnLoading] = useState(false);
+  const [grnSubmitting, setGrnSubmitting] = useState(false);
+  const [returnModal, setReturnModal] = useState(false);
+  const [returnModalLoading, setReturnModalLoading] = useState(false);
+  const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
+  const [username, setUsername] = useState("");
+  const [returnItemData, setReturnItemData] = useState([]);
+  const [returnBackModal, setReturnBackModal] = useState(false);
+  const [returnBackItems, setReturnBackItems] = useState([]);
+  const [returnBackLoading, setReturnBackLoading] = useState(false);
+  const [returnBackSubmitting, setReturnBackSubmitting] = useState(false);
+  const [returnBackNote, setReturnBackNote] = useState("");
+  const [returnForm, setReturnForm] = useState({
+    sendByName: "",
+    returnData: [],
+    note: "",
+  });
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    pageLimit: 10,
+    totalItems: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
 
   const { auth } = useAuth();
-
+  const { showToast } = useToast();
   const handleError = useErrorHandler();
+  const pageType = "subStore";
 
-  const load = async () => {
-    setLoading(true);
+  const openReturnBack = async () => {
     try {
-      const params = { direction: ["MAIN_TO_PCASH", "MAIN_TO_HO"] };
-      if (filter) params.status = filter;
-      const r = await getRequests(params);
-      setRequests(r.data.data);
+      setReturnBackLoading(true);
+      const res = await getItems({ store_id: auth.store_id });
+      const items = (res.data.data || []).filter(
+        (i) => Number(i.item_quantity) > 0,
+      );
+      setReturnBackItems(items.map((i) => ({ ...i, return_qty: 0 })));
+      setReturnBackModal(true);
+    } catch (err) {
+      const msg = handleError(err, "Failed to load items");
+      showToast(msg, "error");
+    } finally {
+      setReturnBackLoading(false);
+    }
+  };
+
+  const handleReturnBack = async () => {
+    const selected = returnBackItems.filter((i) => Number(i.return_qty) > 0);
+    if (selected.length === 0) {
+      showToast("کم از کم ایک آئٹم منتخب کریں", "error");
+      return;
+    }
+    const mainStore = mainStores[0]; // or let user pick
+    if (!mainStore) {
+      showToast("Main store not found", "error");
+      return;
+    }
+    try {
+      setReturnBackSubmitting(true);
+      console.log("FROM STORE:", auth.store_id);
+      console.log("TO STORE:", mainStore.store_id);
+      console.log("USER:", auth.username);
+      console.log("NOTE:", returnBackNote);
+
+      console.log(
+        "ITEMS:",
+        selected.map((i) => ({
+          item_id: i.item_id,
+          return_qty: Number(i.return_qty),
+        })),
+      );
+      await createReturnRequest({
+        from_store_id: auth.store_id,
+        to_store_id: mainStore.store_id,
+        sent_by_name: auth.username,
+        note: returnBackNote || null,
+        items: selected.map((i) => ({
+          item_id: i.item_id,
+          return_qty: Number(i.return_qty),
+        })),
+      });
+      showToast("آئٹمز واپس بھیج دیے گئے", "success");
+      setReturnBackModal(false);
+      setReturnBackItems([]);
+      setReturnBackNote("");
+
+      load();
+    } catch (err) {
+      const msg = handleError(err, "Failed to send items back");
+      showToast(msg, "error");
+    } finally {
+      setReturnBackSubmitting(false);
+    }
+  };
+  // ─── Load ─────────────────────────────────────────────────────────────────
+  const load = async () => {
+    setPageLoading(true);
+    try {
+      const params = {
+        direction: "SUB_TO_MAIN",
+        page,
+        limit: pageSize,
+      };
+
+      if (filterStatus) params.status = filterStatus;
+      if (auth.role !== "super admin") {
+        params.store_id = auth.store_id;
+      } else if (filterStore) {
+        params.store_id = filterStore;
+      }
+      const [sRes, rRes] = await Promise.all([
+        getStores(),
+        getRequests(params),
+      ]);
+      const all = sRes.data.data;
+      setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
+      setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
+      if (!filterStatus) {
+        setAllRequests(rRes.data.data);
+      }
+      setRequests(rRes.data.data || []);
+      setPagination(rRes.data.pagination);
     } catch (error) {
-      const msg = handleError(error, "Failed to load requests");
+      const msg = handleError(error, "Failed to load data");
       setError(msg);
     } finally {
-      setLoading(false);
+      setPageLoading(false);
+    }
+  };
+
+  const fetchStoreData = async () => {
+    if (!itemForm.to_store_id) {
+      setStoreItems([]);
+      setReusableItems([]);
+      setUsableItems([]);
+      return;
+    }
+    try {
+      const response = await getItems({ store_id: itemForm.to_store_id });
+      if (response.data?.success) {
+        const items = response.data.data || [];
+        setStoreItems(items);
+        const reusable = items.filter((i) => i.item_type === "REUSABLE");
+        const usable = items.filter((i) => i.item_type === "USABLE");
+        setReusableItems(reusable);
+        setUsableItems(usable);
+      } else {
+        setStoreItems([]);
+        setReusableItems([]);
+        setUsableItems([]);
+      }
+    } catch (error) {
+      setStoreItems([]);
+      setUsableItems([]);
+      setReusableItems([]);
+      const msg = handleError(error, "Failed to fetch items");
+      showToast(msg, "error");
     }
   };
 
   useEffect(() => {
-    load();
-  }, [filter]);
+    if (auth.store_id || auth.role === "super admin") {
+      load();
+    }
+  }, [filterStatus, filterStore, auth.store_id, page, pageSize]);
 
   useEffect(() => {
-    setTimeout(() => showToast(null), 5000);
-  }, [toast]);
+    fetchStoreData();
+  }, [itemForm.to_store_id]);
 
+  useEffect(() => {
+    if (mainStores.length === 1 && !itemForm.to_store_id) {
+      setItemForm((f) => ({ ...f, to_store_id: mainStores[0].store_id }));
+    }
+  }, [mainStores]);
+
+  // ─── Detail ───────────────────────────────────────────────────────────────
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
       return;
     }
     setDL(true);
-    setDetail({ ...r, items: [] });
+    setDetail({ ...r, items: [], assets: [] });
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
     } catch (error) {
-      const msg = handleError(error, "Failed to load data");
-      showToast({ message: msg, type: "error" });
+      const msg = handleError(error, "Failed to open detail");
+      showToast(msg, "error");
     } finally {
       setDL(false);
     }
   };
 
-  const openApprove = async (r) => {
+  // ─── GRN ──────────────────────────────────────────────────────────────────
+  const openGRN = async (e, r) => {
+    e.stopPropagation();
+    setGrnLoading(true);
     try {
-      setActioning(true);
       const res = await getRequestById(r.request_id);
-      setEditedItems(
-        (res.data.data.items || []).map((i) => ({
-          ...i,
-          approved_qty: i.requested_qty,
-        })),
-      );
-      setApproveModal(r);
-      setApproverName(auth.username || "");
+      setGrnRequest(res.data.data);
     } catch (error) {
-      const msg = handleError(error, "Failed to load items");
-      showToast({ message: msg, type: "error" });
+      const msg = handleError(error, "Failed to load request details");
+      showToast(msg, "error");
     } finally {
-      setActioning(false);
+      setGrnLoading(false);
     }
   };
 
-  const openReject = async (r) => {
+  const handleGRNSubmit = async (payload) => {
+    setGrnSubmitting(true);
     try {
-      setActioning(true);
-      const res = await getRequestById(r.request_id);
-      setRejectModal(res.data.data);
-      setRejecterName(auth.username || "");
-      setRejectReason("");
-    } catch (error) {
-      const msg = handleError(error, "Failed to load request");
-      showToast({ message: msg, type: "error" });
-    } finally {
-      setActioning(false);
-    }
-  };
+      await submitGRN(grnRequest.request_id, payload);
 
-  const handleApprove = async () => {
-    if (!approverName.trim()) return;
-    setActioning(true);
-    try {
-      await approveRequest(approveModal.request_id, {
-        approved_by_name: approverName,
-        approved_items: editedItems.map((i) => ({
-          request_item_id: i.request_item_id,
-          approved_qty: i.approved_qty,
-        })),
-      });
-      showToast({
-        message: "Request approved — Head Office will now fulfill it",
-        type: "success",
-      });
-      setApproveModal(null);
-      setApproverName("");
-      setEditedItems([]);
+      const label =
+        payload.grn_status === "RECEIVED"
+          ? "Delivery confirmed — marked as RECEIVED"
+          : payload.grn_status === "DISPUTED"
+            ? "Issues reported — request marked DISPUTED"
+            : payload.grn_status === "RETURN_BACK"
+              ? "Deliver Returned"
+              : "Delivery rejected — main store notified";
+      showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn");
+      setGrnRequest(null);
+      setDetail(null);
       load();
     } catch (e) {
-      const msg = handleError(e, "Error approving");
-      showToast({ message: msg, type: "error" });
+      const msg = handleError(e, "Failed to submit GRN");
+      showToast(msg, "error");
     } finally {
-      setActioning(false);
+      setGrnSubmitting(false);
     }
   };
 
-  const handleReject = async () => {
-    if (!rejecterName.trim() || !rejectReason.trim()) return;
-    setActioning(true);
+  const addLine = () =>
+    setItemForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_LINE }] }));
+
+  const removeLine = (idx) =>
+    setItemForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
+
+  const updateLine = (idx, field, value) => {
+    setItemForm((f) => {
+      const items = [...f.items];
+      items[idx] = { ...items[idx], [field]: value };
+      if (field === "selected_item_no") {
+        const found = storeItems.find((i) => i.item_no === value);
+        if (found) {
+          items[idx].item_id = found.item_id;
+          items[idx].item_no = found.item_no;
+          items[idx].item_name = found.item_name;
+          items[idx].item_uom = found.item_uom;
+          items[idx].item_type = found.item_type;
+        } else {
+          items[idx].item_id = 0;
+          items[idx].item_no = "";
+          items[idx].item_name = "";
+          items[idx].item_uom = "";
+          items[idx].item_type = "";
+        }
+      }
+      return { ...f, items };
+    });
+  };
+
+  const returnItem = async (id) => {
     try {
-      await rejectRequest(rejectModal.request_id, {
-        approved_by_name: rejecterName,
-        rejection_reason: rejectReason,
-      });
-      showToast({ message: "Request rejected", type: "info" });
-      setRejectModal(null);
-      setRejecterName("");
-      setRejectReason("");
+      setReturnModalLoading(true);
+      const response = await getRequestById(id);
+      setReturnForm((f) => ({
+        ...f,
+        returnData: response.data.data,
+        sendByName: auth.username,
+      }));
+      setReturnModal(true);
+    } catch (error) {
+      const msg = handleError(error, "Failed to open return modal");
+      showToast(msg, "error");
+    } finally {
+      setReturnModalLoading(false);
+    }
+  };
+
+  const handleReturn = async (id) => {
+    try {
+      setReturnModalLoading(true);
+
+      const payload = {
+        resolved_by_name: auth.username,
+        note: returnForm.note,
+        returned_items: returnForm.returnData.items
+          .map((i) => ({
+            request_item_id: i.request_item_id,
+            returned_qty: Number(i.return_qty_input || i.received_qty),
+          }))
+          .filter((i) => i.returned_qty > 0),
+      };
+
+      await sendReturnToMain(id, payload);
+      setReturnForm(() => ({
+        sendByName: "",
+        returnData: [],
+        note: "",
+      }));
+
+      setReturnModal(false);
+      showToast("Items returned successfully", "success");
+
+      load();
+    } catch (error) {
+      const msg = handleError(error, "Failed to return");
+      showToast(msg, "error");
+    } finally {
+      setReturnModalLoading(false);
+    }
+  };
+
+  // ─── Submit ───────────────────────────────────────────────────────────────
+  const handleCreate = async (e) => {
+    e?.preventDefault();
+    const {
+      from_store_id,
+      to_store_id,
+      requested_by_name,
+      items,
+      requested_assets = [],
+    } = itemForm;
+
+    const itemLines = items.filter((i) => i.item_no);
+    const hasItems = itemLines.length > 0;
+
+    const isUOMMissing = itemLines.some(
+      (i) => i.item_type === "USABLE" && !i.item_uom,
+    );
+    if (!from_store_id || !to_store_id || !requested_by_name)
+      return showToast("Please fill all required fields", "error");
+    if (!hasItems && !hasAssets)
+      return showToast("Add at least one item or one asset", "error");
+    if (
+      itemLines.some((i) => !i.item_name || isUOMMissing || i.requested_qty < 1)
+    )
+      return showToast("Check item details", "error");
+
+    setCreating(true);
+    try {
+      const payload = {
+        from_store_id,
+        to_store_id,
+        requested_by_name,
+        notes: itemForm.notes,
+        is_emergency: itemForm.is_emergency,
+        direction: "SUB_TO_MAIN",
+        items: itemLines.map(
+          ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
+        ),
+        requested_assets: requested_assets.map((a) => a.asset_id),
+      };
+
+      await createRequest(payload);
+      showToast("Request submitted successfully", "success");
+      setShowCreate(false);
+      setItemForm({ ...EMPTY_FORM });
       load();
     } catch (e) {
-      const msg = handleError(e, "Error rejecting");
-      showToast({ message: msg, type: "error" });
+      const msg = handleError(e, "Failed to load request details");
+      showToast(msg, "error");
     } finally {
-      setActioning(false);
+      setCreating(false);
     }
   };
 
-  const pendingCount = requests.filter((r) => r.status === "PENDING").length;
+  // ─── Computed ─────────────────────────────────────────────────────────────
+  const pendingGRN = allRequests.filter(
+    (r) => r.status === "FULFILLED" && !r.grn_at,
+  ).length;
+
+  const pendingReturn = allRequests.filter(
+    (r) => r.status === "RECEIVED" && r.item_type === "REUSABLE",
+  ).length;
 
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message} />;
   }
 
-  const paginatedRequests = requests.slice(
-    (page - 1) * pageSize,
-    page * pageSize,
-  );
-
   return (
     <div>
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
-          <p className="text-gray-500 text-sm mt-0.5">
-            Approve or reject Main Store requests to Head Office
-          </p>
-        </div>
+      <div className="flex gap-2 my-4">
+        <button
+          onClick={openReturnBack}
+          disabled={returnBackLoading}
+          className="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
+        >
+          {returnBackLoading ? "لوڈ ہو رہا ہے..." : "آئٹم واپس کریں "}
+        </button>
+        <button
+          onClick={() => {
+            // const nextItemNo = getNextItemNo(storeItems);
+            setItemForm({
+              from_store_id: auth.store_id || "",
+              to_store_id:
+                mainStores.length === 1 ? mainStores[0].store_id : "",
+              requested_by_name: auth.username || "",
+              notes: "",
+              items: [{ ...EMPTY_LINE }],
+              requested_assets: [],
+            });
+            setShowCreate(true);
+          }}
+          className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
+        >
+          نئی درخواست
+        </button>
       </div>
-
-      {/* ── Pending alert ── */}
-      {pendingCount > 0 && filter !== "PENDING" && (
-        <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 flex items-center justify-between">
-          <span className="text-yellow-700 text-sm font-semibold" dir="rtl">
-            {pendingCount} {pendingCount > 1 ? "درخواستیں" : "درخواست"} آپ کی
-            منظوری کی منتظر {pendingCount > 1 ? "ہیں" : "ہے"}
-          </span>
-          <button
-            onClick={() => setFilter("PENDING")}
-            className="text-xs border border-gray-300 text-gray-600 hover:text-gray-900 rounded px-3 py-1"
-          >
-            Show Pending
-          </button>
-        </div>
-      )}
-
-      {/* ── Filter ── */}
-      <div className="flex h-full py-2 items-end justify-between">
-        <div>
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-          >
-            <option value="">تمام حالتیں</option>
-            <option value="PENDING">زیر التواء</option>
-            <option value="APPROVED">منظور شدہ</option>
-            <option value="REJECTED">مسترد شدہ</option>
-            <option value="FULFILLED">مکمل شدہ</option>
-          </select>
-
+      {/* // */}
+      <RequestDashboard
+        pageType={pageType}
+        setFilterStatus={setFilterStatus}
+        filterStatus={filterStatus}
+        counts={{
+          pending: pendingGRN,
+          returnBack: pendingReturn,
+          emergency: 0,
+          disputed: 0,
+        }}
+      />
+      {/* ── Filters ── */}
+      <div className="flex h-full py-2  items-end justify-between">
+        <div className="Filter">
+          <StoreFilters
+            filterStatus={filterStatus}
+            setFilterStatus={(v) => {
+              setFilterStatus(v);
+              setPage(1);
+            }}
+            pageType={pageType}
+            filterStore={filterStore}
+            setFilterStore={(v) => {
+              setFilterStore(v);
+              setPage(1);
+            }}
+            role={auth.role}
+            subStores={subStores}
+            loading={pageLoading}
+          />
           <button
             onClick={() => {
-              setFilter("");
-              setPage(1);
               load();
+              fetchStoreData();
             }}
-            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto hover:bg-gray-50 shadow-sm"
           >
             ↻ Refresh
           </button>
         </div>
 
-        <div className="Temp-downloader">
-          {/* Excel specific Date Downloader */}
-          <div className="downloader">
+        <div className="Temp-downloader flex justify-center items-center gap-4">
+          <div className="">
             <ExcelDownloaderWithDates
-              data={requests}
               dateKey="created_at"
-              fileName={auth.username}
+              fileName="requests"
               columns={[
                 { key: "request_id", label: "درخواست نمبر" },
                 { key: "requested_by_name", label: "درخواست کنندہ" },
@@ -258,431 +552,313 @@ export default function MainStoreApprover() {
           </div>
         </div>
       </div>
-
       {/* ── Table ── */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              {[
-                "درخواست نمبر",
-                "درخواست کنندہ",
-                "درخواست کا وقت",
-                "حالت",
-                "منظوری کا وقت",
-                "مکمل ہونے کا وقت",
-                "عملیات",
-              ].map((h) => (
-                <th
-                  key={h}
-                  className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
+            <TableHead />
           </thead>
           <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12">
-                  <div className="flex justify-center">
-                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                  </div>
-                </td>
-              </tr>
-            ) : error ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12">
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
-                    {error}
-                  </div>
-                </td>
-              </tr>
-            ) : requests.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-400">
-                  No requests found.
-                </td>
-              </tr>
+            {pageLoading || error || requests.length === 0 ? (
+              <CheckLoadingAndError
+                loading={pageLoading}
+                error={error}
+                requests={requests}
+              />
             ) : (
-              paginatedRequests.map((r) => {
-                const isExpanded = detail && detail.request_id === r.request_id;
-                return (
-                  <>
-                    <tr
-                      key={r.request_id}
-                      className={`border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${isExpanded ? "bg-gray-50" : ""}`}
-                      onClick={() => openDetail(r)}
-                    >
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-emerald-600 text-xs font-bold">
-                          {r.request_no}
-                        </span>
-                        {r.item_count > 0 && (
-                          <span className="ml-2 bg-gray-100 text-gray-500 text-xs font-mono rounded px-1.5 py-0.5 border border-gray-200">
-                            {r.item_count} item{r.item_count > 1 ? "s" : ""}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {r.requested_by_name || "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <DateTimeCell ts={r.requested_at || r.created_at} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={r.status} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <DateTimeCell ts={r.approved_at} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <DateTimeCell ts={r.fulfilled_at} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-1 items-center">
-                          <span
-                            className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
-                          >
-                            {isExpanded ? "▲ Hide" : "▼ View"}
-                          </span>
-                          {r.status === "PENDING" && (
-                            <>
-                              <button
-                                disabled={loading}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openApprove(r);
-                                }}
-                                className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1 disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                {actioning ? "..." : "Approve"}
-                              </button>
-                              <button
-                                disabled={loading}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openReject(r);
-                                }}
-                                className="text-xs bg-red-500 hover:bg-red-400 text-white rounded px-2 py-1 disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                {actioning ? "..." : "Reject"}
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* ── Expanded detail row ── */}
-                    {isExpanded && (
-                      <tr
-                        key={r.request_id + "-detail"}
-                        className="bg-gray-50 border-b-2 border-emerald-200"
-                      >
-                        <td colSpan={7} className="px-6 py-4">
-                          {detailLoad ? (
-                            <div className="flex justify-center py-6">
-                              <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                            </div>
-                          ) : (
-                            detail && (
-                              <div className="space-y-3">
-                                {detail.notes && (
-                                  <div className="bg-white rounded p-3 border border-gray-200">
-                                    <div className="text-gray-400 text-xs mb-1">
-                                      NOTES
-                                    </div>
-                                    <div className="text-gray-700 text-sm">
-                                      {detail.notes}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {detail.rejection_reason && (
-                                  <div className="bg-red-50 border border-red-200 rounded p-3">
-                                    <div className="text-red-500 text-xs font-semibold mb-1">
-                                      REJECTION REASON
-                                    </div>
-                                    <div className="text-red-600 text-sm">
-                                      {detail.rejection_reason}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Items table */}
-                                <div>
-                                  <table className="w-full text-sm">
-                                    <thead>
-                                      <tr className="border-b border-gray-200 text-gray-400 text-xs">
-                                        <th className="text-left pb-2 pr-4">
-                                          چیز نمبر
-                                        </th>
-                                        <th className="text-left pb-2 pr-4">
-                                          چیز کا نام
-                                        </th>
-                                        <th className="text-left pb-2 pr-4">
-                                          پیمائش کی اکائی
-                                        </th>
-                                        <th className="text-center pb-2 pr-4">
-                                          درخواست کردہ
-                                        </th>
-                                        <th className="text-center pb-2 pr-4">
-                                          منظور شدہ
-                                        </th>
-                                        <th className="text-center pb-2">
-                                          مکمل شدہ
-                                        </th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {(detail.items || []).map((i) => (
-                                        <tr
-                                          key={i.request_item_id}
-                                          className="border-b border-gray-100"
-                                        >
-                                          <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
-                                            {i.item_no}
-                                          </td>
-                                          <td className="py-2 pr-4 text-gray-800">
-                                            {i.item_name}
-                                          </td>
-                                          <td className="py-2 pr-4 text-gray-400 text-xs">
-                                            {i.item_uom}
-                                          </td>
-                                          <td className="py-2 pr-4 font-mono text-gray-800 text-center">
-                                            {i.requested_qty}
-                                          </td>
-                                          <td className="py-2 pr-4 font-mono text-center">
-                                            <span
-                                              className={
-                                                i.approved_qty != null
-                                                  ? "text-emerald-600"
-                                                  : "text-gray-300"
-                                              }
-                                            >
-                                              {i.approved_qty ?? "—"}
-                                            </span>
-                                          </td>
-                                          <td className="py-2 font-mono text-center">
-                                            <span
-                                              className={
-                                                i.fulfilled_qty != null
-                                                  ? "text-blue-600"
-                                                  : "text-gray-300"
-                                              }
-                                            >
-                                              {i.fulfilled_qty ?? "—"}
-                                            </span>
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-
-                                {detail.status === "APPROVED" && (
-                                  <div className="bg-emerald-50 border border-emerald-200 rounded p-3 text-emerald-700 text-xs">
-                                    ✓ Approved by{" "}
-                                    <strong>{detail.approved_by_name}</strong> —
-                                    Head Office will fulfill this request.
-                                  </div>
-                                )}
-                              </div>
-                            )
-                          )}
-                        </td>
-                      </tr>
-                    )}
-                  </>
-                );
-              })
+              requests.map((r) => (
+                <RequestRow
+                  key={r.request_id}
+                  r={r}
+                  detail={detail}
+                  detailLoad={detailLoad}
+                  openDetail={openDetail}
+                  openGRN={openGRN}
+                  grnLoading={grnLoading}
+                  pageType={pageType}
+                  returnItem={returnItem}
+                  returnModalLoading={returnModalLoading}
+                />
+              ))
             )}
           </tbody>
         </table>
+
         <Pagination
-          currentPage={page}
-          totalItems={requests.length}
-          pageSize={pageSize}
+          currentPage={pagination.currentPage}
+          totalItems={pagination.totalItems}
+          pageSize={pagination.pageLimit}
           onPageChange={setPage}
           pageSizeOptions={[10, 25, 50]}
-          onPageSizeChange={setPageSize}
+          onPageSizeChange={(s) => {
+            setPageSize(s);
+            setPage(1);
+          }}
         />
       </div>
+      {/* GRN Modal */}
+      {grnRequest && (
+        <GRNModal
+          request={grnRequest}
+          onClose={() => setGrnRequest(null)}
+          onSubmit={handleGRNSubmit}
+          submitting={grnSubmitting}
+        />
+      )}
+      {returnModal && (
+        <ReturnItemsModal
+          setReturnModal={setReturnModal}
+          handleReturn={handleReturn}
+          returnModalLoading={returnModalLoading}
+          returnForm={returnForm}
+          setReturnForm={setReturnForm}
+        />
+      )}
 
-      {/* ── Approve Modal ── */}
-      {approveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/30"
-            onClick={() => setApproveModal(null)}
-          />
-          <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-              <h2 className="text-gray-900 font-bold">
-                Approve — {approveModal.request_no}
-              </h2>
+      {/* Create Modal */}
+      {showCreate && (
+        <CreateRequestModal
+          itemForm={itemForm}
+          setItemForm={setItemForm}
+          mainStores={mainStores}
+          storeItems={storeItems}
+          reusableItems={reusableItems}
+          usableItems={usableItems}
+          onClose={() => setShowCreate(false)}
+          onSubmit={handleCreate}
+          addLine={addLine}
+          removeLine={removeLine}
+          updateLine={updateLine}
+          creating={creating}
+          EMPTY_FORM={EMPTY_FORM}
+        />
+      )}
+      {returnBackModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <div>
+                <h3 className="font-bold text-gray-800">آئٹم واپس کریں</h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  مرکزی اسٹور کو واپس بھیجنے کے لیے مقدار درج کریں
+                </p>
+              </div>
               <button
-                onClick={() => setApproveModal(null)}
-                className="text-gray-400 hover:text-gray-700 text-xl"
+                onClick={() => setReturnBackModal(false)}
+                className="text-gray-400 hover:text-gray-700 text-2xl leading-none"
               >
-                ✕
+                ×
               </button>
             </div>
-            <div className="p-5 space-y-4">
-              <div className="bg-emerald-50 border border-emerald-200 rounded p-3 text-emerald-700 text-xs">
-                منظوری کے بعد، یہ درخواست <strong>ہیڈ آفس</strong> کو نظر آئے گی
-                جو اشیاء روانہ کرے گا اور مین اسٹور کی انوینٹری کو اپ ڈیٹ کرے
-                گا۔
-              </div>
-              <div>
-                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Your Name *
-                </label>
-                {/* Read-only — auto-filled from auth */}
-                <input
-                  value={approverName}
-                  readOnly
-                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-600 text-sm cursor-not-allowed outline-none"
-                />
-              </div>
-              <div>
-                <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
-                  Adjust quantities if needed
-                </div>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 text-gray-400 text-xs">
-                      <th className="text-left pb-2">Item</th>
-                      <th className="text-center pb-2">Requested</th>
-                      <th className="text-center pb-2">Approve Qty</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {editedItems.map((i, idx) => (
-                      <tr
-                        key={i.request_item_id}
-                        className="border-b border-gray-100"
+
+            {/* Search */}
+            <div className="px-6 py-3 border-b">
+              <input
+                placeholder="آئٹم تلاش کریں..."
+                onChange={(e) => {
+                  const q = e.target.value.toLowerCase();
+                  setReturnBackItems((prev) =>
+                    prev.map((i) => ({
+                      ...i,
+                      _hidden:
+                        q &&
+                        !i.item_name.toLowerCase().includes(q) &&
+                        !i.item_no.toLowerCase().includes(q),
+                    })),
+                  );
+                }}
+                className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 shadow-sm"
+              />
+            </div>
+
+            {/* Table Body */}
+            <div className="flex-1 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    {[
+                      "آئٹم نمبر",
+                      "نام",
+                      "قسم",
+                      "UOM",
+                      "دستیاب مقدار",
+                      "واپسی مقدار",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
                       >
-                        <td className="py-2">
-                          <div className="text-gray-800 text-sm">
-                            {i.item_name}
-                          </div>
-                          <div className="text-gray-400 text-xs font-mono">
-                            {i.item_no} · {i.item_uom}
-                          </div>
-                        </td>
-                        <td className="py-2 font-mono text-gray-500 text-center">
-                          {i.requested_qty}
-                        </td>
-                        <td className="py-2 text-center">
-                          <input
-                            type="number"
-                            min="0"
-                            value={i.approved_qty}
-                            onChange={(e) => {
-                              const u = [...editedItems];
-                              u[idx] = {
-                                ...u[idx],
-                                approved_qty: +e.target.value,
-                              };
-                              setEditedItems(u);
-                            }}
-                            className="w-20 bg-gray-50 border border-gray-300 rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none focus:border-emerald-500"
-                          />
-                        </td>
-                      </tr>
+                        {h}
+                      </th>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
+                  </tr>
+                </thead>
+                <tbody>
+                  {returnBackItems.filter((i) => !i._hidden).length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="text-center text-gray-400 text-sm py-8"
+                      >
+                        کوئی آئٹم دستیاب نہیں
+                      </td>
+                    </tr>
+                  ) : (
+                    returnBackItems
+                      .filter((i) => !i._hidden)
+                      .map((item) => (
+                        <tr
+                          key={item.item_id}
+                          className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-4 py-3">
+                            <span className="font-mono text-emerald-600 text-xs">
+                              {item.item_no}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-800 font-semibold">
+                            {item.item_name}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-500">
+                            {item.item_type || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-500">
+                            {item.item_uom || "—"}
+                          </td>
+                          <td className="px-4 py-3 font-mono font-bold text-emerald-600">
+                            {Number(item.item_quantity)}
+                          </td>
+                          <td
+                            className="px-4 py-3"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() =>
+                                  setReturnBackItems((prev) =>
+                                    prev.map((i) =>
+                                      i.item_id === item.item_id
+                                        ? {
+                                            ...i,
+                                            return_qty: Math.max(
+                                              0,
+                                              Number(i.return_qty) - 1,
+                                            ),
+                                          }
+                                        : i,
+                                    ),
+                                  )
+                                }
+                                className="w-7 h-7 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 font-bold flex items-center justify-center"
+                              >
+                                −
+                              </button>
+                              <input
+                                type="number"
+                                min={0}
+                                max={item.item_quantity}
+                                value={item.return_qty}
+                                onChange={(e) =>
+                                  setReturnBackItems((prev) =>
+                                    prev.map((i) =>
+                                      i.item_id === item.item_id
+                                        ? {
+                                            ...i,
+                                            return_qty: Math.min(
+                                              Number(item.item_quantity),
+                                              Math.max(
+                                                0,
+                                                Number(e.target.value),
+                                              ),
+                                            ),
+                                          }
+                                        : i,
+                                    ),
+                                  )
+                                }
+                                className="w-16 border border-gray-300 rounded px-2 py-1 text-center font-mono text-sm focus:outline-none focus:border-emerald-500"
+                              />
+                              <button
+                                onClick={() =>
+                                  setReturnBackItems((prev) =>
+                                    prev.map((i) =>
+                                      i.item_id === item.item_id
+                                        ? {
+                                            ...i,
+                                            return_qty: Math.min(
+                                              Number(item.item_quantity),
+                                              Number(i.return_qty) + 1,
+                                            ),
+                                          }
+                                        : i,
+                                    ),
+                                  )
+                                }
+                                className="w-7 h-7 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 font-bold flex items-center justify-center"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Summary + Footer */}
+            <div className="border-t px-6 py-4 space-y-3">
+              {/* Selected summary */}
+              {returnBackItems.filter((i) => Number(i.return_qty) > 0).length >
+                0 && (
+                <div className="flex gap-4 text-xs text-gray-500 bg-gray-50 rounded px-3 py-2">
+                  <span>
+                    منتخب آئٹمز:{" "}
+                    <strong className="text-gray-800">
+                      {
+                        returnBackItems.filter((i) => Number(i.return_qty) > 0)
+                          .length
+                      }
+                    </strong>
+                  </span>
+                  <span>
+                    کل مقدار:{" "}
+                    <strong className="text-emerald-600">
+                      {returnBackItems.reduce(
+                        (s, i) => s + Number(i.return_qty),
+                        0,
+                      )}
+                    </strong>
+                  </span>
+                </div>
+              )}
+              <input
+                value={returnBackNote}
+                onChange={(e) => setReturnBackNote(e.target.value)}
+                placeholder="نوٹ (اختیاری)"
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+              />
+              <div className="flex gap-3">
                 <button
-                  onClick={() => setApproveModal(null)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
+                  onClick={() => setReturnBackModal(false)}
+                  className="flex-1 text-gray-500 text-sm py-2 border border-gray-300 rounded hover:bg-gray-50"
                 >
-                  Cancel
+                  منسوخ
                 </button>
                 <button
-                  onClick={handleApprove}
-                  disabled={actioning || !approverName.trim()}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
+                  onClick={handleReturnBack}
+                  disabled={returnBackSubmitting}
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-sm font-semibold py-2 rounded transition-colors"
                 >
-                  {actioning ? "Processing..." : "Confirm Approve"}
+                  {returnBackSubmitting ? "بھیج رہے ہیں..." : "واپس بھیجیں ✓"}
                 </button>
               </div>
             </div>
           </div>
         </div>
       )}
-
-      {/* ── Reject Modal ── */}
-      {rejectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/30"
-            onClick={() => setRejectModal(null)}
-          />
-          <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-              <h2 className="text-gray-900 font-bold">
-                Reject — {rejectModal.request_no}
-              </h2>
-              <button
-                onClick={() => setRejectModal(null)}
-                className="text-gray-400 hover:text-gray-700 text-xl"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Your Name *
-                </label>
-                {/* Read-only — auto-filled from auth */}
-                <input
-                  value={rejecterName}
-                  readOnly
-                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-600 text-sm cursor-not-allowed outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Rejection Reason *
-                </label>
-                <textarea
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  rows={3}
-                  placeholder="Explain why this request is rejected"
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-red-400 resize-none"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
-                <button
-                  onClick={() => setRejectModal(null)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleReject}
-                  disabled={
-                    actioning || !rejecterName.trim() || !rejectReason.trim()
-                  }
-                  className="bg-red-500 hover:bg-red-400 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
-                >
-                  {actioning ? "Rejecting..." : "Confirm Reject"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* <Toast toast={toast} onClose={() => showToast(null)} /> */}
     </div>
   );
 }

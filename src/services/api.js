@@ -101,7 +101,7 @@ export const getRequests = (params) => API.get("/requests", { params });
 export const getRequestById = (id) => API.get(`/requests/${id}`);
 export const getItemSummary = (params) =>
   API.get("/requests/item-summary", { params });
-export const createRequest = (data) => API.post("/requests", data);
+export const createRequest = (data) => API.post("/requests", data,);
 export const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 export const acceptReturn = (id, data) =>
   API.patch(`/requests/${id}/accept-return`, data);

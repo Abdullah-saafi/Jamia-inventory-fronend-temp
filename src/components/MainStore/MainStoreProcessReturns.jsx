@@ -1,17 +1,13 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../context/authContext";
-import useErrorHandler from "../components/useErrorHandler";
-import CheckLoadingAndError from "../components/CheckLoadingAndError";
-
-// Add these to your api.js:
-// export const getReturnRequests = (params) => API.get("/returns", { params });
-// export const getReturnRequestById = (id) => API.get(`/returns/${id}`);
-// export const processReturnRequest = (id, data) => API.patch(`/returns/${id}/process`, data);
+import { useAuth } from "../../context/authContext";
+import useErrorHandler from "../useErrorHandler";
+import CheckLoadingAndError from "../CheckLoadingAndError";
 import {
   getReturnRequests,
   getReturnRequestById,
   processReturnRequest,
-} from "../services/api";
+} from "../../services/api";
+import TableHead from "../TableHead";
 
 const STATUS_COLORS = {
   PENDING: "bg-yellow-100 text-yellow-700 border-yellow-200",
@@ -23,17 +19,16 @@ const STATUS_COLORS = {
 export default function MainStoreProcessReturns({ showToast }) {
   const { auth } = useAuth();
   const handleError = useErrorHandler();
+  const pageType = "mainStoreProcessReturns"
 
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState("");
-
-  // Detail / process modal
-  const [selected, setSelected] = useState(null); // full return request with items
+  const [selected, setSelected] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [itemActions, setItemActions] = useState({}); // { return_item_id: { action, note } }
+  const [itemActions, setItemActions] = useState({});
 
   useEffect(() => {
     fetchReturns();
@@ -153,10 +148,10 @@ export default function MainStoreProcessReturns({ showToast }) {
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm"
         >
           <option value="">تمام اسٹیٹس</option>
-          <option value="PENDING">PENDING</option>
-          <option value="ADDED_TO_STOCK">ADDED TO STOCK</option>
-          <option value="SCRAPPED">SCRAPPED</option>
-          <option value="PARTIALLY_SCRAPPED">PARTIALLY SCRAPPED</option>
+          <option value="PENDING">زیر التواء</option>
+          <option value="ADDED_TO_STOCK">اسٹاک میں شامل کر دیا گیا</option>
+          <option value="SCRAPPED">اسکریپ کر دیا گیا</option>
+          <option value="PARTIALLY_SCRAPPED">جزوی طور پر اسکریپ کیا گیا</option>
         </select>
         {filterStatus && (
           <button
@@ -172,24 +167,9 @@ export default function MainStoreProcessReturns({ showToast }) {
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              {[
-                "واپسی نمبر",
-                "بھیجنے والا اسٹور",
-                "بھیجنے والا",
-                "آئٹمز",
-                "تاریخ",
-                "اسٹیٹس",
-                "عمل",
-              ].map((h) => (
-                <th
-                  key={h}
-                  className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
+            <TableHead
+              pageType={pageType}
+            />
           </thead>
           <tbody>
             {loading || error || returns.length === 0 ? (
