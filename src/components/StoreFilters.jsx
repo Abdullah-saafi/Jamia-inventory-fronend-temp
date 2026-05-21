@@ -23,6 +23,10 @@ const pages = {
   mainStoreApprover: {
     page: "mainStoreApprover",
     store: false
+  },
+  headOffice: {
+    page: "headOffice",
+    store: false
   }
 }
 

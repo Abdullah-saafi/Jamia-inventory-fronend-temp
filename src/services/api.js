@@ -123,8 +123,6 @@ export const approveRequest = (id, data) =>
 export const rejectRequest = (id, data) =>
   API.patch(`/requests/${id}/reject`, data);
 export const fulfillRequest = (id,data) => API.patch(`/requests/${id}/fulfill`, data);
-export const headOfficeFulfillRequest = (id, data) =>
-  API.patch(`/requests/${id}/fulfill`, data);
 export const sendReturnToMain = (id, data) =>
   API.patch(`/requests/${id}/send-back`, data);
 export const acceptReturnFromSub = (id, accepted_by_name) =>

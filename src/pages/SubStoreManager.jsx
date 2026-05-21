@@ -338,6 +338,7 @@ export default function SubStoreManager() {
           setEditedItems={setEditedItems}
           actioning={actioning}
           handleApprove={handleApprove}
+          handleReject={handleReject}
           action={"Approve"}
         />
       )}

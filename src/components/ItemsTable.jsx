@@ -21,11 +21,11 @@ export default function ItemsTable({
           <tr className="border-b border-gray-200 text-gray-400 text-xs">
             <th className="text-left pb-2 pr-4">اشیاء نمبر</th>
             <th className="text-left pb-2 pr-4">اشیاء کا نام</th>
-            <th className="text-left pb-2 pr-4">UOM</th>
+            <th className="text-left pb-2 pr-4">اکائی</th>
             {(pageType === "subStore" || pageType === "subStoreManager") && (
               <th className="text-center pb-2 pr-4">درخواست شدہ</th>
             )}
-            {pageType === "mainSubStoreReqs" && (
+            {(pageType === "mainSubStoreReqs" || pageType === "headOffice") && (
               <th className="text-center pb-2 pr-4">درخواست کردہ</th>
             )}
             <th className="text-center pb-2 pr-4">منظور شدہ</th>
@@ -121,23 +121,6 @@ export default function ItemsTable({
                         <span className="text-gray-300">—</span>
                       )}
                     </td>
-                    {pageType === "mainSubStoreReqs" && (
-                      <>
-                        <td className="py-2 pr-4 font-mono text-center">
-                          <span
-                            className={
-                              i.received_qty != null
-                                ? Number(i.received_qty) < Number(i.fulfilled_qty)
-                                  ? "text-amber-600"
-                                  : "text-teal-600"
-                                : "text-gray-300"
-                            }
-                          >
-                            {i.received_qty ?? "—"}
-                          </span>
-                        </td>
-                      </>
-                    )}
                   </>
                 )}
               </tr>
@@ -153,8 +136,7 @@ export default function ItemsTable({
           showToast={showToast}
           managerName={username}
         />
-      )
-      }
+      )}
     </>
   );
 }

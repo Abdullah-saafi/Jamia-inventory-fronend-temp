@@ -50,7 +50,7 @@ const RequestDashboard = ({
 
       {/* Approved Card */}
 
-      {pageType === "mainSubStoreReqs" && (
+      {(pageType === "mainSubStoreReqs" || pageType === "headOffice") && (
         <StatusCard
           title="منظور شدہ"
           count={counts.pending}
@@ -61,7 +61,7 @@ const RequestDashboard = ({
       )}
 
       {/* Disputed Card */}
-      {pageType === "mainSubStoreReqs" && (
+      {(pageType === "mainSubStoreReqs" || pageType === "headOffice") && (
         <StatusCard
           title="متنازع درخواستیں"
           count={counts.disputed}

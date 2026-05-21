@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {
     getRequests,
     getRequestById,
-    headOfficeFulfillRequest,
     acceptReturn,
     resendItems,
     fulfillRequest,

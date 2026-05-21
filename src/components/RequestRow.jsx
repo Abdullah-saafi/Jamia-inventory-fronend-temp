@@ -24,9 +24,6 @@ export default function RequestRow({
   handleResolved,
   showToast,
   username,
-  setInstantRequest,
-  instantRequest,
-  getDetail,
   setItemForm,
   EMPTY_LINE,
 }) {
@@ -41,6 +38,8 @@ export default function RequestRow({
   const isReturnable = r.item_type === "REUSABLE" && r.has_returnable_items && (r.status === "RECEIVED" || r.status === "PARTIALLY_RECEIVED");
   const isEmergency = r.is_emergency;
   const isClosed = r.status === "CLOSED";
+  const canFulfill = r.status === "APPROVED";
+  const hasGRN = isDisputed || isReceived || isClosed;
 
   const { auth } = useAuth()
 
@@ -123,7 +122,7 @@ export default function RequestRow({
         <td className="px-4 py-3">
           <StatusBadge status={r.status} />
         </td>
-        {(pageType === "subStore" || pageType === "subStoreManager") && (
+        {(pageType === "subStore" || pageType === "subStoreManager" || pageType === "headOffice" || pageType === "mainStoreApprover") && (
           <>
             <td className="px-4 py-3">
               <DateTimeCell ts={r.approved_at} />
@@ -156,31 +155,31 @@ export default function RequestRow({
                 {returnModalLoading ? "…" : "Return Items"}
               </button>
             )}
-            {(r.status === "PENDING" && pageType === "subStoreManager") && (
+            {((pageType === "subStoreManager" || pageType === "mainStoreApprover") && r.status === "PENDING") && (
               <>
                 <button
-                  disabled={actioning}
+                  disabled={actioning === r.request_id}
                   onClick={(e) => {
                     e.stopPropagation();
                     openApprove(r);
                   }}
                   className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {actioning ? "..." : "Approve"}
+                  {actioning === r.request_id ? "..." : "Approve"}
                 </button>
                 <button
-                  disabled={actioning}
+                  disabled={actioning === r.request_id}
                   onClick={(e) => {
                     e.stopPropagation();
                     openReject(r)
                   }}
                   className="text-xs bg-red-500 hover:bg-red-400 text-white rounded px-2 py-1 disabled:opacity-40"
                 >
-                  {actioning ? "..." : "Reject"}
+                  {actioning === r.request_id ? "..." : "Reject"}
                 </button>
               </>
             )}
-            {(pageType === "mainSubStoreReqs" && r.status === "APPROVED") && (
+            {((pageType === "mainSubStoreReqs" || pageType === "headOffice") && canFulfill) && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -194,23 +193,6 @@ export default function RequestRow({
               >
                 {fulfilling === r.request_id ? "..." : "Fulfill"}
               </button>
-            )}
-            {/* Temporary */}
-            {pageType === "mainSubStoreReqs" && (
-              <button onClick={(e) => {
-                e.stopPropagation();
-                setItemForm({
-                  from_store_id: auth.store_id || "",
-                  requested_by_name: auth.username || "",
-                  to_store_id: "",
-                  notes: "",
-                  is_emergency: false,
-                  items: [{ ...EMPTY_LINE }],
-                })
-                getDetail(r)
-                console.log("clicked")
-
-              }}>Instant Request</button>
             )}
             {(pageType === "mainSubStoreReqs" && r.item_type === "REUSABLE" && r.status === "RETURN_BACK") && (
               <button
@@ -273,21 +255,21 @@ export default function RequestRow({
                     <div className="text-gray-600 text-sm">
                       Resolution:{" "}
                       <span className="font-semibold">
-                        {d.resolution === "RETURN_ACCEPTED"
+                        {detail.resolution === "RETURN_ACCEPTED"
                           ? "Return accepted — stock restored"
-                          : d.resolution === "RESENT"
+                          : detail.resolution === "RESENT"
                             ? "Fresh items resent via new request"
-                            : d.resolution}
+                            : detail.resolution}
                       </span>
                     </div>
-                    {d.resolved_by_name && (
+                    {detail.resolved_by_name && (
                       <div className="text-gray-400 text-xs mt-1">
-                        By {d.resolved_by_name}
+                        By {detail.resolved_by_name}
                       </div>
                     )}
-                    {d.resolved_at && (
+                    {detail.resolved_at && (
                       <div className="text-gray-400 text-xs">
-                        {new Date(d.resolved_at).toLocaleString()}
+                        {new Date(detail.resolved_at).toLocaleString()}
                       </div>
                     )}
                   </div>
@@ -309,7 +291,7 @@ export default function RequestRow({
                 {(isDisputed || isReceived) && detail?.grn_note && (
                   <div className={`rounded-xl p-3 border text-sm ${isDisputed ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-teal-50 border-teal-200 text-teal-700"}`}>
                     <div className="text-xs font-bold uppercase tracking-wider mb-1">
-                      {isDisputed ? "⚠ Sub Store Reported Issues" : "✓ Sub Store Confirmed Receipt"}
+                      {isDisputed ? "⚠ Sub Store Reported Issues" : (pageType === "headOffice" && isDisputed) ? "✓ Main Store Confirmed Receipt" : "✓ Sub Store Confirmed Receipt"}
                     </div>
                     <div>{detail.grn_note}</div>
                     {detail.grn_at && <div className="text-xs opacity-60 mt-1">{new Date(detail.grn_at).toLocaleString()}</div>}

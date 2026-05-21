@@ -17,6 +17,8 @@ import RequestDashboard from "../components/RequestDashboard";
 import StoreFilters from "../components/StoreFilters";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
+import ApproveRejectModal from "../components/ApproveRejectModal";
+import RequestRow from "../components/RequestRow";
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MainStoreApprover() {
@@ -29,7 +31,7 @@ export default function MainStoreApprover() {
   const [approveModal, setApproveModal] = useState(null);
   const [approverName, setApproverName] = useState("");
   const [editedItems, setEditedItems] = useState([]);
-  const [actioning, setActioning] = useState(false);
+  const [actioning, setActioning] = useState(null);
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
@@ -81,7 +83,7 @@ export default function MainStoreApprover() {
 
   const openApprove = async (r) => {
     try {
-      setActioning(true);
+      setActioning(r.request_id);
       const res = await getRequestById(r.request_id);
       setEditedItems(
         (res.data.data.items || []).map((i) => ({
@@ -95,13 +97,13 @@ export default function MainStoreApprover() {
       const msg = handleError(error, "Failed to load items");
       showToast(msg, "error");
     } finally {
-      setActioning(false);
+      setActioning(null);
     }
   };
 
   const openReject = async (r) => {
     try {
-      setActioning(true);
+      setActioning(r.request_id);
       const res = await getRequestById(r.request_id);
       setRejectModal(res.data.data);
       setRejecterName(auth.username || "");
@@ -110,7 +112,7 @@ export default function MainStoreApprover() {
       const msg = handleError(error, "Failed to load request");
       showToast(msg, "error");
     } finally {
-      setActioning(false);
+      setActioning(null);
     }
   };
 
@@ -259,198 +261,19 @@ export default function MainStoreApprover() {
                 requests={requests}
               />
             ) : (
-              requests.map((r) => {
-                const isExpanded = detail && detail.request_id === r.request_id;
-                return (
-                  <>
-                    <tr
-                      key={r.request_id}
-                      className={`border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${isExpanded ? "bg-gray-50" : ""}`}
-                      onClick={() => openDetail(r)}
-                    >
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-emerald-600 text-xs font-bold">
-                          {r.request_no}
-                        </span>
-                        {r.item_count > 0 && (
-                          <span className="ml-2 bg-gray-100 text-gray-500 text-xs font-mono rounded px-1.5 py-0.5 border border-gray-200">
-                            {r.item_count} item{r.item_count > 1 ? "s" : ""}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {r.requested_by_name || "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <DateTimeCell ts={r.requested_at || r.created_at} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={r.status} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <DateTimeCell ts={r.approved_at} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <DateTimeCell ts={r.fulfilled_at} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-1 items-center">
-                          <span
-                            className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
-                          >
-                            {isExpanded ? "▲ Hide" : "▼ View"}
-                          </span>
-                          {r.status === "PENDING" && (
-                            <>
-                              <button
-                                disabled={loading}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openApprove(r);
-                                }}
-                                className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1 disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                {actioning ? "..." : "Approve"}
-                              </button>
-                              <button
-                                disabled={loading}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openReject(r);
-                                }}
-                                className="text-xs bg-red-500 hover:bg-red-400 text-white rounded px-2 py-1 disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                {actioning ? "..." : "Reject"}
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* ── Expanded detail row ── */}
-                    {isExpanded && (
-                      <tr
-                        key={r.request_id + "-detail"}
-                        className="bg-gray-50 border-b-2 border-emerald-200"
-                      >
-                        <td colSpan={7} className="px-6 py-4">
-                          {detailLoad ? (
-                            <div className="flex justify-center py-6">
-                              <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                            </div>
-                          ) : (
-                            detail && (
-                              <div className="space-y-3">
-                                {detail.notes && (
-                                  <div className="bg-white rounded p-3 border border-gray-200">
-                                    <div className="text-gray-400 text-xs mb-1">
-                                      NOTES
-                                    </div>
-                                    <div className="text-gray-700 text-sm">
-                                      {detail.notes}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {detail.rejection_reason && (
-                                  <div className="bg-red-50 border border-red-200 rounded p-3">
-                                    <div className="text-red-500 text-xs font-semibold mb-1">
-                                      REJECTION REASON
-                                    </div>
-                                    <div className="text-red-600 text-sm">
-                                      {detail.rejection_reason}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Items table */}
-                                <div>
-                                  <table className="w-full text-sm">
-                                    <thead>
-                                      <tr className="border-b border-gray-200 text-gray-400 text-xs">
-                                        <th className="text-left pb-2 pr-4">
-                                          چیز نمبر
-                                        </th>
-                                        <th className="text-left pb-2 pr-4">
-                                          چیز کا نام
-                                        </th>
-                                        <th className="text-left pb-2 pr-4">
-                                          پیمائش کی اکائی
-                                        </th>
-                                        <th className="text-center pb-2 pr-4">
-                                          درخواست کردہ
-                                        </th>
-                                        <th className="text-center pb-2 pr-4">
-                                          منظور شدہ
-                                        </th>
-                                        <th className="text-center pb-2">
-                                          مکمل شدہ
-                                        </th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {(detail.items || []).map((i) => (
-                                        <tr
-                                          key={i.request_item_id}
-                                          className="border-b border-gray-100"
-                                        >
-                                          <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
-                                            {i.item_no}
-                                          </td>
-                                          <td className="py-2 pr-4 text-gray-800">
-                                            {i.item_name}
-                                          </td>
-                                          <td className="py-2 pr-4 text-gray-400 text-xs">
-                                            {i.item_uom}
-                                          </td>
-                                          <td className="py-2 pr-4 font-mono text-gray-800 text-center">
-                                            {i.requested_qty}
-                                          </td>
-                                          <td className="py-2 pr-4 font-mono text-center">
-                                            <span
-                                              className={
-                                                i.approved_qty != null
-                                                  ? "text-emerald-600"
-                                                  : "text-gray-300"
-                                              }
-                                            >
-                                              {i.approved_qty ?? "—"}
-                                            </span>
-                                          </td>
-                                          <td className="py-2 font-mono text-center">
-                                            <span
-                                              className={
-                                                i.fulfilled_qty != null
-                                                  ? "text-blue-600"
-                                                  : "text-gray-300"
-                                              }
-                                            >
-                                              {i.fulfilled_qty ?? "—"}
-                                            </span>
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-
-                                {detail.status === "APPROVED" && (
-                                  <div className="bg-emerald-50 border border-emerald-200 rounded p-3 text-emerald-700 text-xs">
-                                    ✓ Approved by{" "}
-                                    <strong>{detail.approved_by_name}</strong> —
-                                    Head Office will fulfill this request.
-                                  </div>
-                                )}
-                              </div>
-                            )
-                          )}
-                        </td>
-                      </tr>
-                    )}
-                  </>
-                );
-              })
+              requests.map((r) => (
+                <RequestRow
+                  key={r.request_id}
+                  r={r}
+                  detail={detail}
+                  detailLoad={detailLoad}
+                  openDetail={openDetail}
+                  actioning={actioning}
+                  openApprove={openApprove}
+                  openReject={openReject}
+                  pageType={pageType}
+                />
+              ))
             )}
           </tbody>
         </table>
@@ -465,174 +288,35 @@ export default function MainStoreApprover() {
       </div>
 
       {/* ── Approve Modal ── */}
+
       {approveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/30"
-            onClick={() => setApproveModal(null)}
-          />
-          <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-              <h2 className="text-gray-900 font-bold">
-                Approve — {approveModal.request_no}
-              </h2>
-              <button
-                onClick={() => setApproveModal(null)}
-                className="text-gray-400 hover:text-gray-700 text-xl"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div className="bg-emerald-50 border border-emerald-200 rounded p-3 text-emerald-700 text-xs">
-                منظوری کے بعد، یہ درخواست <strong>ہیڈ آفس</strong> کو نظر آئے گی
-                جو اشیاء روانہ کرے گا اور مین اسٹور کی انوینٹری کو اپ ڈیٹ کرے
-                گا۔
-              </div>
-              <div>
-                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Your Name *
-                </label>
-                {/* Read-only — auto-filled from auth */}
-                <input
-                  value={approverName}
-                  readOnly
-                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-600 text-sm cursor-not-allowed outline-none"
-                />
-              </div>
-              <div>
-                <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
-                  Adjust quantities if needed
-                </div>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 text-gray-400 text-xs">
-                      <th className="text-left pb-2">Item</th>
-                      <th className="text-center pb-2">Requested</th>
-                      <th className="text-center pb-2">Approve Qty</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {editedItems.map((i, idx) => (
-                      <tr
-                        key={i.request_item_id}
-                        className="border-b border-gray-100"
-                      >
-                        <td className="py-2">
-                          <div className="text-gray-800 text-sm">
-                            {i.item_name}
-                          </div>
-                          <div className="text-gray-400 text-xs font-mono">
-                            {i.item_no} · {i.item_uom}
-                          </div>
-                        </td>
-                        <td className="py-2 font-mono text-gray-500 text-center">
-                          {i.requested_qty}
-                        </td>
-                        <td className="py-2 text-center">
-                          <input
-                            type="number"
-                            min="0"
-                            value={i.approved_qty}
-                            onChange={(e) => {
-                              const u = [...editedItems];
-                              u[idx] = {
-                                ...u[idx],
-                                approved_qty: +e.target.value,
-                              };
-                              setEditedItems(u);
-                            }}
-                            className="w-20 bg-gray-50 border border-gray-300 rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none focus:border-emerald-500"
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
-                <button
-                  onClick={() => setApproveModal(null)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleApprove}
-                  disabled={actioning || !approverName.trim()}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
-                >
-                  {actioning ? "Processing..." : "Confirm Approve"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ApproveRejectModal
+          setApproveModal={setApproveModal}
+          approveModal={approveModal}
+          approverName={approverName}
+          setApproverName={setApproverName}
+          editedItems={editedItems}
+          setEditedItems={setEditedItems}
+          actioning={actioning}
+          handleApprove={handleApprove}
+          handleReject={handleReject}
+          action={"Approve"}
+        />
       )}
 
-      {/* ── Reject Modal ── */}
+      {/* Reject Modal */}
       {rejectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/30"
-            onClick={() => setRejectModal(null)}
-          />
-          <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-              <h2 className="text-gray-900 font-bold">
-                Reject — {rejectModal.request_no}
-              </h2>
-              <button
-                onClick={() => setRejectModal(null)}
-                className="text-gray-400 hover:text-gray-700 text-xl"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Your Name *
-                </label>
-                {/* Read-only — auto-filled from auth */}
-                <input
-                  value={rejecterName}
-                  readOnly
-                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-600 text-sm cursor-not-allowed outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Rejection Reason *
-                </label>
-                <textarea
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  rows={3}
-                  placeholder="Explain why this request is rejected"
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-red-400 resize-none"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
-                <button
-                  onClick={() => setRejectModal(null)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleReject}
-                  disabled={
-                    actioning || !rejecterName.trim() || !rejectReason.trim()
-                  }
-                  className="bg-red-500 hover:bg-red-400 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
-                >
-                  {actioning ? "Rejecting..." : "Confirm Reject"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ApproveRejectModal
+          setRejectModal={setRejectModal}
+          rejectModal={rejectModal}
+          rejecterName={rejecterName}
+          setRejecterName={setRejecterName}
+          rejectReason={rejectReason}
+          setRejectReason={setRejectReason}
+          actioning={actioning}
+          handleReject={handleReject}
+          action={"Reject"}
+        />
       )}
     </div>
   );

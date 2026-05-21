@@ -1,4 +1,21 @@
-const ApproveRejectModal = ({ setApproveModal, approveModal, approverName, setApproverName, editedItems,setEditedItems, actioning, handleApprove, action, setRejectModal, rejectModal, rejecterName, setRejecterName, rejectReason,setRejectReason, handleReject }) => {
+const ApproveRejectModal = ({
+    setApproveModal,
+    approveModal,
+    approverName,
+    setApproverName,
+    editedItems,
+    setEditedItems,
+    actioning,
+    handleApprove,
+    action,
+    setRejectModal,
+    rejectModal,
+    rejecterName,
+    setRejecterName,
+    rejectReason,
+    setRejectReason,
+    handleReject
+}) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div
@@ -48,6 +65,9 @@ const ApproveRejectModal = ({ setApproveModal, approveModal, approverName, setAp
                                         <th className="text-left pb-2">آئٹم</th>
                                         <th className="text-center pb-2">درخواست کردہ</th>
                                         <th className="text-center pb-2">منظور شدہ مقدار</th>
+                                        {editedItems.length > 1 && (
+                                            <th className="text-center pb-2">عملیات</th>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -83,6 +103,17 @@ const ApproveRejectModal = ({ setApproveModal, approveModal, approverName, setAp
                                                     className="w-20 bg-gray-50 border border-gray-300 rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none focus:border-emerald-500"
                                                 />
                                             </td>
+                                            {editedItems.length > 1 && (
+                                                <td>
+                                                    <button
+                                                        // onClick={handleReject(i.request_id)}
+                                                        // disabled={actioning || !rejecterName.trim() || !rejectReason.trim()}
+                                                        className="text-white text-sm font-semibold px-3 py-1.5 rounded disabled:opacity-40 bg-red-600 hover:bg-red-500"
+                                                    >
+                                                        مسترد
+                                                    </button>
+                                                </td>
+                                            )}
                                         </tr>
                                     ))}
                                 </tbody>
@@ -108,7 +139,7 @@ const ApproveRejectModal = ({ setApproveModal, approveModal, approverName, setAp
                         <button
                             disabled={actioning}
                             onClick={() => {
-                                {action === "Approve" ? setApproveModal(null) : setRejectModal(null)}
+                                { action === "Approve" ? setApproveModal(null) : setRejectModal(null) }
                             }}
                             className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
                         >

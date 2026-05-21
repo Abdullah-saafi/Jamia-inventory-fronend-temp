@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import API, { resendItems } from "../services/api";
 import { useAuth } from "../context/authContext";
 
@@ -23,7 +23,6 @@ export default function CreateRequestModal({
   // ── Asset section state ────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("items");
   const { auth } = useAuth();
-  const uploadLock = useRef(false);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -175,9 +174,8 @@ export default function CreateRequestModal({
               onClick={() => {
                 setActiveTab("items");
                 setItemForm((prev) => ({
-                  // ← use prev, not EMPTY_FORM spread
                   ...EMPTY_FORM,
-                  to_store_id: prev.to_store_id, // ← keep whatever was selected
+                  to_store_id: prev.to_store_id,
                   requested_by_name: auth.username || "",
                   from_store_id: auth.store_id || "",
                 }));
@@ -407,27 +405,28 @@ export default function CreateRequestModal({
                             onChange={(e) => {
                               const files = Array.from(e.target.files);
 
+                              const currentImages = itemForm.items[idx].images || [];
+
+                              const newFiles = files.filter(
+                                (file) =>
+                                  !currentImages.some(
+                                    (img) =>
+                                      img.name === file.name &&
+                                      img.size === file.size &&
+                                      img.lastModified === file.lastModified
+                                  )
+                              );
+
+                              const total = currentImages.length + newFiles.length;
+
+                              if (total > 3) {
+                                showToast("Maximum 3 images allowed per item", "warn");
+                                e.target.value = null;
+                                return;
+                              }
+
                               setItemForm((f) => {
                                 const updatedItems = [...f.items];
-                                const currentImages = updatedItems[idx].images || [];
-
-                                const newFiles = files.filter(
-                                  (file) =>
-                                    !currentImages.some(
-                                      (img) =>
-                                        img.name === file.name &&
-                                        img.size === file.size &&
-                                        img.lastModified === file.lastModified
-                                    )
-                                );
-
-                                const total = currentImages.length + newFiles.length;
-
-                                if (total > 3) {
-                                  showToast("Maximum 3 images allowed per item", "warn");
-                                  return f;
-                                }
-
                                 updatedItems[idx].images = [...currentImages, ...newFiles];
 
                                 return {
@@ -679,25 +678,27 @@ export default function CreateRequestModal({
                             onChange={(e) => {
                               const files = Array.from(e.target.files);
 
+                              const currentImages = itemForm.items[idx].images || [];
+
+                              const newFiles = files.filter(
+                                (file) =>
+                                  !currentImages.some(
+                                    (img) =>
+                                      img.name === file.name &&
+                                      img.size === file.size &&
+                                      img.lastModified === file.lastModified
+                                  )
+                              );
+
+                              const total = currentImages.length + newFiles.length;
+                              if (total > 3) {
+                                showToast("Maximum 3 images allowed per item", "warn");
+                                e.target.value = null;
+                                return;
+                              }
+
                               setItemForm((f) => {
                                 const updatedItems = [...f.items];
-                                const currentImages = updatedItems[idx].images || [];
-
-                                const newFiles = files.filter(
-                                  (file) =>
-                                    !currentImages.some(
-                                      (img) =>
-                                        img.name === file.name &&
-                                        img.size === file.size &&
-                                        img.lastModified === file.lastModified
-                                    )
-                                );
-
-                                if (currentImages.length + newFiles.length > 3) {
-                                  showToast("Maximum 3 images allowed per item", "warn");
-                                  return f;
-                                }
-
                                 updatedItems[idx].images = [...currentImages, ...newFiles];
 
                                 return {
