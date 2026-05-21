@@ -197,20 +197,20 @@ export default function RequestRow({
             )}
             {/* Temporary */}
             {pageType === "mainSubStoreReqs" && (
-              <button onClick={(e) => {
-                e.stopPropagation();
-                setItemForm({
-                  from_store_id: auth.store_id || "",
-                  requested_by_name: auth.username || "",
-                  to_store_id: "",
-                  notes: "",
-                  is_emergency: false,
-                  items: [{ ...EMPTY_LINE }],
-                })
-                getDetail(r)
-                console.log("clicked")
+              // <button onClick={(e) => {
+              //   e.stopPropagation();
+              //   setItemForm({
+              //     from_store_id: auth.store_id || "",
+              //     requested_by_name: auth.username || "",
+              //     to_store_id: "",
+              //     notes: "",
+              //     is_emergency: false,
+              //     items: [{ ...EMPTY_LINE }],
+              //   })
+              //   getDetail(r)
+              //   console.log("clicked")
 
-              }}>Instant Request</button>
+              // }}>Instant Request</button>
             )}
             {(pageType === "mainSubStoreReqs" && r.item_type === "REUSABLE" && r.status === "RETURN_BACK") && (
               <button
