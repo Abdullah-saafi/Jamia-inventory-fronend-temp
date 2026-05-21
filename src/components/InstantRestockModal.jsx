@@ -8,6 +8,7 @@ const InstantRestockModal = ({
     toStore,
     removeLine,
     creating,
+    showToast,
 }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -132,7 +133,7 @@ const InstantRestockModal = ({
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                {items.items.map((item, idx) => (
+                                {itemForm.items.map((item, idx) => (
                                     <div
                                         key={idx}
                                         className="bg-gray-50 rounded-lg p-3 border border-gray-200"
@@ -201,11 +202,17 @@ const InstantRestockModal = ({
                                                     min={1}
                                                     value={Number(item.requested_qty) || itemForm.requested_qty}
                                                     onChange={(e) => {
-                                                        setItemForm((f) => ({
-                                                            ...f,
-                                                            requested_qty: e.target.value
-                                                        }))
-                                                        item.requested_qty = e.target.value
+                                                        const value = e.target.value;
+
+                                                        setItemForm((f) => {
+                                                            const updatedItems = [...f.items];
+                                                            updatedItems[idx].requested_qty = value;
+
+                                                            return {
+                                                                ...f,
+                                                                items: updatedItems
+                                                            };
+                                                        });
                                                     }}
                                                     className="w-full bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
                                                 />
@@ -218,7 +225,6 @@ const InstantRestockModal = ({
 
                                             <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-white hover:bg-gray-100 hover:border-gray-400 transition-colors group">
                                                 <div className="flex flex-col items-center justify-center pt-3 pb-3">
-                                                    {/* Minimalist Upload Icon */}
                                                     <svg
                                                         className="w-6 h-6 mb-1 text-gray-400 group-hover:text-gray-500 transition-colors"
                                                         fill="none"
@@ -236,7 +242,6 @@ const InstantRestockModal = ({
                                                     </p>
                                                 </div>
 
-                                                {/* Hidden original input */}
                                                 <input
                                                     type="file"
                                                     multiple
@@ -247,69 +252,75 @@ const InstantRestockModal = ({
                                                         setItemForm((f) => {
                                                             const updatedItems = [...f.items];
                                                             const currentImages = updatedItems[idx].images || [];
-                                                            if (currentImages.length + files.length > 3) {
-                                                                alert("Maximum 3 images allowed per item");
+
+                                                            const newFiles = files.filter(
+                                                                (file) =>
+                                                                    !currentImages.some(
+                                                                        (img) =>
+                                                                            img.name === file.name &&
+                                                                            img.size === file.size &&
+                                                                            img.lastModified === file.lastModified
+                                                                    )
+                                                            );
+
+                                                            const total = currentImages.length + newFiles.length;
+
+                                                            if (total > 3) {
+                                                                showToast("Maximum 3 images allowed per item", "warn");
                                                                 return f;
                                                             }
 
-                                                            updatedItems[idx].images = [...currentImages, ...files];
+                                                            updatedItems[idx].images = [...currentImages, ...newFiles];
 
                                                             return {
                                                                 ...f,
                                                                 items: updatedItems
                                                             };
                                                         });
+
+                                                        e.target.value = null;
                                                     }}
                                                     className="hidden"
                                                 />
-                                                {item.images && item.images.length > 0 && (
-                                                    <div className="flex flex-wrap gap-2 mt-2">
-                                                        {item.images.map((img, imgIdx) => (
-                                                            <div key={imgIdx} className="relative">
-                                                                <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                                                                    {img.name}
-                                                                </span>
-
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setItemForm((f) => {
-                                                                            const updatedItems = [...f.items];
-                                                                            updatedItems[idx].images =
-                                                                                updatedItems[idx].images.filter((_, i) => i !== imgIdx);
-
-                                                                            return {
-                                                                                ...f,
-                                                                                items: updatedItems
-                                                                            };
-                                                                        });
-                                                                    }}
-                                                                    className="ml-1 text-red-500"
-                                                                >
-                                                                    ✕
-                                                                </button>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
                                             </label>
+                                            {item.images && item.images.length > 0 && (
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    {item.images.map((img, imgIdx) => (
+                                                        <div key={imgIdx} className="relative">
+                                                            <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                                                {img.name}
+                                                            </span>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setItemForm((f) => {
+                                                                        const updatedItems = [...f.items];
+                                                                        updatedItems[idx].images =
+                                                                            updatedItems[idx].images.filter((_, i) => i !== imgIdx);
+
+                                                                        return {
+                                                                            ...f,
+                                                                            items: updatedItems
+                                                                        };
+                                                                    });
+                                                                }}
+                                                                className="ml-1 text-red-500"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
 
                                             {/* Elegant File Count Badge */}
                                             {item.images?.length > 0 && (
                                                 <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded w-fit font-medium">
-                                                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                    </svg>
-                                                    <span>{item.images?.length || 0} تصویر منتخب کر لی گئی ہے</span>
+                                                    <span>{item.images.length} تصویر منتخب کر لی گئی ہے</span>
                                                 </div>
                                             )}
                                         </div>
-                                        <button onClick={() => {
-                                            console.log(itemForm.items[idx].images.length);
-                                            console.log(itemForm.items);
-                                        }}>
-                                            check images
-                                        </button>
                                     </div>
                                 ))}
                             </div>

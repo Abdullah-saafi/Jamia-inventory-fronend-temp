@@ -33,6 +33,7 @@ const EMPTY_LINE = {
   item_no: "",
   item_name: "",
   item_uom: "",
+  images: [],
   requested_qty: 1,
 };
 
@@ -41,7 +42,6 @@ const EMPTY_FORM = {
   to_store_id: "",
   requested_by_name: "",
   notes: "",
-  images: [],
   items: [{ ...EMPTY_LINE }],
 };
 
@@ -397,8 +397,8 @@ export default function SubStore() {
     );
     if (!from_store_id || !to_store_id || !requested_by_name)
       return showToast("Please fill all required fields", "error");
-    if (!hasItems && !hasAssets)
-      return showToast("Add at least one item or one asset", "error");
+    if (!hasItems)
+      return showToast("Add at least one item", "error");
     if (
       itemLines.some((i) => !i.item_name || isUOMMissing || i.requested_qty < 1)
     )
@@ -647,6 +647,7 @@ export default function SubStore() {
           creating={creating}
           EMPTY_FORM={EMPTY_FORM}
           pageType={pageType}
+          showToast={showToast}
         />
       )}
       {returnBackModal && (

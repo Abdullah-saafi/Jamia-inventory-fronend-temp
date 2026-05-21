@@ -94,6 +94,13 @@ export default function MainSubStoreReqs({
     try {
       const res = await getRequestById(r.request_id);
       setInstantRequest(res.data.data);
+      setItemForm((prev) => ({
+        ...prev,
+        items: res.data.data.items.map(item => ({
+          ...item,
+          images: [] // initialize per item
+        }))
+      }))
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
       showToast(msg, "error");
@@ -350,6 +357,7 @@ export default function MainSubStoreReqs({
           toStore={toStore}
           removeLine={removeLine}
           creating={creating}
+          showToast={showToast}
         />
       )}
     </div>
