@@ -46,6 +46,7 @@ const TableHead = ({ pageType }) => {
       // "واپس آئٹمز",
       // "اسکریپ",
       "حالت",
+      "تصویر"
     ],
     mainStoreProcessReturns: [
       "واپسی نمبر",

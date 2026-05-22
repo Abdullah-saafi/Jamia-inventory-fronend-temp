@@ -30,7 +30,7 @@ export default function MainAllItems({
 }) {
   const [showAddItem, setShowAddItem] = useState(false);
   const [showCategory, setShowCategory] = useState(false);
-
+  const [previewImg, setPreviewImg] = useState(null);
   const { auth } = useAuth();
   const handleError = useErrorHandler();
 
@@ -210,6 +210,7 @@ export default function MainAllItems({
                     <td className="px-4 py-3 text-gray-800 font-semibold">
                       {i.item_name}
                     </td>
+                    
                     <td className="px-4 py-3 text-gray-500 text-xs">
                       {i.category || "—"}
                     </td>
@@ -258,6 +259,19 @@ export default function MainAllItems({
                         {isLow ? "Low" : "OK"}
                       </span>
                     </td>
+     <td className="px-4 py-3 text-center">
+  {i.image_url ? (
+    <button
+      onClick={() => setPreviewImg(i.image_url)}
+      title="تصویر دیکھیں"
+      className="text-xl hover:scale-125 transition-transform"
+    >
+      🖼️
+    </button>
+  ) : (
+    <span className="text-gray-300 text-lg">—</span>
+  )}
+</td>
                   </tr>
                 );
               })
@@ -276,7 +290,20 @@ export default function MainAllItems({
             setCurrentPage(1);
           }}
         />
+        {previewImg && (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+    onClick={() => setPreviewImg(null)}
+  >
+    <img
+      src={previewImg}
+      alt="preview"
+      className="max-w-[90vw] max-h-[85vh] rounded-xl shadow-2xl border-4 border-white"
+    />
+  </div>
+)}
       </div>
     </div>
+    
   );
 }

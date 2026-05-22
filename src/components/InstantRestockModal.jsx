@@ -41,7 +41,7 @@ const InstantRestockModal = ({
                     </div>
                 )}
 
-                <form onSubmit={onSubmit} className="p-5 space-y-4">
+                <form onSubmit={handleSubmit} className="p-5 space-y-4">
                     {/* ── Emergency toggle ── */}
                     <div
                         onClick={() =>

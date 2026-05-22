@@ -665,6 +665,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
           creating={creating}
           EMPTY_FORM={EMPTY_FORM}
           pageType={pageType}
+          setCreating={setCreating}
           toStore={toStore}
         />
       )}

@@ -625,6 +625,7 @@ export default function SubStore() {
       {showCreate && (
         <CreateRequestModal
           itemForm={itemForm}
+          setCreating={setCreating}
           setItemForm={setItemForm}
           mainStores={mainStores}
           storeItems={storeItems}

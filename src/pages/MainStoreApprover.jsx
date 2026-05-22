@@ -623,6 +623,7 @@ export default function SubStore() {
           mainStores={mainStores}
           storeItems={storeItems}
           reusableItems={reusableItems}
+          setCreating={setCreating}
           usableItems={usableItems}
           onClose={() => setShowCreate(false)}
           onSubmit={handleCreate}
