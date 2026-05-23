@@ -35,7 +35,6 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
       (i) =>
         i.item_condition === "DAMAGED" ||
         i.item_condition === "MISSING" ||
-        i.item_condition === "RETURN" ||
         Number(i.received_qty) < Number(i.fulfilled_qty)
     );
     if (hasDispute) return "DISPUTED";
@@ -125,8 +124,8 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                 }`}
             />
             {currentStatus === "DISPUTED"
-                ? "Issues detected — this will be marked DISPUTED"
-                : "All items look good — this will be marked RECEIVED"}
+              ? "Issues detected — this will be marked DISPUTED"
+              : "All items look good — this will be marked RECEIVED"}
           </div>
 
           {/* Items table */}
@@ -182,7 +181,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                             updateItem(idx, "item_condition", "OK");
                           }
                         }}
-                        className="w-20 border rounded px-2 py-1 text-sm font-mono focus:outline-none border-gray-300 text-gray-800"/>
+                        className="w-20 border rounded px-2 py-1 text-sm font-mono focus:outline-none border-gray-300 text-gray-800" />
                     </td>
                     <td className="px-4 py-3">
                       <select
@@ -203,7 +202,6 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                         <option value="OK">✓ OK</option>
                         <option value="DAMAGED">⚠ Damaged</option>
                         <option value="MISSING">✕ Missing</option>
-                        <option value="RETURN">↵ Return</option>
                       </select>
                     </td>
                   </tr>
@@ -228,7 +226,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                   .map((i) => (
                     <li
                       key={i.request_item_id}
-                      className={`${hasAnyIssue ? "text-amber-700" :  ""} text-xs flex items-center gap-2`}
+                      className={`${hasAnyIssue ? "text-amber-700" : ""} text-xs flex items-center gap-2`}
                     >
                       <span className="font-mono font-bold">{i.item_no}</span>
                       <span>{i.item_name}</span>
@@ -292,8 +290,8 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
             >
               {submitting
                 ? "Submitting…"
-                  : currentStatus === "DISPUTED" 
-                  ? "Submit with issue" 
+                : currentStatus === "DISPUTED"
+                  ? "Submit with issue"
                   : "✓ Confirm Receipt"}
             </button>
           </div>

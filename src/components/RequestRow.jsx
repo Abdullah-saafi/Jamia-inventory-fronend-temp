@@ -144,18 +144,7 @@ export default function RequestRow({
                 {grnLoading ? "…" : "Verify Delivery"}
               </button>
             )}
-            {isReturnable && pageType === "subStore" && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  returnItem(r.request_id,)
-                }}
-                disabled={returnModalLoading}
-                className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
-              >
-                {returnModalLoading ? "…" : "Return Items"}
-              </button>
-            )}
+
             {(r.status === "PENDING" && pageType === "subStoreManager") && (
               <>
                 <button

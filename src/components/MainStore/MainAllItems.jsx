@@ -55,9 +55,9 @@ export default function MainAllItems({
               className="bg-white border leading-none border-gray-300 rounded px-3 py-3 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-64 shadow-sm"
             />
 
-              {showCategory && (
-                <div className="absolute inset-0" onClick={() => setShowCategory((prev) => !prev)} />
-              )}
+            {showCategory && (
+              <div className="absolute inset-0" onClick={() => setShowCategory((prev) => !prev)} />
+            )}
             <div className="relative w-48">
               {showCategory && (
                 <div
@@ -196,7 +196,7 @@ export default function MainAllItems({
               />
             ) : (
               allItems.map((i) => {
-                const isLow = i.main_qty <= parseFloat(i.min_quantity || 0);
+                const isLow = i.item_quantity <= parseFloat(i.min_quantity || 0);
                 return (
                   <tr
                     key={i.item_id}
@@ -210,7 +210,7 @@ export default function MainAllItems({
                     <td className="px-4 py-3 text-gray-800 font-semibold">
                       {i.item_name}
                     </td>
-                    
+
                     <td className="px-4 py-3 text-gray-500 text-xs">
                       {i.category || "—"}
                     </td>
@@ -228,7 +228,7 @@ export default function MainAllItems({
                       </span>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">
-                      {Number(i.sub_qty).toFixed(0)}
+                      {(Number(i.sub_qty || 0) - Number(i.returned_qty || 0))}
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-bold text-gray-700">
@@ -237,18 +237,16 @@ export default function MainAllItems({
                     </td>
 
                     <td className="px-4 py-3">
-                      <span
-                        className={`font-mono text-xs font-bold ${i.main_qty - i.sub_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
-                      >
-                        {Number(
-                          i.item_quantity - i.sub_qty - i.transit_qty,
-                        ).toFixed(0)}
+                      <span className="font-mono text-xs font-bold text-gray-700">
+                        {(Number(i.item_quantity) - Number(i.sub_qty || 0) + Number(i.returned_qty || 0) - Number(i.scrapped_qty || 0)).toFixed(0)}
                       </span>
                     </td>
-                     <td className="px-4 py-3 font-mono text-gray-400 text-xs">
+                    <td className="px-4 py-3 font-mono text-gray-400 text-xs">
                       {Number(i.min_quantity) ?? "0"}
                     </td>
-               
+                    <td className="px-4 py-3 font-mono text-xs text-red-500 font-bold">
+                      {Number(i.scrapped_qty) || "—"}
+                    </td>
 
 
 
@@ -259,19 +257,19 @@ export default function MainAllItems({
                         {isLow ? "Low" : "OK"}
                       </span>
                     </td>
-     <td className="px-4 py-3 text-center">
-  {i.image_url ? (
-    <button
-      onClick={() => setPreviewImg(i.image_url)}
-      title="تصویر دیکھیں"
-      className="text-xl hover:scale-125 transition-transform"
-    >
-      🖼️
-    </button>
-  ) : (
-    <span className="text-gray-300 text-lg">—</span>
-  )}
-</td>
+                    <td className="px-4 py-3 text-center">
+                      {i.image_url ? (
+                        <button
+                          onClick={() => setPreviewImg(i.image_url)}
+                          title="تصویر دیکھیں"
+                          className="text-xl hover:scale-125 transition-transform"
+                        >
+                          🖼️
+                        </button>
+                      ) : (
+                        <span className="text-gray-300 text-lg">—</span>
+                      )}
+                    </td>
                   </tr>
                 );
               })
@@ -291,19 +289,19 @@ export default function MainAllItems({
           }}
         />
         {previewImg && (
-  <div
-    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-    onClick={() => setPreviewImg(null)}
-  >
-    <img
-      src={previewImg}
-      alt="preview"
-      className="max-w-[90vw] max-h-[85vh] rounded-xl shadow-2xl border-4 border-white"
-    />
-  </div>
-)}
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+            onClick={() => setPreviewImg(null)}
+          >
+            <img
+              src={previewImg}
+              alt="preview"
+              className="max-w-[90vw] max-h-[85vh] rounded-xl shadow-2xl border-4 border-white"
+            />
+          </div>
+        )}
       </div>
     </div>
-    
+
   );
 }

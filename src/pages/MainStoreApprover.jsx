@@ -19,7 +19,6 @@ import CreateRequestModal from "../components/CreateRequestModal";
 import RequestRow from "../components/RequestRow";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
-import ReturnItemsModal from "../components/ReturnItemsModal";
 import useErrorHandler from "../components/useErrorHandler";
 import RequestDashboard from "../components/RequestDashboard";
 import ToastContainer from "../components/ToastContainer";
@@ -741,12 +740,12 @@ export default function SubStore() {
                                     prev.map((i) =>
                                       i.item_id === item.item_id
                                         ? {
-                                            ...i,
-                                            return_qty: Math.max(
-                                              0,
-                                              Number(i.return_qty) - 1,
-                                            ),
-                                          }
+                                          ...i,
+                                          return_qty: Math.max(
+                                            0,
+                                            Number(i.return_qty) - 1,
+                                          ),
+                                        }
                                         : i,
                                     ),
                                   )
@@ -765,15 +764,15 @@ export default function SubStore() {
                                     prev.map((i) =>
                                       i.item_id === item.item_id
                                         ? {
-                                            ...i,
-                                            return_qty: Math.min(
-                                              Number(item.item_quantity),
-                                              Math.max(
-                                                0,
-                                                Number(e.target.value),
-                                              ),
+                                          ...i,
+                                          return_qty: Math.min(
+                                            Number(item.item_quantity),
+                                            Math.max(
+                                              0,
+                                              Number(e.target.value),
                                             ),
-                                          }
+                                          ),
+                                        }
                                         : i,
                                     ),
                                   )
@@ -786,12 +785,12 @@ export default function SubStore() {
                                     prev.map((i) =>
                                       i.item_id === item.item_id
                                         ? {
-                                            ...i,
-                                            return_qty: Math.min(
-                                              Number(item.item_quantity),
-                                              Number(i.return_qty) + 1,
-                                            ),
-                                          }
+                                          ...i,
+                                          return_qty: Math.min(
+                                            Number(item.item_quantity),
+                                            Number(i.return_qty) + 1,
+                                          ),
+                                        }
                                         : i,
                                     ),
                                   )
@@ -814,27 +813,27 @@ export default function SubStore() {
               {/* Selected summary */}
               {returnBackItems.filter((i) => Number(i.return_qty) > 0).length >
                 0 && (
-                <div className="flex gap-4 text-xs text-gray-500 bg-gray-50 rounded px-3 py-2">
-                  <span>
-                    منتخب آئٹمز:{" "}
-                    <strong className="text-gray-800">
-                      {
-                        returnBackItems.filter((i) => Number(i.return_qty) > 0)
-                          .length
-                      }
-                    </strong>
-                  </span>
-                  <span>
-                    کل مقدار:{" "}
-                    <strong className="text-emerald-600">
-                      {returnBackItems.reduce(
-                        (s, i) => s + Number(i.return_qty),
-                        0,
-                      )}
-                    </strong>
-                  </span>
-                </div>
-              )}
+                  <div className="flex gap-4 text-xs text-gray-500 bg-gray-50 rounded px-3 py-2">
+                    <span>
+                      منتخب آئٹمز:{" "}
+                      <strong className="text-gray-800">
+                        {
+                          returnBackItems.filter((i) => Number(i.return_qty) > 0)
+                            .length
+                        }
+                      </strong>
+                    </span>
+                    <span>
+                      کل مقدار:{" "}
+                      <strong className="text-emerald-600">
+                        {returnBackItems.reduce(
+                          (s, i) => s + Number(i.return_qty),
+                          0,
+                        )}
+                      </strong>
+                    </span>
+                  </div>
+                )}
               <input
                 value={returnBackNote}
                 onChange={(e) => setReturnBackNote(e.target.value)}
