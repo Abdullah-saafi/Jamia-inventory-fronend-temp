@@ -26,6 +26,8 @@ export default function RequestRow({
   username,
   setItemForm,
   EMPTY_LINE,
+  setFulfillModal,
+  setRequestNo,
 }) {
   const isExpanded = detail && detail.request_id === r.request_id;
   const needsGRN = r.status === "FULFILLED" && !r.grn_at;
@@ -34,7 +36,6 @@ export default function RequestRow({
   const isReceived = r.status === "RECEIVED" || r.status === "PARTIALLY_RECEIVED";
   const isREUSABLE = r.item
   const hasItems = (r.item_count ?? 0) > 0;
-  const hasAssets = (r.asset_count ?? 0) > 0;
   const isReturnable = r.item_type === "REUSABLE" && r.has_returnable_items && (r.status === "RECEIVED" || r.status === "PARTIALLY_RECEIVED");
   const isEmergency = r.is_emergency;
   const isClosed = r.status === "CLOSED";
@@ -82,7 +83,7 @@ export default function RequestRow({
         {(pageType === "subStore" || pageType === "subStoreManager") && (
           <>
             <td className="px-4 py-3">
-              <TypeBadge hasItems={hasItems} hasAssets={hasAssets} />
+              <TypeBadge hasItems={hasItems} itemType={r.item_type} />
             </td>
           </>
         )}
@@ -183,9 +184,18 @@ export default function RequestRow({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleFulfill(r.request_id);
+
+                  if (pageType === "mainSubStoreReqs") {
+                    handleFulfill(r.request_id);
+                  } else {
+                    setFulfillModal(true);
+                    setRequestNo({
+                      id: r.request_id,
+                      no: r.request_no
+                    });
+                  }
                 }}
-                className={`text-white text-sm font-semibold px-2.5 ml-2 py-1.5 rounded disabled:opacity-40 ${isEmergency
+                className={`text-white text-sm font-semibold px-2.5 ml-2 py-1.5 cursor-pointer rounded disabled:opacity-40 ${isEmergency
                   ? "bg-red-500 hover:bg-red-600"
                   : "bg-blue-600 hover:bg-blue-500"
                   }`}
@@ -300,8 +310,15 @@ export default function RequestRow({
 
                 <div>
                   <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
-                    آئٹمز
+                    آئٹم کی تفصیلات
                   </div>
+                  {(r.driver_name || r.driver_no || r.vehicle_no) && (
+                    <div>
+                      <p>Driver Name: {r.driver_name || "-"}</p>
+                      <p>Driver Number: {r.driver_no || "-"}</p>
+                      <p>Vehicle number plate: {r.vehicle_no || "-"}</p>
+                    </div>
+                  )}
                   <ItemsTable
                     items={detail?.items || []}
                     isDisputed={isDisputed}

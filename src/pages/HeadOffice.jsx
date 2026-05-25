@@ -21,6 +21,13 @@ import StoreFilters from "../components/StoreFilters";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import RequestRow from "../components/RequestRow";
+import FulfillModal from "../components/FulfillModal";
+
+const EMPTY_FULFILL_FORM = {
+  driver_name: "",
+  driver_no: "",
+  vehicle_no: "",
+}
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function HeadOffice() {
@@ -38,7 +45,8 @@ export default function HeadOffice() {
   const [fulfillerName, setFulfillerName] = useState("");
   const [fulfillNotes, setFulfillNotes] = useState("");
   const [fulfilling, setFulfilling] = useState(false);
-
+  const [requestNo, setRequestNo] = useState(null);
+  const [fulfillForm, setFulfillForm] = useState({...EMPTY_FULFILL_FORM})
   const { auth } = useAuth();
   const { showToast } = useToast()
   const handleError = useErrorHandler();
@@ -84,10 +92,12 @@ export default function HeadOffice() {
   const handleFulfill = async (id) => {
     setFulfilling(id);
     try {
-      await fulfillRequest(id);
+      await fulfillRequest(id, fulfillForm);
       showToast(fulfillMode === "refulfill"
         ? "Re-dispatched — Main Store will verify the corrected delivery"
         : "Request fulfilled — Main Store will verify delivery", "success");
+      setFulfillModal(false)
+      setFulfillForm({...EMPTY_FULFILL_FORM})
       load();
     } catch (e) {
       const msg = handleError(e, "Error fulfilling request");
@@ -216,6 +226,8 @@ export default function HeadOffice() {
                   fulfilling={fulfilling}
                   handleResolved={handleResolved}
                   showToast={showToast}
+                  setFulfillModal={setFulfillModal}
+                  setRequestNo={setRequestNo}
                 />
               ))
             )}
@@ -230,6 +242,18 @@ export default function HeadOffice() {
           onPageSizeChange={setPageSize}
         />
       </div>
+      {fulfillModal && (
+        <FulfillModal
+          pageType={pageType}
+          setFulfillForm={setFulfillForm}
+          setFulfillModal={setFulfillModal}
+          fulfillForm={fulfillForm}
+          requestNo={requestNo}
+          fulfilling={fulfilling}
+          handleFulfill={handleFulfill}
+          EMPTY_FULFILL_FORM={EMPTY_FULFILL_FORM}
+        />
+      )}
     </div>
   );
 }

@@ -55,9 +55,9 @@ export default function MainAllItems({
               className="bg-white border leading-none border-gray-300 rounded px-3 py-3 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-64 shadow-sm"
             />
 
-              {showCategory && (
-                <div className="absolute inset-0" onClick={() => setShowCategory((prev) => !prev)} />
-              )}
+            {showCategory && (
+              <div className="absolute inset-0" onClick={() => setShowCategory((prev) => !prev)} />
+            )}
             <div className="relative w-48">
               {showCategory && (
                 <div
@@ -98,7 +98,7 @@ export default function MainAllItems({
                       setFilterCategory("");
                       setShowCategory(false);
                     }}
-                    className=" text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 border-b border-gray-100"
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
                   >
                     تمام زمرے
                   </button>

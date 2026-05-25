@@ -199,12 +199,14 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    const { from_store_id, to_store_id, requested_by_name, items } = form;
+    const { from_store_id, to_store_id, requested_by_name, items} = form;
     const invalid = items.some(
       (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
     );
+    console.log("form",form);
+    
     if (!from_store_id || !to_store_id || !requested_by_name || invalid)
-      return showToast("Please fill all required fields", "error");
+      return showToast("براہ کرم تمام لازمی خانے پُر کریں۔", "error");
 
     setCreating(true);
     try {
@@ -274,18 +276,11 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => {
-
-            setForm({
+            setForm((prev) => ({
+              ...prev,
               from_store_id: auth.store_id || "",
-              to_store_id: "",
               requested_by_name: auth.username || "",
-              notes: "",
-              items: [
-                {
-                  ...EMPTY_LINE
-                },
-              ],
-            });
+            }));
 
             setShowCreate(true);
           }}

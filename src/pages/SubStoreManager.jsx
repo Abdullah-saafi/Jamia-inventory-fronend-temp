@@ -32,7 +32,7 @@ export default function SubStoreManager() {
   const [approveModal, setApproveModal] = useState(null);
   const [approverName, setApproverName] = useState("");
   const [editedItems, setEditedItems] = useState([]);
-  const [actioning, setActioning] = useState(false);
+  const [actioning, setActioning] = useState(null);
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
@@ -119,7 +119,7 @@ export default function SubStoreManager() {
 
   const openApprove = async (r) => {
     try {
-      setActioning(true);
+      setActioning(r.request_id);
       const res = await getRequestById(r.request_id);
       setEditedItems(
         (res.data.data.items || []).map((i) => ({
@@ -133,13 +133,13 @@ export default function SubStoreManager() {
       const msg = handleError(error, "Failed to load items");
       showToast(msg,"error");
     } finally {
-      setActioning(false);
+      setActioning(null);
     }
   };
 
   const openReject = async (r) => {
     try {
-      setActioning(true);
+      setActioning(r.request_id);
       const res = await getRequestById(r.request_id);
       setRejectModal(res.data.data);
       setRejecterName(auth.username || "");
@@ -148,7 +148,7 @@ export default function SubStoreManager() {
       const msg = handleError(error, "Failed to load request");
       showToast(msg, "error");
     } finally {
-      setActioning(false);
+      setActioning(null);
     }
   };
 
@@ -156,9 +156,6 @@ export default function SubStoreManager() {
     if (!approverName.trim()) return;
     setActioning(true);
     try {
-      console.log("Approver modal", approveModal);
-      console.log("edited items", editedItems);
-
       await approveRequest(approveModal.request_id, {
         approved_by_name: approverName,
         approved_items: editedItems.map((i) => ({

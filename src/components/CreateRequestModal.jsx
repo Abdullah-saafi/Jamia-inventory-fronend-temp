@@ -24,6 +24,9 @@ export default function CreateRequestModal({
   const [activeTab, setActiveTab] = useState("items");
   const { auth } = useAuth();
 
+  const selectedStore = toStore?.find((s) => s.store_id === itemForm.to_store_id)
+  const isHeadOffice = selectedStore?.store_name === "Head Office"
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
@@ -217,7 +220,7 @@ export default function CreateRequestModal({
                   onClick={addLine}
                   className="text-xs text-emerald-600 hover:text-emerald-500 border border-gray-300 rounded px-2 py-1"
                 >
-                  + قطار شامل کریں
+                  + آئٹم شامل کریں
                 </button>
               </div>
 
@@ -486,7 +489,7 @@ export default function CreateRequestModal({
           )}
 
           {/* ══════════════════════════════════════════════════════════
-              ASSETS TAB
+              Non-Consumalbe items TAB
           ══════════════════════════════════════════════════════════ */}
           {activeTab === "assets" && (
             <div>
@@ -499,7 +502,7 @@ export default function CreateRequestModal({
                   onClick={addLine}
                   className="text-xs text-emerald-600 hover:text-emerald-500 border border-gray-300 rounded px-2 py-1"
                 >
-                  + قطار شامل کریں
+                  + آئٹم شامل کریں
                 </button>
               </div>
 

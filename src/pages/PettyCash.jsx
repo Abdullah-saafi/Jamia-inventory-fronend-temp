@@ -17,6 +17,7 @@ import DateTimeCell from "../components/DateTimeCell";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import DisputeResolutionPanel from "../components/DisputeResolutionPanel";
 import { useToast } from "../context/ToastContext";
+import FulfillModal from "../components/FulfillModal";
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function PettyCash() {
@@ -40,8 +41,9 @@ export default function PettyCash() {
     const [actioning, setActioning] = useState(false);
 
     const { auth } = useAuth();
-    const {showToast} = useToast()
+    const { showToast } = useToast()
     const handleError = useErrorHandler();
+    const pageType = "pettyCash"
 
     const load = async () => {
         setLoading(true);
@@ -74,7 +76,7 @@ export default function PettyCash() {
             setDetail(res.data.data);
         } catch (error) {
             const msg = handleError(error, "Failed to load data", "error");
-            showToast(msg,"error");
+            showToast(msg, "error");
         } finally {
             setDL(false);
         }
@@ -83,18 +85,18 @@ export default function PettyCash() {
     const handleFulfill = async (id, ref_no) => {
         setActioning(true);
         try {
-            console.log("id",id);
-            console.log("ref_no",ref_no);
-            
-            await fulfillRequest(id,{ref_no});
+            console.log("id", id);
+            console.log("ref_no", ref_no);
+
+            await fulfillRequest(id, { ref_no });
             showToast(fulfillMode === "refulfill"
-                        ? "Re-dispatched — Main Store will verify the corrected delivery"
-                        : "Request fulfilled — Main Store will verify delivery", "success");
+                ? "Re-dispatched — Main Store will verify the corrected delivery"
+                : "Request fulfilled — Main Store will verify delivery", "success");
             setFulfillModal(false)
             load();
         } catch (e) {
             const msg = handleError(e, "Error fulfilling request");
-            showToast(msg,"error");
+            showToast(msg, "error");
         } finally {
             setActioning(false);
         }
@@ -111,11 +113,6 @@ export default function PettyCash() {
     if (auth.isBlocked) {
         return <BlockedUI message={auth.message} />;
     }
-
-    const paginatedRequests = requests.slice(
-        (page - 1) * pageSize,
-        page * pageSize,
-    );
 
     return (
         <div>
@@ -254,7 +251,7 @@ export default function PettyCash() {
                                 requests={requests}
                             />
                         ) : (
-                            paginatedRequests.map((r) => {
+                            requests.map((r) => {
                                 const isExpanded = detail && detail.request_id === r.request_id;
                                 const canFulfill = r.status === "APPROVED";
                                 const isDisputed = r.status === "DISPUTED";
@@ -318,7 +315,10 @@ export default function PettyCash() {
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 setFulfillModal(true)
-                                                                setRequestNo(r)
+                                                                setRequestNo({
+                                                                    id: r.request_id,
+                                                                    no: r.request_no
+                                                                });
                                                             }}
                                                             className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-2.5 ml-2 py-1.5 rounded disabled:opacity-40"
                                                         >
@@ -553,13 +553,6 @@ export default function PettyCash() {
                                                                         managerName={auth.username}
                                                                     />
                                                                 )}
-
-                                                                {detail.status === "FULFILLED" && (
-                                                                    <div className="bg-blue-50 border border-blue-200 rounded p-3 text-blue-700 text-xs">
-                                                                        ✓ Fulfilled — waiting for Main Store to
-                                                                        verify delivery.
-                                                                    </div>
-                                                                )}
                                                             </div>
                                                         )
                                                     )}
@@ -584,69 +577,16 @@ export default function PettyCash() {
 
             {/* ── Fulfill / Re-dispatch Modal ── */}
             {fulfillModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div
-                        className="absolute inset-0 bg-black/30"
-                        onClick={() => {
-                            setFulfillModal(null)
-                            setReferenceNo("")
-                        }}
-                    />
-                    <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-                            <h2 className="text-gray-900 font-bold">
-                                Fulfill — {requestNo.request_no}
-                            </h2>
-                            <button
-                                onClick={() => {
-                                    setFulfillModal(null)
-                                    setReferenceNo("")
-                                }}
-                                className="text-gray-400 hover:text-gray-700 text-xl"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                        <div className="p-5 space-y-4">
-                            <div>
-                                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                                    Reference Number *
-                                </label>
-                                <input
-                                    type="text"
-                                    value={referenceNo}
-                                    onChange={(e) => {
-                                        setReferenceNo(e.target.value)
-                                    }}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-sm outline-none"
-                                />
-                            </div>
-                            <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
-                                <button
-                                    onClick={() => {
-                                        setFulfillModal(null)
-                                        setReferenceNo("")
-                                    }}
-                                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        handleFulfill(requestNo.request_id, referenceNo)
-                                    }}
-                                    disabled={
-                                        actioning
-                                    }
-                                    className="text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40 bg-emerald-600 hover:bg-emerald-500">
-                                    {actioning
-                                        ? "Processing..."
-                                        : "Confirm Fulfill"}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <FulfillModal
+                    pageType={pageType}
+                    setRequestNo={setRequestNo}
+                    setFulfillModal={setFulfillModal}
+                    requestNo={requestNo}
+                    referenceNo={referenceNo}
+                    handleFulfill={handleFulfill}
+                    actioning={actioning}
+                    setReferenceNo={setReferenceNo}
+                />
             )}
 
         </div>

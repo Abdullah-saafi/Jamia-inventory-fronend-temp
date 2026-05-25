@@ -238,6 +238,7 @@ const AddItemsAndCategories = () => {
                     <div className="flex gap-2">
                       <input
                         value={newItem.item_no}
+                        placeholder="خودکارتیارکردہ،آئٹم کی قسم منتخب کریں"
                         onChange={(e) => {
                           setNewItem((f) => ({
                             ...f,
@@ -268,7 +269,7 @@ const AddItemsAndCategories = () => {
                         }));
                         setItemErrors((f) => ({ ...f, item_name: undefined }));
                       }}
-                      placeholder="e.g. Surgical Gloves"
+                      placeholder="English / اردو"
                       className={inputCls("item_name")}
                     />
                     {fieldError("item_name")}
@@ -319,7 +320,7 @@ const AddItemsAndCategories = () => {
                           }));
                           setItemErrors((f) => ({ ...f, item_uom: undefined }));
                         }}
-                        placeholder="Select or Type UOM"
+                        placeholder="Type UOM"
                         className={`w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${
                           itemErrors.item_uom
                             ? "border-red-400"
