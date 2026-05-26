@@ -246,7 +246,7 @@ export default function MainStoreApprover() {
       </div>
 
       {/* ── Table ── */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+      <div className="overflow-x-auto text-center rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <TableHead

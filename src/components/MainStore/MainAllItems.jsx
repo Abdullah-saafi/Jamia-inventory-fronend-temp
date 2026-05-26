@@ -180,7 +180,7 @@ export default function MainAllItems({
       </div>
 
       {/* Table Section */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm mt-1">
+      <div className="overflow-x-auto text-center rounded-lg border border-gray-200 shadow-sm mt-1">
         <table className="w-full text-sm">
           <thead>
             <TableHead
@@ -207,8 +207,11 @@ export default function MainAllItems({
                         {i.item_no}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-semibold">
-                      {i.item_name}
+                    <td className="px-4 py-3">
+                      <div className="font-semibold text-gray-800">{i.item_name}</div>
+                      <div className="font-semibold text-xs text-gray-800 dir-rtl" dir="rtl">
+                        {i.item_name_urdu}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-gray-500 text-xs">
                       {i.category || "—"}

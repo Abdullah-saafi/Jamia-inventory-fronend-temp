@@ -258,13 +258,7 @@ export default function MainStore() {
 
       {tab === "ho-create" && (
         <MainReqToHO
-          mainStores={mainStores}
-          headOffices={headOffices}
-          hoRequests={hoRequests}
-          refresh={refresh}
           showToast={showToast}
-          loading={loading}
-          mainStoreError={mainStoreError}
         />
       )}
     </div>

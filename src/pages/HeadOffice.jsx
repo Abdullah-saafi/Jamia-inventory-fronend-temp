@@ -23,7 +23,8 @@ import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import RequestRow from "../components/RequestRow";
 import FulfillModal from "../components/FulfillModal";
 
-const EMPTY_FULFILL_FORM = {
+const 
+EMPTY_FULFILL_FORM = {
   driver_name: "",
   driver_no: "",
   vehicle_no: "",

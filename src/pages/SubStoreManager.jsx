@@ -4,6 +4,7 @@ import {
   getRequestById,
   approveRequest,
   rejectRequest,
+  rejectItemById,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
@@ -33,6 +34,7 @@ export default function SubStoreManager() {
   const [approverName, setApproverName] = useState("");
   const [editedItems, setEditedItems] = useState([]);
   const [actioning, setActioning] = useState(null);
+  const [rejectSpecificItem, setRejectSpecificItem] = useState(null);
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
@@ -107,7 +109,9 @@ export default function SubStoreManager() {
     setDL(true);
     setDetail({ ...r, items: [] });
     try {
+      console.log("r",r);
       const res = await getRequestById(r.request_id);
+      console.log("detail",res.data.data);
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
@@ -117,17 +121,20 @@ export default function SubStoreManager() {
     }
   };
 
-  const openApprove = async (r) => {
+  const openApprove = async (request_id, request_no) => {
     try {
-      setActioning(r.request_id);
-      const res = await getRequestById(r.request_id);
+      setActioning(request_id);
+      const res = await getRequestById(request_id);
       setEditedItems(
         (res.data.data.items || []).map((i) => ({
           ...i,
           approved_qty: i.requested_qty,
         })),
       );
-      setApproveModal(r);
+      setApproveModal({
+        id: request_id,
+        no: request_no
+      });
       setApproverName(auth.username || "");
     } catch (error) {
       const msg = handleError(error, "Failed to load items");
@@ -156,7 +163,7 @@ export default function SubStoreManager() {
     if (!approverName.trim()) return;
     setActioning(true);
     try {
-      await approveRequest(approveModal.request_id, {
+      await approveRequest(approveModal.id, {
         approved_by_name: approverName,
         approved_items: editedItems.map((i) => ({
           request_item_id: i.request_item_id,
@@ -175,6 +182,19 @@ export default function SubStoreManager() {
       setActioning(false);
     }
   };
+
+  const rejectItem = async (id, rid) => {
+    try {
+      setRejectSpecificItem(rid)
+      await rejectItemById(id, rid)
+      openApprove(id)
+    } catch (error) {
+      const msg = handleError(error, "Error approving");
+      showToast(msg,"error");
+    } finally{
+      setRejectSpecificItem(null)
+    }
+  }
 
   const handleReject = async () => {
     if (!rejecterName.trim() || !rejectReason.trim()) return;
@@ -279,7 +299,7 @@ export default function SubStoreManager() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+      <div className="overflow-x-auto text-center rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <TableHead
@@ -336,6 +356,8 @@ export default function SubStoreManager() {
           actioning={actioning}
           handleApprove={handleApprove}
           handleReject={handleReject}
+          rejectItem={rejectItem}
+          rejectSpecificItem={rejectSpecificItem}
           action={"Approve"}
         />
       )}

@@ -7,7 +7,6 @@ const FulfillModal = ({
     requestNo,
     referenceNo,
     handleFulfill,
-    actioning,
     fulfilling,
     EMPTY_FULFILL_FORM,
 
@@ -70,11 +69,9 @@ const FulfillModal = ({
                                 onClick={() => {
                                     handleFulfill(requestNo.id, referenceNo)
                                 }}
-                                disabled={
-                                    actioning
-                                }
+                                disabled={fulfilling}
                                 className="text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40 bg-emerald-600 hover:bg-emerald-500">
-                                {actioning
+                                {fulfilling
                                     ? "جاری ہے..."
                                     : "تکمیل کی تصدیق کریں"}
                             </button>

@@ -115,7 +115,7 @@ export default function RequestRow({
         </td>
         {pageType === "mainSubStoreReqs" && (
           <>
-            <td className="px-4 py-3 text-gray-700">
+            <td className="px-4 py-3">
               <DateTimeCell ts={r.fulfilled_at} />
             </td>
           </>
@@ -123,9 +123,9 @@ export default function RequestRow({
         <td className="px-4 py-3">
           <StatusBadge status={r.status} />
         </td>
-        {(pageType === "subStore" || pageType === "subStoreManager" || pageType === "headOffice" || pageType === "mainStoreApprover") && (
+        {(pageType === "subStore" || pageType === "subStoreManager" || pageType === "headOffice" || pageType === "mainStoreApprover" || pageType === "mainReqToHO" || pageType === "pettyCash") && (
           <>
-            <td className="px-4 py-3">
+            <td className="px-4 py-3 ">
               <DateTimeCell ts={r.approved_at} />
             </td>
             <td className="px-4 py-3">
@@ -135,7 +135,7 @@ export default function RequestRow({
         )}
         <td className="px-4 py-3 text-right">
           <div className="flex items-center justify-end gap-2">
-            {(needsGRN && pageType === "subStore") && (
+            {(needsGRN && (pageType === "subStore" || pageType === "mainReqToHO")) && (
               <button
                 onClick={(e) => openGRN(e, r)}
                 disabled={grnLoading}
@@ -162,7 +162,7 @@ export default function RequestRow({
                   disabled={actioning === r.request_id}
                   onClick={(e) => {
                     e.stopPropagation();
-                    openApprove(r);
+                    openApprove(r.request_id, r.request_no);
                   }}
                   className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
@@ -240,7 +240,7 @@ export default function RequestRow({
                   : "bg-gray-50 border-emerald-200"
             }`}
         >
-          <td colSpan={10} className="px-6 py-4">
+          <td colSpan={10} className="px-6 py-4 text-left leading-relaxed">
             {detailLoad ? (
               <div className="flex justify-center py-6">
                 <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
@@ -309,14 +309,44 @@ export default function RequestRow({
                 )}
 
                 <div>
-                  <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
+                  {/* Title */}
+                  <div className="text-gray-400 text-[11px] uppercase font-bold tracking-wider mb-3">
                     آئٹم کی تفصیلات
                   </div>
-                  {(r.driver_name || r.driver_no || r.vehicle_no) && (
-                    <div>
-                      <p>Driver Name: {r.driver_name || "-"}</p>
-                      <p>Driver Number: {r.driver_no || "-"}</p>
-                      <p>Vehicle number plate: {r.vehicle_no || "-"}</p>
+
+                  {/* Driver Info */}
+                  {(r.driver_name || r.driver_no || r.vehicle_no) && (pageType === "headOffice" || pageType === "mainReqToHO") (
+                    <div className="bg-gray-100 border border-gray-200 rounded-xl p-4 mb-3 ">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+
+                        <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                          <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
+                            ڈرائیور کا نام
+                          </div>
+                          <div className="text-gray-800 font-medium">
+                            {r.driver_name || "-"}
+                          </div>
+                        </div>
+
+                        <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                          <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
+                            ڈرائیور کا نمبر
+                          </div>
+                          <div className="text-gray-800 font-medium">
+                            {r.driver_no || "-"}
+                          </div>
+                        </div>
+
+                        <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                          <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
+                            گاڑی کا نمبر
+                          </div>
+                          <div className="text-gray-800 font-medium">
+                            {r.vehicle_no || "-"}
+                          </div>
+                        </div>
+
+                      </div>
                     </div>
                   )}
                   <ItemsTable
