@@ -16,7 +16,8 @@ const ApproveRejectModal = ({
     setRejectReason,
     handleReject,
     rejectItem,
-    rejectSpecificItem
+    rejectSpecificItem,
+    openHistory
 }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -103,7 +104,7 @@ const ApproveRejectModal = ({
                                                 <td className="py-2 text-center">
                                                     <input
                                                         type="number"
-                                                        min="0"
+                                                        min="1"
                                                         value={Number(i.approved_qty)}
                                                         onChange={(e) => {
                                                             const u = [...editedItems];
@@ -116,13 +117,23 @@ const ApproveRejectModal = ({
                                                         className="w-20 bg-gray-50 border border-gray-300 rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none focus:border-emerald-500"
                                                     />
                                                 </td>
-
+                                                <td className="text-center">
+                                                    <button
+                                                        onClick={() => {
+                                                            openHistory(i.item_no)
+                                                        }}
+                                                        // disabled={rejectSpecificItem === i.request_item_id}
+                                                        className="text-zinc-800 text-sm font-semibold px-2 py-1 rounded disabled:opacity-40 bg-gray-200 hover:bg-gray-300"
+                                                    >
+                                                        {rejectSpecificItem === i.request_item_id ? "..." : "History"}
+                                                    </button>
+                                                </td>
                                                 {editedItems.length > 1 && (
                                                     <td className="text-center">
                                                         <button
                                                             onClick={() => rejectItem(i.request_id, i.request_item_id)}
                                                             disabled={rejectSpecificItem === i.request_item_id}
-                                                            className="text-white text-sm font-semibold px-3 py-1.5 rounded disabled:opacity-40 bg-red-600 hover:bg-red-500"
+                                                            className="text-white text-sm font-semibold px-2 py-1 rounded disabled:opacity-40 bg-red-600 hover:bg-red-500"
                                                         >
                                                             {rejectSpecificItem === i.request_item_id ? "..." : "مسترد"}
                                                         </button>

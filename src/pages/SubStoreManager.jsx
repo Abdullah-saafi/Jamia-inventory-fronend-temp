@@ -5,6 +5,8 @@ import {
   approveRequest,
   rejectRequest,
   rejectItemById,
+  getItemHistory,
+  getStores,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
@@ -28,6 +30,7 @@ export default function SubStoreManager() {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterStore, setFilterStore] = useState("");
   const [subStores, setSubStores] = useState([]);
+  const [currentStore, setCurrentStore] = useState(null);
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [approveModal, setApproveModal] = useState(null);
@@ -48,7 +51,7 @@ export default function SubStoreManager() {
   });
 
   const { auth } = useAuth();
-  const {showToast} = useToast()
+  const { showToast } = useToast()
   const handleError = useErrorHandler();
 
   const pageType = "subStoreManager";
@@ -88,18 +91,19 @@ export default function SubStoreManager() {
   }, [filterStatus, filterStore, auth.store_id, page, pageSize,]);
 
   useEffect(() => {
-    if (auth.role === "super admin") {
-      import("../services/api").then(({ getStores }) => {
-        getStores()
-          .then((res) =>
-            setSubStores(
-              res.data.data.filter((s) => s.store_type === "SUB_STORE"),
-            ),
-          )
-          .catch(() => { });
-      });
-    }
-  }, [auth.role]);
+    const fetchStores = async () => {
+      try {
+        const response = await getStores()
+        setSubStores(response.data.data.filter((s) => s.store_type === "SUB_STORE"))
+        setCurrentStore(response.data.data.filter((s) => s.store_name === auth.storeName))
+      } catch (e) {
+        const msg = handleError(e, "Failed to get stores")
+        showToast(msg, "error")
+      }
+    };
+
+    fetchStores();
+  }, []);
 
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
@@ -109,9 +113,9 @@ export default function SubStoreManager() {
     setDL(true);
     setDetail({ ...r, items: [] });
     try {
-      console.log("r",r);
+      console.log("r", r);
       const res = await getRequestById(r.request_id);
-      console.log("detail",res.data.data);
+      console.log("detail", res.data.data);
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
@@ -138,7 +142,7 @@ export default function SubStoreManager() {
       setApproverName(auth.username || "");
     } catch (error) {
       const msg = handleError(error, "Failed to load items");
-      showToast(msg,"error");
+      showToast(msg, "error");
     } finally {
       setActioning(null);
     }
@@ -177,7 +181,7 @@ export default function SubStoreManager() {
       load();
     } catch (e) {
       const msg = handleError(e, "Error approving");
-      showToast(msg,"error");
+      showToast(msg, "error");
     } finally {
       setActioning(false);
     }
@@ -190,8 +194,8 @@ export default function SubStoreManager() {
       openApprove(id)
     } catch (error) {
       const msg = handleError(error, "Error approving");
-      showToast(msg,"error");
-    } finally{
+      showToast(msg, "error");
+    } finally {
       setRejectSpecificItem(null)
     }
   }
@@ -211,11 +215,23 @@ export default function SubStoreManager() {
       load();
     } catch (e) {
       const msg = handleError(e, "Error rejecting");
-      showToast(msg,"error");
+      showToast(msg, "error");
     } finally {
       setActioning(false);
     }
   };
+
+  const openHistory = async (item_no) => {
+    try {
+      const response = await getItemHistory(currentStore[0].store_id, item_no)
+      console.log("data",response.data.data);
+      
+      showToast("success","success")
+    } catch (e) {
+      const msg = handleError(e, "Error fetching history");
+      showToast(msg, "error");
+    }
+  }
 
   const pendingCount = allRequests.filter((r) => r.status === "PENDING").length;
 
@@ -359,6 +375,7 @@ export default function SubStoreManager() {
           rejectItem={rejectItem}
           rejectSpecificItem={rejectSpecificItem}
           action={"Approve"}
+          openHistory={openHistory}
         />
       )}
 

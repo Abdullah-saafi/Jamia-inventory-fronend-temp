@@ -141,7 +141,7 @@ export default function RequestRow({
                 disabled={grnLoading}
                 className="text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
               >
-                {grnLoading ? "…" : "Verify Delivery"}
+                {grnLoading ? "…" : "ڈلیوری کی تصدیق"}
               </button>
             )}
             {isReturnable && pageType === "subStore" && (
@@ -166,7 +166,7 @@ export default function RequestRow({
                   }}
                   className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {actioning === r.request_id ? "..." : "Approve"}
+                  {actioning === r.request_id ? "..." : "منظور کریں"}
                 </button>
                 <button
                   disabled={actioning === r.request_id}
@@ -176,7 +176,7 @@ export default function RequestRow({
                   }}
                   className="text-xs bg-red-500 hover:bg-red-400 text-white rounded px-2 py-1 disabled:opacity-40"
                 >
-                  {actioning === r.request_id ? "..." : "Reject"}
+                  {actioning === r.request_id ? "..." : "مسترد کریں"}
                 </button>
               </>
             )}
@@ -195,13 +195,13 @@ export default function RequestRow({
                     });
                   }
                 }}
-                className={`text-white text-sm font-semibold px-2.5 ml-2 py-1.5 cursor-pointer rounded disabled:opacity-40 ${isEmergency
+                className={`text-white text-sm font-bold px-2.5 ml-2 py-1.5 cursor-pointer rounded disabled:opacity-40 ${isEmergency
                   ? "bg-red-500 hover:bg-red-600"
                   : "bg-blue-600 hover:bg-blue-500"
                   }`}
                 disabled={fulfilling === r.request_id}
               >
-                {fulfilling === r.request_id ? "..." : "Fulfill"}
+                {fulfilling === r.request_id ? "..." : "تکمیل"}
               </button>
             )}
             {(pageType === "mainSubStoreReqs" && r.item_type === "REUSABLE" && r.status === "RETURN_BACK") && (

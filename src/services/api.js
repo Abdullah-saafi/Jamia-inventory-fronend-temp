@@ -107,6 +107,7 @@ export const createItem = (data) => API.post("/items", data);
 export const updateItem = (id, data) => API.patch(`/items/${id}`, data);
 export const deleteItem = (id) => API.delete(`/items/${id}`);
 export const rejectItemById = (id,rid) => API.delete(`/requests/${id}/item/${rid}`);
+export const getItemHistory = (store_id, item_no) => API.get(`/items/store/${store_id}/item/${item_no}`);
 
 // ── Requests ─────────────────────────────────────────────────
 export const getRequests = (params) => API.get("/requests", { params });
