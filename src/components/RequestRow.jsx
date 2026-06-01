@@ -144,18 +144,7 @@ export default function RequestRow({
                 {grnLoading ? "…" : "Verify Delivery"}
               </button>
             )}
-            {isReturnable && pageType === "subStore" && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  returnItem(r.request_id,)
-                }}
-                disabled={returnModalLoading}
-                className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
-              >
-                {returnModalLoading ? "…" : "Return Items"}
-              </button>
-            )}
+
             {(r.status === "PENDING" && pageType === "subStoreManager") && (
               <>
                 <button
@@ -195,23 +184,7 @@ export default function RequestRow({
                 {fulfilling === r.request_id ? "..." : "Fulfill"}
               </button>
             )}
-            {/* Temporary */}
-            {pageType === "mainSubStoreReqs" && (
-              <button onClick={(e) => {
-                e.stopPropagation();
-                setItemForm({
-                  from_store_id: auth.store_id || "",
-                  requested_by_name: auth.username || "",
-                  to_store_id: "",
-                  notes: "",
-                  is_emergency: false,
-                  items: [{ ...EMPTY_LINE }],
-                })
-                getDetail(r)
-                console.log("clicked")
 
-              }}>Instant Request</button>
-            )}
             {(pageType === "mainSubStoreReqs" && r.item_type === "REUSABLE" && r.status === "RETURN_BACK") && (
               <button
                 onClick={(e) => {

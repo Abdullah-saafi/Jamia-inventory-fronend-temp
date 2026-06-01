@@ -61,7 +61,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
   const [usableItems, setUsableItems] = useState([]);
   const handleError = useErrorHandler();
 
-  const [form, setForm] = useState({...EMPTY_FORM});
+  const [form, setForm] = useState({ ...EMPTY_FORM });
 
   const { auth } = useAuth();
   const pageType = "mainReqToHO";
@@ -651,11 +651,11 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       {/* ── Create Request Modal ── */}
       {showCreate && (
         <CreateRequestModal
-          itemForm={form} 
-          setItemForm={setForm} 
-          mainStores={mainStores} 
-          storeItems={storeItems} 
-          reusableItems={reusableItems} 
+          itemForm={form}
+          setItemForm={setForm}
+          mainStores={mainStores}
+          storeItems={storeItems}
+          reusableItems={reusableItems}
           usableItems={usableItems}
           onClose={() => setShowCreate(false)}
           onSubmit={handleCreate}
@@ -665,6 +665,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
           creating={creating}
           EMPTY_FORM={EMPTY_FORM}
           pageType={pageType}
+          setCreating={setCreating}
           toStore={toStore}
         />
       )}

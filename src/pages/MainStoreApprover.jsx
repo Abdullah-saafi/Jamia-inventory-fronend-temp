@@ -1,88 +1,41 @@
 import { useEffect, useState } from "react";
-import { createReturnRequest } from "../services/api";
 import {
-  getStores,
-  getItems,
-  createRequest,
   getRequests,
   getRequestById,
-  submitGRN,
-  sendReturnToMain,
+  approveRequest,
+  rejectRequest,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
-import GRNModal from "../components/GRNModal";
-import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Toast from "../components/Toast";
-import StoreFilters from "../components/StoreFilters";
+import BlockedUI from "../components/BlockedUI";
+import useErrorHandler from "../components/useErrorHandler";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Pagination from "../components/Pagination";
-import CreateRequestModal from "../components/CreateRequestModal";
+import StoreFilters from "../components/StoreFilters";
 import RequestRow from "../components/RequestRow";
+import ApproveRejectModal from "../components/ApproveRejectModal";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
-import ReturnItemsModal from "../components/ReturnItemsModal";
-import useErrorHandler from "../components/useErrorHandler";
 import RequestDashboard from "../components/RequestDashboard";
-import ToastContainer from "../components/ToastContainer";
 import { useToast } from "../context/ToastContext";
 
-const EMPTY_LINE = {
-  selected_item_no: "",
-  item_search: "",
-  _showDropdown: false,
-  item_id: 0,
-  item_no: "",
-  item_name: "",
-  item_uom: "",
-  requested_qty: 1,
-  item_type: "abc",
-};
-
-const EMPTY_FORM = {
-  from_store_id: "",
-  to_store_id: "",
-  requested_by_name: "",
-  notes: "",
-  is_emergency: false,
-  items: [{ ...EMPTY_LINE }],
-  requested_assets: [],
-};
-
-export default function SubStore() {
-  const [subStores, setSubStores] = useState([]);
-  const [mainStores, setMainStores] = useState([]);
+export default function SubStoreManager() {
   const [requests, setRequests] = useState([]);
   const [allRequests, setAllRequests] = useState([]);
-  const [pageLoading, setPageLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterStore, setFilterStore] = useState("");
+  const [subStores, setSubStores] = useState([]);
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
-  const [showCreate, setShowCreate] = useState(false);
-  const [storeItems, setStoreItems] = useState([]);
-  const [reusableItems, setReusableItems] = useState([]);
-  const [usableItems, setUsableItems] = useState([]);
-  const [creating, setCreating] = useState(false);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [grnRequest, setGrnRequest] = useState(null);
-  const [grnLoading, setGrnLoading] = useState(false);
-  const [grnSubmitting, setGrnSubmitting] = useState(false);
-  const [returnModal, setReturnModal] = useState(false);
-  const [returnModalLoading, setReturnModalLoading] = useState(false);
-  const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
-  const [username, setUsername] = useState("");
-  const [returnItemData, setReturnItemData] = useState([]);
-  const [returnBackModal, setReturnBackModal] = useState(false);
-  const [returnBackItems, setReturnBackItems] = useState([]);
-  const [returnBackLoading, setReturnBackLoading] = useState(false);
-  const [returnBackSubmitting, setReturnBackSubmitting] = useState(false);
-  const [returnBackNote, setReturnBackNote] = useState("");
-  const [returnForm, setReturnForm] = useState({
-    sendByName: "",
-    returnData: [],
-    note: "",
-  });
+  const [approveModal, setApproveModal] = useState(null);
+  const [approverName, setApproverName] = useState("");
+  const [editedItems, setEditedItems] = useState([]);
+  const [actioning, setActioning] = useState(false);
+  const [rejectModal, setRejectModal] = useState(null);
+  const [rejecterName, setRejecterName] = useState("");
+  const [rejectReason, setRejectReason] = useState("");
   const [pagination, setPagination] = useState({
     currentPage: 1,
     pageLimit: 10,
@@ -93,360 +46,161 @@ export default function SubStore() {
   });
 
   const { auth } = useAuth();
-  const { showToast } = useToast();
+  const { showToast } = useToast()
   const handleError = useErrorHandler();
-  const pageType = "subStore";
 
-  const openReturnBack = async () => {
-    try {
-      setReturnBackLoading(true);
-      const res = await getItems({ store_id: auth.store_id });
-      const items = (res.data.data || []).filter(
-        (i) => Number(i.item_quantity) > 0,
-      );
-      setReturnBackItems(items.map((i) => ({ ...i, return_qty: 0 })));
-      setReturnBackModal(true);
-    } catch (err) {
-      const msg = handleError(err, "Failed to load items");
-      showToast(msg, "error");
-    } finally {
-      setReturnBackLoading(false);
-    }
-  };
+  const pageType = "subStoreManager";
 
-  const handleReturnBack = async () => {
-    const selected = returnBackItems.filter((i) => Number(i.return_qty) > 0);
-    if (selected.length === 0) {
-      showToast("کم از کم ایک آئٹم منتخب کریں", "error");
-      return;
-    }
-    const mainStore = mainStores[0]; // or let user pick
-    if (!mainStore) {
-      showToast("Main store not found", "error");
-      return;
-    }
-    try {
-      setReturnBackSubmitting(true);
-      console.log("FROM STORE:", auth.store_id);
-      console.log("TO STORE:", mainStore.store_id);
-      console.log("USER:", auth.username);
-      console.log("NOTE:", returnBackNote);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-      console.log(
-        "ITEMS:",
-        selected.map((i) => ({
-          item_id: i.item_id,
-          return_qty: Number(i.return_qty),
-        })),
-      );
-      await createReturnRequest({
-        from_store_id: auth.store_id,
-        to_store_id: mainStore.store_id,
-        sent_by_name: auth.username,
-        note: returnBackNote || null,
-        items: selected.map((i) => ({
-          item_id: i.item_id,
-          return_qty: Number(i.return_qty),
-        })),
-      });
-      showToast("آئٹمز واپس بھیج دیے گئے", "success");
-      setReturnBackModal(false);
-      setReturnBackItems([]);
-      setReturnBackNote("");
-
-      load();
-    } catch (err) {
-      const msg = handleError(err, "Failed to send items back");
-      showToast(msg, "error");
-    } finally {
-      setReturnBackSubmitting(false);
-    }
-  };
-  // ─── Load ─────────────────────────────────────────────────────────────────
   const load = async () => {
-    setPageLoading(true);
+    setLoading(true);
     try {
       const params = {
-        direction: "SUB_TO_MAIN",
+        direction: "MAIN_TO_HO",
         page,
         limit: pageSize,
       };
-
       if (filterStatus) params.status = filterStatus;
-      if (auth.role !== "super admin") {
+      if (auth.role !== "super admin" && auth.store_id)
         params.store_id = auth.store_id;
-      } else if (filterStore) {
+      if (auth.role === "super admin" && filterStore)
         params.store_id = filterStore;
-      }
-      const [sRes, rRes] = await Promise.all([
-        getStores(),
-        getRequests(params),
-      ]);
-      const all = sRes.data.data;
-      setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
-      setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
+      const r = await getRequests(params);
       if (!filterStatus) {
-        setAllRequests(rRes.data.data);
+        setAllRequests(r.data.data)
       }
-      setRequests(rRes.data.data || []);
-      setPagination(rRes.data.pagination);
+      setRequests(r.data.data || []);
+      setPagination(r.data.pagination);
     } catch (error) {
-      const msg = handleError(error, "Failed to load data");
+      const msg = handleError(error, "Failed to load requests");
       setError(msg);
     } finally {
-      setPageLoading(false);
-    }
-  };
-
-  const fetchStoreData = async () => {
-    if (!itemForm.to_store_id) {
-      setStoreItems([]);
-      setReusableItems([]);
-      setUsableItems([]);
-      return;
-    }
-    try {
-      const response = await getItems({ store_id: itemForm.to_store_id });
-      if (response.data?.success) {
-        const items = response.data.data || [];
-        setStoreItems(items);
-        const reusable = items.filter((i) => i.item_type === "REUSABLE");
-        const usable = items.filter((i) => i.item_type === "USABLE");
-        setReusableItems(reusable);
-        setUsableItems(usable);
-      } else {
-        setStoreItems([]);
-        setReusableItems([]);
-        setUsableItems([]);
-      }
-    } catch (error) {
-      setStoreItems([]);
-      setUsableItems([]);
-      setReusableItems([]);
-      const msg = handleError(error, "Failed to fetch items");
-      showToast(msg, "error");
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (auth.store_id || auth.role === "super admin") {
-      load();
-    }
-  }, [filterStatus, filterStore, auth.store_id, page, pageSize]);
+    load();
+  }, [filterStatus, filterStore, auth.store_id, page, pageSize,]);
 
   useEffect(() => {
-    fetchStoreData();
-  }, [itemForm.to_store_id]);
-
-  useEffect(() => {
-    if (mainStores.length === 1 && !itemForm.to_store_id) {
-      setItemForm((f) => ({ ...f, to_store_id: mainStores[0].store_id }));
+    if (auth.role === "super admin") {
+      import("../services/api").then(({ getStores }) => {
+        getStores()
+          .then((res) =>
+            setSubStores(
+              res.data.data.filter((s) => s.store_type === "SUB_STORE"),
+            ),
+          )
+          .catch(() => { });
+      });
     }
-  }, [mainStores]);
+  }, [auth.role]);
 
-  // ─── Detail ───────────────────────────────────────────────────────────────
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
       return;
     }
     setDL(true);
-    setDetail({ ...r, items: [], assets: [] });
+    setDetail({ ...r, items: [] });
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
     } catch (error) {
-      const msg = handleError(error, "Failed to open detail");
+      const msg = handleError(error, "Failed to load data");
       showToast(msg, "error");
     } finally {
       setDL(false);
     }
   };
 
-  // ─── GRN ──────────────────────────────────────────────────────────────────
-  const openGRN = async (e, r) => {
-    e.stopPropagation();
-    setGrnLoading(true);
+  const openApprove = async (r) => {
     try {
+      setActioning(true);
       const res = await getRequestById(r.request_id);
-      setGrnRequest(res.data.data);
+      setEditedItems(
+        (res.data.data.items || []).map((i) => ({
+          ...i,
+          approved_qty: i.requested_qty,
+        })),
+      );
+      setApproveModal(r);
+      setApproverName(auth.username || "");
     } catch (error) {
-      const msg = handleError(error, "Failed to load request details");
+      const msg = handleError(error, "Failed to load items");
       showToast(msg, "error");
     } finally {
-      setGrnLoading(false);
+      setActioning(false);
     }
   };
 
-  const handleGRNSubmit = async (payload) => {
-    setGrnSubmitting(true);
+  const openReject = async (r) => {
     try {
-      await submitGRN(grnRequest.request_id, payload);
+      setActioning(true);
+      const res = await getRequestById(r.request_id);
+      setRejectModal(res.data.data);
+      setRejecterName(auth.username || "");
+      setRejectReason("");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load request");
+      showToast(msg, "error");
+    } finally {
+      setActioning(false);
+    }
+  };
 
-      const label =
-        payload.grn_status === "RECEIVED"
-          ? "Delivery confirmed — marked as RECEIVED"
-          : payload.grn_status === "DISPUTED"
-            ? "Issues reported — request marked DISPUTED"
-            : payload.grn_status === "RETURN_BACK"
-              ? "Deliver Returned"
-              : "Delivery rejected — main store notified";
-      showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn");
-      setGrnRequest(null);
-      setDetail(null);
+  const handleApprove = async () => {
+    if (!approverName.trim()) return;
+    setActioning(true);
+    try {
+      console.log("Approver modal", approveModal);
+      console.log("edited items", editedItems);
+
+      await approveRequest(approveModal.request_id, {
+        approved_by_name: approverName,
+        approved_items: editedItems.map((i) => ({
+          request_item_id: i.request_item_id,
+          approved_qty: i.approved_qty,
+        })),
+      });
+      showToast("Request approved — waiting for Main Store Manager", "success");
+      setApproveModal(null);
+      setApproverName("");
+      setEditedItems([]);
       load();
     } catch (e) {
-      const msg = handleError(e, "Failed to submit GRN");
+      const msg = handleError(e, "Error approving");
       showToast(msg, "error");
     } finally {
-      setGrnSubmitting(false);
+      setActioning(false);
     }
   };
 
-  const addLine = () =>
-    setItemForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_LINE }] }));
-
-  const removeLine = (idx) =>
-    setItemForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
-
-  const updateLine = (idx, field, value) => {
-    setItemForm((f) => {
-      const items = [...f.items];
-      items[idx] = { ...items[idx], [field]: value };
-      if (field === "selected_item_no") {
-        const found = storeItems.find((i) => i.item_no === value);
-        if (found) {
-          items[idx].item_id = found.item_id;
-          items[idx].item_no = found.item_no;
-          items[idx].item_name = found.item_name;
-          items[idx].item_uom = found.item_uom;
-          items[idx].item_type = found.item_type;
-        } else {
-          items[idx].item_id = 0;
-          items[idx].item_no = "";
-          items[idx].item_name = "";
-          items[idx].item_uom = "";
-          items[idx].item_type = "";
-        }
-      }
-      return { ...f, items };
-    });
-  };
-
-  const returnItem = async (id) => {
+  const handleReject = async () => {
+    if (!rejecterName.trim() || !rejectReason.trim()) return;
+    setActioning(true);
     try {
-      setReturnModalLoading(true);
-      const response = await getRequestById(id);
-      setReturnForm((f) => ({
-        ...f,
-        returnData: response.data.data,
-        sendByName: auth.username,
-      }));
-      setReturnModal(true);
-    } catch (error) {
-      const msg = handleError(error, "Failed to open return modal");
-      showToast(msg, "error");
-    } finally {
-      setReturnModalLoading(false);
-    }
-  };
-
-  const handleReturn = async (id) => {
-    try {
-      setReturnModalLoading(true);
-
-      const payload = {
-        resolved_by_name: auth.username,
-        note: returnForm.note,
-        returned_items: returnForm.returnData.items
-          .map((i) => ({
-            request_item_id: i.request_item_id,
-            returned_qty: Number(i.return_qty_input || i.received_qty),
-          }))
-          .filter((i) => i.returned_qty > 0),
-      };
-
-      await sendReturnToMain(id, payload);
-      setReturnForm(() => ({
-        sendByName: "",
-        returnData: [],
-        note: "",
-      }));
-
-      setReturnModal(false);
-      showToast("Items returned successfully", "success");
-
-      load();
-    } catch (error) {
-      const msg = handleError(error, "Failed to return");
-      showToast(msg, "error");
-    } finally {
-      setReturnModalLoading(false);
-    }
-  };
-
-  // ─── Submit ───────────────────────────────────────────────────────────────
-  const handleCreate = async (e) => {
-    e?.preventDefault();
-    const {
-      from_store_id,
-      to_store_id,
-      requested_by_name,
-      items,
-      requested_assets = [],
-    } = itemForm;
-
-    const itemLines = items.filter((i) => i.item_no);
-    const hasItems = itemLines.length > 0;
-
-    const isUOMMissing = itemLines.some(
-      (i) => i.item_type === "USABLE" && !i.item_uom,
-    );
-    if (!from_store_id || !to_store_id || !requested_by_name)
-      return showToast("Please fill all required fields", "error");
-    if (!hasItems && !hasAssets)
-      return showToast("Add at least one item or one asset", "error");
-    if (
-      itemLines.some((i) => !i.item_name || isUOMMissing || i.requested_qty < 1)
-    )
-      return showToast("Check item details", "error");
-
-    setCreating(true);
-    try {
-      const payload = {
-        from_store_id,
-        to_store_id,
-        requested_by_name,
-        notes: itemForm.notes,
-        is_emergency: itemForm.is_emergency,
-        direction: "SUB_TO_MAIN",
-        items: itemLines.map(
-          ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
-        ),
-        requested_assets: requested_assets.map((a) => a.asset_id),
-      };
-
-      await createRequest(payload);
-      showToast("Request submitted successfully", "success");
-      setShowCreate(false);
-      setItemForm({ ...EMPTY_FORM });
+      await rejectRequest(rejectModal.request_id, {
+        approved_by_name: rejecterName,
+        rejection_reason: rejectReason,
+      });
+      showToast("Request rejected", "success");
+      setRejectModal(null);
+      setRejecterName("");
+      setRejectReason("");
       load();
     } catch (e) {
-      const msg = handleError(e, "Failed to load request details");
+      const msg = handleError(e, "Error rejecting");
       showToast(msg, "error");
     } finally {
-      setCreating(false);
+      setActioning(false);
     }
   };
 
-  // ─── Computed ─────────────────────────────────────────────────────────────
-  const pendingGRN = allRequests.filter(
-    (r) => r.status === "FULFILLED" && !r.grn_at,
-  ).length;
-
-  const pendingReturn = allRequests.filter(
-    (r) => r.status === "RECEIVED" && r.item_type === "REUSABLE",
-  ).length;
+  const pendingCount = allRequests.filter((r) => r.status === "PENDING").length;
 
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message} />;
@@ -454,80 +208,55 @@ export default function SubStore() {
 
   return (
     <div>
-      <div className="flex gap-2 my-4">
-        <button
-          onClick={openReturnBack}
-          disabled={returnBackLoading}
-          className="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
-        >
-          {returnBackLoading ? "لوڈ ہو رہا ہے..." : "آئٹم واپس کریں "}
-        </button>
-        <button
-          onClick={() => {
-            // const nextItemNo = getNextItemNo(storeItems);
-            setItemForm({
-              from_store_id: auth.store_id || "",
-              to_store_id:
-                mainStores.length === 1 ? mainStores[0].store_id : "",
-              requested_by_name: auth.username || "",
-              notes: "",
-              items: [{ ...EMPTY_LINE }],
-              requested_assets: [],
-            });
-            setShowCreate(true);
-          }}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
-        >
-          نئی درخواست
-        </button>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
+          <span className="text-gray-500 text-xs mt-0.5 bg-gray-200 rounded p-1">{auth.storeName || "loading..."}</span>
+          <p className="text-gray-500 text-sm mt-0.5">
+            اسٹاف کی آئٹم درخواستوں کا جائزہ لیں اور انہیں منظور یا مسترد کریں
+          </p>
+        </div>
       </div>
-      {/* // */}
+
       <RequestDashboard
         pageType={pageType}
         setFilterStatus={setFilterStatus}
         filterStatus={filterStatus}
         counts={{
-          pending: pendingGRN,
-          returnBack: pendingReturn,
+          pending: pendingCount,
+          returnBack: 0,
           emergency: 0,
-          disputed: 0,
+          disputed: 0
         }}
       />
-      {/* ── Filters ── */}
+
       <div className="flex h-full py-2  items-end justify-between">
         <div className="Filter">
           <StoreFilters
             filterStatus={filterStatus}
-            setFilterStatus={(v) => {
-              setFilterStatus(v);
-              setPage(1);
-            }}
+            setFilterStatus={setFilterStatus}
             pageType={pageType}
             filterStore={filterStore}
-            setFilterStore={(v) => {
-              setFilterStore(v);
-              setPage(1);
-            }}
+            setFilterStore={setFilterStore}
             role={auth.role}
             subStores={subStores}
-            loading={pageLoading}
           />
           <button
-            onClick={() => {
-              load();
-              fetchStoreData();
-            }}
+            onClick={load}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto hover:bg-gray-50 shadow-sm"
           >
             ↻ Refresh
           </button>
         </div>
 
-        <div className="Temp-downloader flex justify-center items-center gap-4">
-          <div className="">
+        <div className="Temp-downloader">
+          {/* Excel specific Date Downloader */}
+          <div className="downloader">
             <ExcelDownloaderWithDates
+              data={requests}
               dateKey="created_at"
-              fileName="requests"
+              fileName={auth.username}
               columns={[
                 { key: "request_id", label: "درخواست نمبر" },
                 { key: "requested_by_name", label: "درخواست کنندہ" },
@@ -552,16 +281,18 @@ export default function SubStore() {
           </div>
         </div>
       </div>
-      {/* ── Table ── */}
+
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <TableHead />
+            <TableHead
+              pageType={pageType}
+            />
           </thead>
           <tbody>
-            {pageLoading || error || requests.length === 0 ? (
+            {(loading || error || requests.length === 0) ? (
               <CheckLoadingAndError
-                loading={pageLoading}
+                loading={loading}
                 error={error}
                 requests={requests}
               />
@@ -573,11 +304,10 @@ export default function SubStore() {
                   detail={detail}
                   detailLoad={detailLoad}
                   openDetail={openDetail}
-                  openGRN={openGRN}
-                  grnLoading={grnLoading}
+                  actioning={actioning}
+                  openApprove={openApprove}
+                  openReject={openReject}
                   pageType={pageType}
-                  returnItem={returnItem}
-                  returnModalLoading={returnModalLoading}
                 />
               ))
             )}
@@ -596,269 +326,37 @@ export default function SubStore() {
           }}
         />
       </div>
-      {/* GRN Modal */}
-      {grnRequest && (
-        <GRNModal
-          request={grnRequest}
-          onClose={() => setGrnRequest(null)}
-          onSubmit={handleGRNSubmit}
-          submitting={grnSubmitting}
-        />
-      )}
-      {returnModal && (
-        <ReturnItemsModal
-          setReturnModal={setReturnModal}
-          handleReturn={handleReturn}
-          returnModalLoading={returnModalLoading}
-          returnForm={returnForm}
-          setReturnForm={setReturnForm}
+
+      {/* Approve Modal */}
+      {approveModal && (
+        <ApproveRejectModal
+          setApproveModal={setApproveModal}
+          approveModal={approveModal}
+          approverName={approverName}
+          setApproverName={setApproverName}
+          editedItems={editedItems}
+          setEditedItems={setEditedItems}
+          actioning={actioning}
+          handleApprove={handleApprove}
+          action={"Approve"}
         />
       )}
 
-      {/* Create Modal */}
-      {showCreate && (
-        <CreateRequestModal
-          itemForm={itemForm}
-          setItemForm={setItemForm}
-          mainStores={mainStores}
-          storeItems={storeItems}
-          reusableItems={reusableItems}
-          usableItems={usableItems}
-          onClose={() => setShowCreate(false)}
-          onSubmit={handleCreate}
-          addLine={addLine}
-          removeLine={removeLine}
-          updateLine={updateLine}
-          creating={creating}
-          EMPTY_FORM={EMPTY_FORM}
+      {/* Reject Modal */}
+      {rejectModal && (
+        <ApproveRejectModal
+          setRejectModal={setRejectModal}
+          rejectModal={rejectModal}
+          rejecterName={rejecterName}
+          setRejecterName={setRejecterName}
+          rejectReason={rejectReason}
+          setRejectReason={setRejectReason}
+          actioning={actioning}
+          handleReject={handleReject}
+          action={"Reject"}
         />
       )}
-      {returnBackModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b">
-              <div>
-                <h3 className="font-bold text-gray-800">آئٹم واپس کریں</h3>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  مرکزی اسٹور کو واپس بھیجنے کے لیے مقدار درج کریں
-                </p>
-              </div>
-              <button
-                onClick={() => setReturnBackModal(false)}
-                className="text-gray-400 hover:text-gray-700 text-2xl leading-none"
-              >
-                ×
-              </button>
-            </div>
 
-            {/* Search */}
-            <div className="px-6 py-3 border-b">
-              <input
-                placeholder="آئٹم تلاش کریں..."
-                onChange={(e) => {
-                  const q = e.target.value.toLowerCase();
-                  setReturnBackItems((prev) =>
-                    prev.map((i) => ({
-                      ...i,
-                      _hidden:
-                        q &&
-                        !i.item_name.toLowerCase().includes(q) &&
-                        !i.item_no.toLowerCase().includes(q),
-                    })),
-                  );
-                }}
-                className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 shadow-sm"
-              />
-            </div>
-
-            {/* Table Body */}
-            <div className="flex-1 overflow-y-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    {[
-                      "آئٹم نمبر",
-                      "نام",
-                      "قسم",
-                      "UOM",
-                      "دستیاب مقدار",
-                      "واپسی مقدار",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {returnBackItems.filter((i) => !i._hidden).length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="text-center text-gray-400 text-sm py-8"
-                      >
-                        کوئی آئٹم دستیاب نہیں
-                      </td>
-                    </tr>
-                  ) : (
-                    returnBackItems
-                      .filter((i) => !i._hidden)
-                      .map((item) => (
-                        <tr
-                          key={item.item_id}
-                          className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="px-4 py-3">
-                            <span className="font-mono text-emerald-600 text-xs">
-                              {item.item_no}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-gray-800 font-semibold">
-                            {item.item_name}
-                          </td>
-                          <td className="px-4 py-3 text-xs text-gray-500">
-                            {item.item_type || "—"}
-                          </td>
-                          <td className="px-4 py-3 text-xs text-gray-500">
-                            {item.item_uom || "—"}
-                          </td>
-                          <td className="px-4 py-3 font-mono font-bold text-emerald-600">
-                            {Number(item.item_quantity)}
-                          </td>
-                          <td
-                            className="px-4 py-3"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() =>
-                                  setReturnBackItems((prev) =>
-                                    prev.map((i) =>
-                                      i.item_id === item.item_id
-                                        ? {
-                                            ...i,
-                                            return_qty: Math.max(
-                                              0,
-                                              Number(i.return_qty) - 1,
-                                            ),
-                                          }
-                                        : i,
-                                    ),
-                                  )
-                                }
-                                className="w-7 h-7 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 font-bold flex items-center justify-center"
-                              >
-                                −
-                              </button>
-                              <input
-                                type="number"
-                                min={0}
-                                max={item.item_quantity}
-                                value={item.return_qty}
-                                onChange={(e) =>
-                                  setReturnBackItems((prev) =>
-                                    prev.map((i) =>
-                                      i.item_id === item.item_id
-                                        ? {
-                                            ...i,
-                                            return_qty: Math.min(
-                                              Number(item.item_quantity),
-                                              Math.max(
-                                                0,
-                                                Number(e.target.value),
-                                              ),
-                                            ),
-                                          }
-                                        : i,
-                                    ),
-                                  )
-                                }
-                                className="w-16 border border-gray-300 rounded px-2 py-1 text-center font-mono text-sm focus:outline-none focus:border-emerald-500"
-                              />
-                              <button
-                                onClick={() =>
-                                  setReturnBackItems((prev) =>
-                                    prev.map((i) =>
-                                      i.item_id === item.item_id
-                                        ? {
-                                            ...i,
-                                            return_qty: Math.min(
-                                              Number(item.item_quantity),
-                                              Number(i.return_qty) + 1,
-                                            ),
-                                          }
-                                        : i,
-                                    ),
-                                  )
-                                }
-                                className="w-7 h-7 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 font-bold flex items-center justify-center"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Summary + Footer */}
-            <div className="border-t px-6 py-4 space-y-3">
-              {/* Selected summary */}
-              {returnBackItems.filter((i) => Number(i.return_qty) > 0).length >
-                0 && (
-                <div className="flex gap-4 text-xs text-gray-500 bg-gray-50 rounded px-3 py-2">
-                  <span>
-                    منتخب آئٹمز:{" "}
-                    <strong className="text-gray-800">
-                      {
-                        returnBackItems.filter((i) => Number(i.return_qty) > 0)
-                          .length
-                      }
-                    </strong>
-                  </span>
-                  <span>
-                    کل مقدار:{" "}
-                    <strong className="text-emerald-600">
-                      {returnBackItems.reduce(
-                        (s, i) => s + Number(i.return_qty),
-                        0,
-                      )}
-                    </strong>
-                  </span>
-                </div>
-              )}
-              <input
-                value={returnBackNote}
-                onChange={(e) => setReturnBackNote(e.target.value)}
-                placeholder="نوٹ (اختیاری)"
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setReturnBackModal(false)}
-                  className="flex-1 text-gray-500 text-sm py-2 border border-gray-300 rounded hover:bg-gray-50"
-                >
-                  منسوخ
-                </button>
-                <button
-                  onClick={handleReturnBack}
-                  disabled={returnBackSubmitting}
-                  className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-sm font-semibold py-2 rounded transition-colors"
-                >
-                  {returnBackSubmitting ? "بھیج رہے ہیں..." : "واپس بھیجیں ✓"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -146,7 +146,7 @@ export default function ItemsTable({
         </tbody>
       </table>
 
-      {isDisputed && (
+      {isDisputed && pageType === "mainSubStoreReqs" && (
         <DisputeResolutionPanel
           request={d}
           onResolved={handleResolved}

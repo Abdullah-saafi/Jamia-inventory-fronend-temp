@@ -1,50 +1,72 @@
-  import { useState } from "react";
-  import { createItem } from "../../services/api";
-  import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
-  import Pagination from "../Pagination";
-  import { useAuth } from "../../context/authContext";
-  import useErrorHandler from "../useErrorHandler";
-  import CheckLoadingAndError from "../CheckLoadingAndError";
-  import AddItemModal from "../AddItemModal";
-  import { ChevronDown, ChevronUp } from "lucide-react";
-  import TableHead from "../TableHead";
+import { useState } from "react";
+import { createItem } from "../../services/api";
+import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
+import Pagination from "../Pagination";
+import { useAuth } from "../../context/authContext";
+import useErrorHandler from "../useErrorHandler";
+import CheckLoadingAndError from "../CheckLoadingAndError";
+import AddItemModal from "../AddItemModal";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import TableHead from "../TableHead";
 
-  export default function MainAllItems({
-    allItems,
-    mainStores,
-    onRefresh,
-    showToast,
-    loading,
-    mainStoreError,
-    pagination = { currentPage: 1, totalItems: 0, pageLimit: 10 },
-    currentPage,
-    setCurrentPage,
-    pageLimit,
-    setPageLimit,
-    search,
-    setSearch,
-    filterCategory,
-    setFilterCategory,
-    filterType,
-    setFilterType,
-  }) {
-    const [showAddItem, setShowAddItem] = useState(false);
-    const [showCategory, setShowCategory] = useState(false);
+export default function MainAllItems({
+  allItems,
+  mainStores,
+  onRefresh,
+  showToast,
+  loading,
+  mainStoreError,
+  pagination = { currentPage: 1, totalItems: 0, pageLimit: 10 },
+  currentPage,
+  setCurrentPage,
+  pageLimit,
+  setPageLimit,
+  search,
+  setSearch,
+  filterCategory,
+  setFilterCategory,
+  filterType,
+  setFilterType,
+}) {
+  const [showAddItem, setShowAddItem] = useState(false);
+  const [showCategory, setShowCategory] = useState(false);
+  const [previewImg, setPreviewImg] = useState(null);
+  const { auth } = useAuth();
+  const handleError = useErrorHandler();
 
-    const { auth } = useAuth();
-    const handleError = useErrorHandler();
+  const pageType = "mainAllItems"
 
-    const pageType = "mainAllItems"
+  const categories = [
+    ...new Set(allItems.map((i) => i.category).filter(Boolean)),
+  ];
 
-    const categories = [
-      ...new Set(allItems.map((i) => i.category).filter(Boolean)),
-    ];
+  return (
+    <div>
+      <div className="flex items-end justify-between py-2">
+        <div>
+          <div className="flex gap-2">
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="آئٹم کے نام یا نمبر سے تلاش کریں..."
+              className="bg-white border leading-none border-gray-300 rounded px-3 py-3 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-64 shadow-sm"
+            />
 
-    return (
-      <div>
-        <div className="flex items-end justify-between py-2">
-          <div>
-            <div className="flex gap-2">
+            {showCategory && (
+              <div className="absolute inset-0" onClick={() => setShowCategory((prev) => !prev)} />
+            )}
+            <div className="relative w-48">
+              {showCategory && (
+                <div
+                  className="absolute inset-0 z-40"
+                  onClick={() => setShowCategory(false)}
+                />
+              )}
+
+              {/* Input */}
               <input
                 value={search}
                 onChange={(e) => {
@@ -55,9 +77,9 @@
                 className="bg-white border leading-none border-gray-300 rounded px-3 py-3 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-64 shadow-sm"
               />
 
-                {showCategory && (
-                  <div className="absolute inset-0" onClick={() => setShowCategory((prev) => !prev)} />
-                )}
+              {showCategory && (
+                <div className="absolute inset-0" onClick={() => setShowCategory((prev) => !prev)} />
+              )}
               <div className="relative w-48">
                 {showCategory && (
                   <div
@@ -287,5 +309,130 @@
           />
         </div>
       </div>
-    );
-  }
+
+      {/* Table Section */}
+      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm mt-1">
+        <table className="w-full text-sm">
+          <thead>
+            <TableHead
+              pageType={pageType}
+            />
+          </thead>
+          <tbody>
+            {loading || mainStoreError || allItems.length === 0 ? (
+              <CheckLoadingAndError
+                loading={loading}
+                error={mainStoreError}
+                requests={allItems}
+              />
+            ) : (
+              allItems.map((i) => {
+                const isLow = i.item_quantity <= parseFloat(i.min_quantity || 0);
+                return (
+                  <tr
+                    key={i.item_id}
+                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-emerald-600 text-xs">
+                        {i.item_no}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-800 font-semibold">
+                      {i.item_name}
+                    </td>
+
+                    <td className="px-4 py-3 text-gray-500 text-xs">
+                      {i.category || "—"}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-600">
+                      {i.item_uom || "―"}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-600">
+                      {i.item_type || "―"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`font-mono font-bold ${isLow ? "text-red-500" : "text-emerald-600"}`}
+                      >
+                        {Number(i.item_quantity) || "―"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">
+                      {(Number(i.sub_qty || 0) - Number(i.returned_qty || 0))}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-xs font-bold text-gray-700">
+                        {i.transit_qty}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-xs font-bold text-gray-700">
+                        {(Number(i.item_quantity) - Number(i.sub_qty || 0) + Number(i.returned_qty || 0) - Number(i.scrapped_qty || 0)).toFixed(0)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-gray-400 text-xs">
+                      {Number(i.min_quantity) ?? "0"}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-red-500 font-bold">
+                      {Number(i.scrapped_qty) || "—"}
+                    </td>
+
+
+
+                    <td className="px-4 py-3">
+                      <span
+                        className={`text-xs font-semibold ${isLow ? "text-red-500" : "text-emerald-600"}`}
+                      >
+                        {isLow ? "Low" : "OK"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {i.image_url ? (
+                        <button
+                          onClick={() => setPreviewImg(i.image_url)}
+                          title="تصویر دیکھیں"
+                          className="text-xl hover:scale-125 transition-transform"
+                        >
+                          🖼️
+                        </button>
+                      ) : (
+                        <span className="text-gray-300 text-lg">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+
+        <Pagination
+          currentPage={pagination.currentPage}
+          totalItems={pagination.totalItems}
+          pageSize={pagination.pageLimit}
+          onPageChange={setCurrentPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={(s) => {
+            setPageLimit(s);
+            setCurrentPage(1);
+          }}
+        />
+        {previewImg && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+            onClick={() => setPreviewImg(null)}
+          >
+            <img
+              src={previewImg}
+              alt="preview"
+              className="max-w-[90vw] max-h-[85vh] rounded-xl shadow-2xl border-4 border-white"
+            />
+          </div>
+        )}
+      </div>
+    </div>
+
+  );
+}

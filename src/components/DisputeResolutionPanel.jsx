@@ -26,7 +26,7 @@ const DisputeResolutionPanel = ({
 
   const handleResolve = async () => {
     if (Object.keys(itemActions).length === 0) {
-      showToast("Please select at least one action", "error" );
+      showToast("Please select at least one action", "error");
       return;
     }
 
@@ -41,15 +41,15 @@ const DisputeResolutionPanel = ({
         })),
       };
 
-      console.log("payload",payload);
+      console.log("payload", payload);
       await resolveDispute(request.request_id, payload);
-      
+
 
       onResolved();
 
     } catch (error) {
       const msg = handleError(error, "Failed to perform action");
-      showToast(msg,"error");
+      showToast(msg, "error");
     } finally {
       setProcessing(false);
     }
@@ -66,7 +66,7 @@ const DisputeResolutionPanel = ({
       </div>
 
       <div className="p-4 space-y-4 bg-white">
-        {request.grn_note && (
+        {/* {request.grn_note && (
           <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2.5">
             <div className="text-amber-500 text-xs font-bold uppercase tracking-wider mb-1">
               Sub Store Says
@@ -78,7 +78,7 @@ const DisputeResolutionPanel = ({
               </div>
             )}
           </div>
-        )}
+        )} */}
 
         {disputedItems.length > 0 && (
           <div>

@@ -15,12 +15,11 @@ import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Pagination from "../components/Pagination";
 import StatusBadge from "../components/StatusBadge";
 import DateTimeCell from "../components/DateTimeCell";
-import CheckLoadingAndError from "../components/CheckLoadingAndError";
-import DisputeResolutionPanel from "../components/DisputeResolutionPanel";
 import { useToast } from "../context/ToastContext";
+import DisputeResolutionPanel from "../components/DisputeResolutionPanel"
 
 // ── Main Component ────────────────────────────────────────────────────────────
-export default function PettyCash() {
+export default function HeadOffice() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -29,11 +28,7 @@ export default function PettyCash() {
   const [detailLoad, setDL] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
-  // Fulfill modal state
   const [fulfillModal, setFulfillModal] = useState(null);
-  const [referenceNo, setReferenceNo] = useState("");
-  const [requestNo, setRequestNo] = useState(null);
   const [fulfillMode, setFulfillMode] = useState("fulfill");
   const [fulfilledItems, setFulfilledItems] = useState([]);
   const [fulfillerName, setFulfillerName] = useState("");
@@ -41,13 +36,13 @@ export default function PettyCash() {
   const [actioning, setActioning] = useState(false);
 
   const { auth } = useAuth();
-  const { showToast } = useToast();
+  const { showToast } = useToast()
   const handleError = useErrorHandler();
 
   const load = async () => {
     setLoading(true);
     try {
-      const params = { direction: "MAIN_TO_PCASH" };
+      const params = { direction: "MAIN_TO_HO" };
       if (filter) params.status = filter;
       const r = await getRequests(params);
       setRequests(r.data.data);
@@ -81,20 +76,13 @@ export default function PettyCash() {
     }
   };
 
-  const handleFulfill = async (id, ref_no) => {
+  const handleFulfill = async (id) => {
     setActioning(true);
     try {
-      console.log("id", id);
-      console.log("ref_no", ref_no);
-
-      await fulfillRequest(id, { ref_no });
-      showToast(
-        fulfillMode === "refulfill"
-          ? "Re-dispatched — Main Store will verify the corrected delivery"
-          : "Request fulfilled — Main Store will verify delivery",
-        "success",
-      );
-      setFulfillModal(false);
+      await fulfillRequest(id);
+      showToast(fulfillMode === "refulfill"
+        ? "Re-dispatched — Main Store will verify the corrected delivery"
+        : "Request fulfilled — Main Store will verify delivery", "success");
       load();
     } catch (e) {
       const msg = handleError(e, "Error fulfilling request");
@@ -128,7 +116,7 @@ export default function PettyCash() {
         <div>
           <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
           <p className="text-gray-500 text-sm mt-0.5">
-            Petty Cash — fulfill approved Main Store requests
+            Head Office — fulfill approved Main Store requests
           </p>
         </div>
       </div>
@@ -251,12 +239,28 @@ export default function PettyCash() {
             </tr>
           </thead>
           <tbody>
-            {loading || error || requests.length === 0 ? (
-              <CheckLoadingAndError
-                loading={loading}
-                error={error}
-                requests={requests}
-              />
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="flex justify-center">
+                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                  </div>
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
+                    {error}
+                  </div>
+                </td>
+              </tr>
+            ) : requests.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12 text-gray-400">
+                  No requests found.
+                </td>
+              </tr>
             ) : (
               paginatedRequests.map((r) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
@@ -270,8 +274,7 @@ export default function PettyCash() {
                   <>
                     <tr
                       key={r.request_id}
-                      className={`border-b border-gray-100 cursor-pointer transition-colors ${
-                        canFulfill
+                      className={`border-b border-gray-100 cursor-pointer transition-colors ${canFulfill
                           ? "bg-emerald-50/30 hover:bg-emerald-50"
                           : isDisputed
                             ? "bg-amber-50/40 hover:bg-amber-50"
@@ -280,7 +283,7 @@ export default function PettyCash() {
                               : isClosed
                                 ? "bg-gray-50/50 hover:bg-gray-100"
                                 : "hover:bg-gray-50"
-                      } ${isExpanded ? "bg-gray-50" : ""}`}
+                        } ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openDetail(r)}
                     >
                       <td className="px-4 py-3">
@@ -322,8 +325,7 @@ export default function PettyCash() {
                               disabled={actioning}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setFulfillModal(true);
-                                setRequestNo(r);
+                                handleFulfill(r.request_id);
                               }}
                               className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-2.5 ml-2 py-1.5 rounded disabled:opacity-40"
                             >
@@ -338,15 +340,14 @@ export default function PettyCash() {
                     {isExpanded && (
                       <tr
                         key={r.request_id + "-detail"}
-                        className={`border-b-2 ${
-                          isDisputed
+                        className={`border-b-2 ${isDisputed
                             ? "bg-amber-50/20 border-amber-300"
                             : isReceived
                               ? "bg-teal-50/20 border-teal-300"
                               : isClosed
                                 ? "bg-gray-50 border-gray-300"
                                 : "bg-gray-50 border-emerald-200"
-                        }`}
+                          }`}
                       >
                         <td colSpan={7} className="px-6 py-4">
                           {detailLoad ? (
@@ -419,6 +420,17 @@ export default function PettyCash() {
                                   </div>
                                 )}
 
+                                {detail.rejection_reason && (
+                                  <div className="bg-red-50 border border-red-200 rounded p-3">
+                                    <div className="text-red-500 text-xs font-semibold mb-1">
+                                      REJECTION REASON
+                                    </div>
+                                    <div className="text-red-600 text-sm">
+                                      {detail.rejection_reason}
+                                    </div>
+                                  </div>
+                                )}
+
                                 {/* Items table */}
                                 <div>
                                   <table className="w-full text-sm">
@@ -461,7 +473,7 @@ export default function PettyCash() {
                                             i.item_condition !== "OK") ||
                                           (i.received_qty != null &&
                                             Number(i.received_qty) <
-                                              Number(i.fulfilled_qty));
+                                            Number(i.fulfilled_qty));
                                         return (
                                           <tr
                                             key={i.request_item_id}
@@ -508,8 +520,8 @@ export default function PettyCash() {
                                                     className={
                                                       i.received_qty != null
                                                         ? Number(
-                                                            i.received_qty,
-                                                          ) <
+                                                          i.received_qty,
+                                                        ) <
                                                           Number(
                                                             i.fulfilled_qty,
                                                           )
@@ -524,15 +536,14 @@ export default function PettyCash() {
                                                 <td className="py-2 text-center">
                                                   {i.item_condition ? (
                                                     <span
-                                                      className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${
-                                                        i.item_condition ===
-                                                        "OK"
+                                                      className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${i.item_condition ===
+                                                          "OK"
                                                           ? "bg-emerald-50 border-emerald-300 text-emerald-700"
                                                           : i.item_condition ===
-                                                              "DAMAGED"
+                                                            "DAMAGED"
                                                             ? "bg-amber-50 border-amber-300 text-amber-700"
                                                             : "bg-red-50 border-red-300 text-red-700"
-                                                      }`}
+                                                        }`}
                                                     >
                                                       {i.item_condition}
                                                     </span>
@@ -594,58 +605,176 @@ export default function PettyCash() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/30"
-            onClick={() => {
-              setFulfillModal(null);
-              setReferenceNo("");
-            }}
+            onClick={() => setFulfillModal(null)}
           />
           <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
               <h2 className="text-gray-900 font-bold">
-                Fulfill — {requestNo.request_no}
+                {fulfillMode === "refulfill" ? "Re-dispatch" : "Fulfill"} —{" "}
+                {fulfillModal.request_no}
               </h2>
               <button
-                onClick={() => {
-                  setFulfillModal(null);
-                  setReferenceNo("");
-                }}
+                onClick={() => setFulfillModal(null)}
                 className="text-gray-400 hover:text-gray-700 text-xl"
               >
                 ✕
               </button>
             </div>
             <div className="p-5 space-y-4">
+              {fulfillMode === "refulfill" ? (
+                <div className="bg-amber-50 border border-amber-200 rounded p-3 text-amber-700 text-xs space-y-1">
+                  <div className="font-bold">
+                    ⚠ Responding to dispute from Main Store
+                  </div>
+                  <div>
+                    Review the reported issues and re-dispatch corrected
+                    quantities. Main Store will verify again.
+                  </div>
+                  {fulfillModal.grn_note && (
+                    <div className="mt-2 pt-2 border-t border-amber-200 italic">
+                      Main Store said: "{fulfillModal.grn_note}"
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-blue-50 border border-blue-200 rounded p-3 text-blue-700 text-xs">
+                  اشیاء <strong>مین اسٹور</strong> کو روانہ کریں۔ اگر ضرورت ہو
+                  تو مقدار درست کر لیں۔ مین اسٹور وصولی کی تصدیق کرے گا۔
+                </div>
+              )}
+
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Reference Number *
+                  {fulfillMode === "refulfill"
+                    ? "Re-dispatched By"
+                    : "Fulfilled By"}{" "}
+                  *
                 </label>
                 <input
-                  type="text"
-                  value={referenceNo}
-                  onChange={(e) => {
-                    setReferenceNo(e.target.value);
-                  }}
-                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-sm outline-none"
+                  value={fulfillerName}
+                  readOnly
+                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-600 text-sm cursor-not-allowed outline-none"
                 />
               </div>
+
+              <div>
+                <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
+                  {fulfillMode === "refulfill"
+                    ? "Corrected dispatch quantities"
+                    : "Dispatch quantities"}
+                </div>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 text-gray-400 text-xs">
+                      <th className="text-left pb-2">Item</th>
+                      <th className="text-center pb-2">Approved</th>
+                      <th className="text-center pb-2">
+                        {fulfillMode === "refulfill"
+                          ? "Re-dispatch Qty"
+                          : "Fulfill Qty"}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fulfilledItems.map((i, idx) => (
+                      <tr
+                        key={i.request_item_id}
+                        className="border-b border-gray-100"
+                      >
+                        <td className="py-2">
+                          <div className="text-gray-800 text-sm">
+                            {i.item_name}
+                          </div>
+                          <div className="text-gray-400 text-xs font-mono">
+                            {i.item_no} · {i.item_uom}
+                          </div>
+                          {fulfillMode === "refulfill" &&
+                            i.received_qty != null && (
+                              <div className="text-amber-600 text-xs mt-0.5">
+                                Previously received: {i.received_qty}
+                                {i.item_condition &&
+                                  i.item_condition !== "OK" && (
+                                    <span className="ml-1">
+                                      · {i.item_condition}
+                                    </span>
+                                  )}
+                              </div>
+                            )}
+                        </td>
+                        <td className="py-2 font-mono text-emerald-600 text-center">
+                          {i.approved_qty ?? i.requested_qty}
+                        </td>
+                        <td className="py-2 text-center">
+                          <input
+                            type="number"
+                            min="0"
+                            value={i.fulfilled_qty}
+                            onChange={(e) => {
+                              const u = [...fulfilledItems];
+                              u[idx] = {
+                                ...u[idx],
+                                fulfilled_qty: +e.target.value,
+                              };
+                              setFulfilledItems(u);
+                            }}
+                            className={`w-20 border rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none ${fulfillMode === "refulfill"
+                                ? "bg-amber-50 border-amber-300 focus:border-amber-500"
+                                : "bg-gray-50 border-gray-300 focus:border-emerald-500"
+                              }`}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div>
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+                  {fulfillMode === "refulfill"
+                    ? "Resolution Notes *"
+                    : "Notes (optional)"}
+                </label>
+                <textarea
+                  value={fulfillNotes}
+                  onChange={(e) => setFulfillNotes(e.target.value)}
+                  rows={2}
+                  placeholder={
+                    fulfillMode === "refulfill"
+                      ? "Explain what was corrected and what is being re-dispatched…"
+                      : "Any dispatch notes…"
+                  }
+                  className={`w-full border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none resize-none ${fulfillMode === "refulfill"
+                      ? "bg-white border-amber-300 focus:border-amber-400"
+                      : "bg-white border-gray-300 focus:border-emerald-500"
+                    }`}
+                />
+              </div>
+
               <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
                 <button
-                  onClick={() => {
-                    setFulfillModal(null);
-                    setReferenceNo("");
-                  }}
+                  onClick={() => setFulfillModal(null)}
                   className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    handleFulfill(requestNo.request_id, referenceNo);
-                  }}
-                  disabled={actioning}
-                  className="text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40 bg-emerald-600 hover:bg-emerald-500"
+                  onClick={handleFulfill}
+                  disabled={
+                    actioning ||
+                    !fulfillerName.trim() ||
+                    (fulfillMode === "refulfill" && !fulfillNotes.trim())
+                  }
+                  className={`text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40 ${fulfillMode === "refulfill"
+                      ? "bg-amber-500 hover:bg-amber-400"
+                      : "bg-emerald-600 hover:bg-emerald-500"
+                    }`}
                 >
-                  {actioning ? "Processing..." : "Confirm Fulfill"}
+                  {actioning
+                    ? "Processing..."
+                    : fulfillMode === "refulfill"
+                      ? "Confirm Re-dispatch"
+                      : "Confirm Fulfill"}
                 </button>
               </div>
             </div>
