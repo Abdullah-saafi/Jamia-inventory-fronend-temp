@@ -158,46 +158,6 @@ export default function CreateRequestModal({
     </div>
   );
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  setCreating(true);
-
-  try {
-    // 1. Upload images for each item first
-    const itemsWithUrls = await Promise.all(
-      itemForm.items.map(async (item) => {
-        let image_url = null;
-
-        if (item.images && item.images.length > 0) {
-          const urls = await uploadImages(item.images); // call your existing fn
-          image_url = urls[0] ?? null; // backend stores one URL per item
-        }
-
-        return {
-          ...item,
-          image_url,         // attach the uploaded URL
-          images: undefined, // don't send File objects to backend
-        };
-      })
-    );
-
-    // 2. Submit the request with resolved URLs
-    const payload = {
-      ...itemForm,
-      items: itemsWithUrls,
-    };
-
-    await API.post("/requests", payload);
-    onClose();
-    showToast("Request submitted!", "success");
-
-  } catch (err) {
-    showToast("Submission failed", "error");
-  } finally {
-    setCreating(false);
-  }
-};
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
