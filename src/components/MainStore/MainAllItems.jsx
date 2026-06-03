@@ -27,6 +27,7 @@ export default function MainAllItems({
   setFilterCategory,
   filterType,
   setFilterType,
+  categories,
 }) {
   const [showAddItem, setShowAddItem] = useState(false);
   const [showCategory, setShowCategory] = useState(false);
@@ -36,9 +37,6 @@ export default function MainAllItems({
 
   const pageType = "mainAllItems"
 
-  const categories = [
-    ...new Set(allItems.map((i) => i.category).filter(Boolean)),
-  ];
 
   return (
     <div>
@@ -106,15 +104,15 @@ export default function MainAllItems({
                   {/* Category list */}
                   {categories.map((c) => (
                     <button
-                      key={c}
+                      key={c.category}
                       type="button"
                       onClick={() => {
-                        setFilterCategory(c);
+                        setFilterCategory(c.category);
                         setShowCategory(false);
                       }}
                       className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
                     >
-                      {c}
+                      {c.category}
                     </button>
                   ))}
                 </div>
@@ -237,7 +235,11 @@ export default function MainAllItems({
                         {i.transit_qty}
                       </span>
                     </td>
-
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-xs font-bold text-gray-700">
+                        {i.transit_to_mainstore}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">
                       <span
                         className={`font-mono text-xs font-bold ${i.main_qty - i.sub_qty <= 0 ? "text-red-500" : "text-gray-700"}`}

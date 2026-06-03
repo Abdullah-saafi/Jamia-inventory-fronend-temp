@@ -108,6 +108,10 @@ export const updateItem = (id, data) => API.patch(`/items/${id}`, data);
 export const deleteItem = (id) => API.delete(`/items/${id}`);
 export const rejectItemById = (id,rid) => API.delete(`/requests/${id}/item/${rid}`);
 export const getItemHistory = (store_id, item_no) => API.get(`/items/store/${store_id}/item/${item_no}`);
+export const getItemCategories = (store_id) =>
+  API.get("/categories/availableItemCategory", {
+    params: { store_id },
+  });
 
 // ── Requests ─────────────────────────────────────────────────
 export const getRequests = (params) => API.get("/requests", { params });

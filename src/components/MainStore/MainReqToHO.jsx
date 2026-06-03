@@ -40,7 +40,7 @@ const EMPTY_FORM = {
   items: [{ ...EMPTY_LINE }],
 }
 
-export default function MainReqToHO({showToast }) {
+export default function MainReqToHO({ showToast }) {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [toStore, setToStore] = useState([]);
@@ -61,6 +61,11 @@ export default function MainReqToHO({showToast }) {
   const [grnSubmitting, setGrnSubmitting] = useState(false);
   const [reusableItems, setReusableItems] = useState([]);
   const [usableItems, setUsableItems] = useState([]);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalItems: 0,
+    pageLimit: 10,
+  });
   const handleError = useErrorHandler();
 
   const [form, setForm] = useState({ ...EMPTY_FORM });
@@ -72,7 +77,11 @@ export default function MainReqToHO({showToast }) {
   const load = async () => {
     setPageLoading(true);
     try {
-      const params = { direction: "MAIN_TO_HO" };
+      const params = {
+        direction: ["MAIN_TO_HO", "MAIN_TO_PCASH"],
+        page,
+        limit: pageSize,
+      };
       if (filterStatus) params.status = filterStatus;
       if (auth.role !== "super admin") {
         params.store_id = auth.store_id;
@@ -82,19 +91,24 @@ export default function MainReqToHO({showToast }) {
       const [sRes, rRes, iRes] = await Promise.all([
         getStores(),
         getRequests(params),
-        getItems({ store_id: mainStores })
+        getItems({ store_id: auth.store_id }),
       ]);
-      const items = iRes.data.data || []
       const all = sRes.data.data;
+      const items = iRes.data.data || [];
       setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
       setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
-      setStoreItems(items)
-      const reusable = items.filter((i) => i.item_type === "REUSABLE");
-      const usable = items.filter((i) => i.item_type === "USABLE");
-      setReusableItems(reusable);
-      setUsableItems(usable);
       setToStore(all.filter((s) => s.store_type === "PETTY_CASH" || s.store_type === "HEAD_OFFICE"))
       setRequests(rRes.data.data);
+      if (rRes.data.pagination) {
+        setPagination(rRes.data.pagination);
+      }
+      setStoreItems(items);
+      setReusableItems(
+        items.filter(i => i.item_type === "REUSABLE")
+      );
+      setUsableItems(
+        items.filter(i => i.item_type === "USABLE")
+      );
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
       setError(msg);
@@ -105,8 +119,13 @@ export default function MainReqToHO({showToast }) {
 
   useEffect(() => {
     if (auth.store_id || auth.role === "super admin") load();
-  }, [filterStatus, filterStore, auth.store_id]);
-
+  }, [
+    filterStatus,
+    filterStore,
+    auth.store_id,
+    page,
+    pageSize,
+  ]);
 
   // ── Inline detail ──────────────────────────────────────────────────────────
   const openDetail = async (r) => {
@@ -363,18 +382,23 @@ export default function MainReqToHO({showToast }) {
                   pageType={pageType}
                   showToast={showToast}
                   EMPTY_LINE={EMPTY_LINE}
+                  openGRN={openGRN}
+                  grnLoading={grnLoading}
                 />
               ))
             )}
           </tbody>
         </table>
         <Pagination
-          currentPage={page}
-          totalItems={requests.length}
-          pageSize={pageSize}
+          currentPage={pagination.currentPage}
+          totalItems={pagination.totalItems}
+          pageSize={pagination.pageLimit}
           onPageChange={setPage}
           pageSizeOptions={[10, 25, 50]}
-          onPageSizeChange={setPageSize}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
         />
       </div>
 

@@ -182,7 +182,7 @@ export default function MainStoreProcessReturns({ showToast }) {
               returns.map((r) => (
                 <tr
                   key={r.return_id}
-                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                  className="border-b border-zinc-200 hover:bg-gray-50 transition-colors"
                 >
                   <td className="px-4 py-3">
                     <span className="font-mono text-emerald-600 text-xs font-bold">
@@ -219,7 +219,7 @@ export default function MainStoreProcessReturns({ showToast }) {
                         onClick={() => openModal(r.return_id)}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded transition-colors"
                       >
-                        Process
+                        عمل کریں
                       </button>
                     ) : (
                       <button
@@ -242,7 +242,7 @@ export default function MainStoreProcessReturns({ showToast }) {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
               <div>
                 <h3 className="font-bold text-gray-800">
                   واپسی درخواست — {selected?.return_no}
@@ -363,7 +363,7 @@ export default function MainStoreProcessReturns({ showToast }) {
 
             {/* Modal Footer */}
             {selected?.status === "PENDING" && (
-              <div className="border-t px-6 py-4 flex items-center justify-between">
+              <div className="border-t border-zinc-200 px-6 py-4 flex items-center justify-between">
                 <div className="text-xs text-gray-500 flex gap-4">
                   <span className="text-emerald-600 font-semibold">
                     ✓ اسٹاک: {stockCount}

@@ -43,7 +43,14 @@ export default function PettyCash() {
     const [fulfillerName, setFulfillerName] = useState("");
     const [fulfillNotes, setFulfillNotes] = useState("");
     const [fulfilling, setFulfilling] = useState(false);
-
+    const [pagination, setPagination] = useState({
+        currentPage: 1,
+        pageLimit: 10,
+        totalItems: 0,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+    });
 
     const { auth } = useAuth();
     const { showToast } = useToast()
@@ -53,10 +60,22 @@ export default function PettyCash() {
     const load = async () => {
         setLoading(true);
         try {
-            const params = { direction: "MAIN_TO_PCASH" };
+            const params = {
+                direction: "MAIN_TO_PCASH",
+                page,
+                limit: pageSize,
+            };
             if (filter) params.status = filter;
             const r = await getRequests(params);
+
             setRequests(r.data.data);
+            setPagination(
+                r.data.pagination || {
+                    currentPage: 1,
+                    pageLimit: pageSize,
+                    totalItems: r.data.data.length,
+                }
+            );
         } catch (error) {
             const msg = handleError(error, "Failed to load requests");
             setError(msg);
@@ -67,7 +86,7 @@ export default function PettyCash() {
 
     useEffect(() => {
         load();
-    }, [filter]);
+    }, [filter, page, pageSize]);
 
     const openDetail = async (r) => {
         if (detail && detail.request_id === r.request_id) {
@@ -236,12 +255,15 @@ export default function PettyCash() {
                     </tbody>
                 </table>
                 <Pagination
-                    currentPage={page}
-                    totalItems={requests.length}
-                    pageSize={pageSize}
+                    currentPage={pagination.currentPage}
+                    totalItems={pagination.totalItems}
+                    pageSize={pagination.pageLimit}
                     onPageChange={setPage}
                     pageSizeOptions={[10, 25, 50]}
-                    onPageSizeChange={setPageSize}
+                    onPageSizeChange={(size) => {
+                        setPageSize(size);
+                        setPage(1);
+                    }}
                 />
             </div>
 

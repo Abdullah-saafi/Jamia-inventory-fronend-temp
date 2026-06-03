@@ -110,14 +110,21 @@ export default function MainSubStoreReqs({
     }
   };
 
-  const handleFulfill = async (requestId, status) => {
+  const handleFulfill = async (requestId, status,) => {
     setFulfilling(requestId);
     try {
       if (status === "DISPUTED") {
         showToast("Cannot fulfill — dispute resolution required", "error");
         return;
       }
-      await fulfillRequest(requestId);
+
+      const fullfilldata = {
+        ref_no: "",
+        vehicle_no: "",
+        driver_name: "",
+        driver_no: "",
+      }
+      await fulfillRequest(requestId, fullfilldata);
       showToast("Request fulfilled and inventory updated", "success");
       setDetail(null);
       onRefresh();
@@ -196,7 +203,7 @@ export default function MainSubStoreReqs({
         items: itemLines.map(
           ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
         ),
-      };      
+      };
 
       // const formData = new FormData();
       // formData.append("from_store_id", itemForm.from_store_id);

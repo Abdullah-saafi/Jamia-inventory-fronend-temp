@@ -4,6 +4,7 @@ import {
   getStores,
   getItems,
   getReturnRequests,
+  getItemCategories,
 } from "../services/api";
 import MainAllItems from "../components/MainStore/MainAllItems";
 import MainSubStoreReqs from "../components/MainStore/MainSubStoreReqs";
@@ -33,6 +34,7 @@ export default function MainStore() {
   const [pendingReturns, setPendingReturns] = useState(0);
   const [mainStoreError, setMainStoreError] = useState("");
   const [toStore, setToStore] = useState([]);
+  const [categories, setCategories] = useState([]);
 
   // ── UI ────────────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
@@ -80,7 +82,7 @@ export default function MainStore() {
     async (silent = false) => {
       if (!silent) setLoading(true);
       try {
-        const [rRes, sRes, iRes, hoReqRes, retRes] = await Promise.all([
+        const [rRes, sRes, iRes, hoReqRes, retRes, catRes] = await Promise.all([
           getRequests({
             direction: "SUB_TO_MAIN",
             page: currentPage,
@@ -98,8 +100,9 @@ export default function MainStore() {
           }),
           getRequests({ direction: "MAIN_TO_HO" }),
           getReturnRequests({ to_store_id: auth.store_id, status: "PENDING" }),
+          getItemCategories(auth.store_id),
         ]);
-
+        setCategories(catRes.data.data);
         setRequests(rRes.data.data);
         setRequestsPagination(rRes.data.pagination);
         setHoRequests(hoReqRes.data.data);
@@ -231,6 +234,7 @@ export default function MainStore() {
           filterCategory={filterCategory}
           setFilterCategory={setFilterCategory}
           filterType={filterType}
+          categories={categories}
           setFilterType={setFilterType}
         />
       )}

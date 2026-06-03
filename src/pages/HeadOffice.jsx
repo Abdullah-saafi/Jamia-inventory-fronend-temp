@@ -23,12 +23,12 @@ import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import RequestRow from "../components/RequestRow";
 import FulfillModal from "../components/FulfillModal";
 
-const 
-EMPTY_FULFILL_FORM = {
-  driver_name: "",
-  driver_no: "",
-  vehicle_no: "",
-}
+const
+  EMPTY_FULFILL_FORM = {
+    driver_name: "",
+    driver_no: "",
+    vehicle_no: "",
+  }
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function HeadOffice() {
@@ -47,7 +47,16 @@ export default function HeadOffice() {
   const [fulfillNotes, setFulfillNotes] = useState("");
   const [fulfilling, setFulfilling] = useState(false);
   const [requestNo, setRequestNo] = useState(null);
-  const [fulfillForm, setFulfillForm] = useState({...EMPTY_FULFILL_FORM})
+  const [fulfillForm, setFulfillForm] = useState({ ...EMPTY_FULFILL_FORM })
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    pageLimit: 10,
+    totalItems: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+
   const { auth } = useAuth();
   const { showToast } = useToast()
   const handleError = useErrorHandler();
@@ -56,10 +65,22 @@ export default function HeadOffice() {
   const load = async () => {
     setLoading(true);
     try {
-      const params = { direction: "MAIN_TO_HO" };
+      const params = {
+        direction: "MAIN_TO_HO",
+        page,
+        limit: pageSize,
+      };
       if (filter) params.status = filter;
       const r = await getRequests(params);
+
       setRequests(r.data.data);
+      setPagination(
+        r.data.pagination || {
+          currentPage: 1,
+          pageLimit: pageSize,
+          totalItems: r.data.data.length,
+        }
+      );
     } catch (error) {
       const msg = handleError(error, "Failed to load requests");
       setError(msg);
@@ -70,7 +91,7 @@ export default function HeadOffice() {
 
   useEffect(() => {
     load();
-  }, [filter]);
+  }, [filter, page, pageSize]);
 
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
@@ -98,7 +119,7 @@ export default function HeadOffice() {
         ? "Re-dispatched — Main Store will verify the corrected delivery"
         : "Request fulfilled — Main Store will verify delivery", "success");
       setFulfillModal(false)
-      setFulfillForm({...EMPTY_FULFILL_FORM})
+      setFulfillForm({ ...EMPTY_FULFILL_FORM })
       load();
     } catch (e) {
       const msg = handleError(e, "Error fulfilling request");
@@ -235,14 +256,18 @@ export default function HeadOffice() {
           </tbody>
         </table>
         <Pagination
-          currentPage={page}
-          totalItems={requests.length}
-          pageSize={pageSize}
+          currentPage={pagination.currentPage}
+          totalItems={pagination.totalItems}
+          pageSize={pagination.pageLimit}
           onPageChange={setPage}
           pageSizeOptions={[10, 25, 50]}
-          onPageSizeChange={setPageSize}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
         />
       </div>
+
       {fulfillModal && (
         <FulfillModal
           pageType={pageType}

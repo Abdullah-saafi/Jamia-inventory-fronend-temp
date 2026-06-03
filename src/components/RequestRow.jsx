@@ -144,7 +144,7 @@ export default function RequestRow({
                 {grnLoading ? "…" : "ڈلیوری کی تصدیق"}
               </button>
             )}
-            {isReturnable && pageType === "subStore" && (
+            {/* {isReturnable && pageType === "subStore" && (
               <button
                 onClick={(e) => {
                   e.stopPropagation()
@@ -155,7 +155,7 @@ export default function RequestRow({
               >
                 {returnModalLoading ? "…" : "Return Items"}
               </button>
-            )}
+            )} */}
             {((pageType === "subStoreManager" || pageType === "mainStoreApprover") && r.status === "PENDING") && (
               <>
                 <button
@@ -180,7 +180,7 @@ export default function RequestRow({
                 </button>
               </>
             )}
-            {((pageType === "mainSubStoreReqs" || pageType === "headOffice") && canFulfill) && (
+            {((pageType === "mainSubStoreReqs" || pageType === "headOffice" || pageType === "pettyCash") && canFulfill) && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -315,7 +315,7 @@ export default function RequestRow({
                   </div>
 
                   {/* Driver Info */}
-                  {(r.driver_name || r.driver_no || r.vehicle_no) && (pageType === "headOffice" || pageType === "mainReqToHO") (
+                  {(r.driver_name || r.driver_no || r.vehicle_no) && (
                     <div className="bg-gray-100 border border-gray-200 rounded-xl p-4 mb-3 ">
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
 
@@ -346,6 +346,20 @@ export default function RequestRow({
                           </div>
                         </div>
 
+                      </div>
+                    </div>
+                  )}
+                  {(r.ref_no) && (
+                    <div className="bg-gray-100 border border-gray-200 rounded-xl p-4 mb-3 ">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                        <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                          <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
+                            پیٹی کیش ریفرنس نمبر
+                          </div>
+                          <div className="text-gray-800 font-medium">
+                            {r.ref_no || "-"}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
