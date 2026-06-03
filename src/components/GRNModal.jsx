@@ -89,18 +89,14 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
           <div>
             <div className="flex items-center gap-3">
               <span className="text-lg font-black text-gray-900 tracking-tight">
-                Goods Receiving Note
+                سامان کی وصولی کا نوٹ (GRN)
               </span>
               <span className="font-mono text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
                 {request.request_no}
               </span>
             </div>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Dispatched by{" "}
-              <span className="text-gray-600 font-medium">
-                {request.to_store_name}
-              </span>
-              {" · "}Verify each item and enter what was actually received
+            <p className="text-xs text-gray-400 mt-0.5" dir="rtl">
+              {" · "}ہر آئٹم کی تصدیق کریں اور درج کریں کہ اصل میں کتنا سامان موصول ہوا ہے۔
             </p>
           </div>
           <button
@@ -125,19 +121,19 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                 }`}
             />
             {currentStatus === "DISPUTED"
-                ? "Issues detected — this will be marked DISPUTED"
-                : "All items look good — this will be marked RECEIVED"}
+              ? " یہ ڈلیوری مارک ہو جائے گی متنازعہ"
+              : "  یہ ڈلیوری مارک ہو جائے گی"}
           </div>
 
           {/* Items table */}
           <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm text-center">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  {["Item No", "Item Name", "UOM", "Dispatched", "Received Qty", "Condition"].map((h) => (
+                  {["آئٹم نمبر", "آئٹم کا نام", "اکائی", "بھیجی گئی مقدار", "موصول شدہ مقدار", "حالت"].map((h) => (
                     <th
                       key={h}
-                      className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
+                      className=" px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
                     >
                       {h}
                     </th>
@@ -157,18 +153,18 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                     <td className="px-4 py-3 text-gray-400 text-xs">{item.item_uom}</td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-gray-700 font-semibold">
-                        {item.fulfilled_qty}
+                        {Number(item.fulfilled_qty)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <input
                         type="number"
                         min="0"
-                        max={item.fulfilled_qty}
-                        value={item.received_qty}
+                        max={Number(item.fulfilled_qty)}
+                        value={Number(item.received_qty)}
                         onChange={(e) => {
                           const val = Math.min(
-                            Number(item.fulfilled_qty),
+                            Number(Number(item.fulfilled_qty)),
                             Math.max(0, Number(e.target.value)),
                           );
                           updateItem(idx, "received_qty", val);
@@ -182,7 +178,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                             updateItem(idx, "item_condition", "OK");
                           }
                         }}
-                        className="w-20 border rounded px-2 py-1 text-sm font-mono focus:outline-none border-gray-300 text-gray-800"/>
+                        className="w-20 border rounded px-2 py-1 text-sm font-mono focus:outline-none border-gray-300 text-gray-800" />
                     </td>
                     <td className="px-4 py-3">
                       <select
@@ -200,10 +196,10 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                               : "border-red-300 text-red-700 bg-red-50"
                           }`}
                       >
-                        <option value="OK">✓ OK</option>
-                        <option value="DAMAGED">⚠ Damaged</option>
-                        <option value="MISSING">✕ Missing</option>
-                        <option value="RETURN">↵ Return</option>
+                        <option value="OK">✓ ٹھیک ہے (OK)</option>
+                        <option value="DAMAGED">⚠ خراب / متاثرہ (Damaged)</option>
+                        <option value="MISSING">✕ کم (Missing)</option>
+                        <option value="RETURN">↵ واپسی (Return)</option>
                       </select>
                     </td>
                   </tr>
@@ -216,7 +212,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
           {hasAnyIssue && (
             <div className={`${hasAnyIssue ? "bg-amber-50 border-amber-200" : ""} border rounded-xl p-4`}>
               <div className={`${hasAnyIssue && "text-amber-700"} text-xs font-bold uppercase tracking-wider mb-2`}>
-                Issues Detected
+                مسائل سامنے آئے ہیں
               </div>
               <ul className="space-y-1">
                 {items
@@ -228,13 +224,13 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                   .map((i) => (
                     <li
                       key={i.request_item_id}
-                      className={`${hasAnyIssue ? "text-amber-700" :  ""} text-xs flex items-center gap-2`}
+                      className={`${hasAnyIssue ? "text-amber-700" : ""} text-xs flex items-center gap-2`}
                     >
                       <span className="font-mono font-bold">{i.item_no}</span>
                       <span>{i.item_name}</span>
                       {Number(i.received_qty) < Number(i.fulfilled_qty) && (
                         <span className={`${hasAnyIssue && "text-amber-600"}`}>
-                          — received {i.received_qty} of {i.fulfilled_qty}
+                          — {i.fulfilled_qty} میں سے {i.received_qty} موصول ہوئے
                         </span>
                       )}
                       {i.item_condition !== "OK" && (
@@ -249,8 +245,8 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
           {/* Note */}
           <div>
             <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1.5">
-              Message to Main Store{" "}
-              <span className="text-gray-300 font-normal normal-case">(optional)</span>
+              مین اسٹور کے نام پیغام{" "}
+              <span className="text-gray-400 font-normal normal-case">(اختیاری)</span>
             </label>
             <textarea
               value={grnNote}
@@ -258,8 +254,8 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
               rows={3}
               placeholder={
                 hasAnyIssue
-                  ? "Describe the issue in detail…"
-                  : "Any remarks about the delivery…"
+                  ? "مسئلے کی تفصیلات یہاں لکھیں..."
+                  : "ڈلیوری کے بارے میں کوئی بھی ریمارکس لکھیں..."
               }
               className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2.5 text-gray-800 text-sm resize-none placeholder-gray-300 focus:outline-none focus:border-emerald-400"
             />
@@ -273,7 +269,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
             disabled={submitting}
             className="text-sm font-semibold text-red-500 hover:text-red-600 border border-red-200 hover:border-red-300 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg transition-colors disabled:opacity-40"
           >
-            Reject Entire Delivery
+            پوری ڈلیوری مسترد کریں
           </button>
 
           <div className="flex items-center gap-2">
@@ -282,7 +278,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
               disabled={submitting}
               className="text-sm font-semibold text-gray-600 hover:text-gray-800 border border-gray-200 bg-gray-50 px-4 py-2 rounded-lg transition-colors disabled:opacity-40"
             >
-              Cancel
+              منسوخ کریں
             </button>
             <button
               onClick={handleConfirm}
@@ -291,10 +287,10 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                 }`}
             >
               {submitting
-                ? "Submitting…"
-                  : currentStatus === "DISPUTED" 
-                  ? "Submit with issue" 
-                  : "✓ Confirm Receipt"}
+                ? "جمع ہو رہا ہے..."
+                : currentStatus === "DISPUTED"
+                  ? "مسئلے کے ساتھ جمع کریں"
+                  : "✓ وصولی کی تصدیق کریں"}
             </button>
           </div>
         </div>
