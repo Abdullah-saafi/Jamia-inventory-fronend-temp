@@ -125,7 +125,7 @@ export default function MainSubStoreReqs({
         driver_no: "",
       }
       await fulfillRequest(requestId, fullfilldata);
-      showToast("Request fulfilled and inventory updated", "success");
+      showToast("درخواست پوری کر دی گئی اور انوینٹری اپڈیٹ ہو گئی ہے", "success");
       setDetail(null);
       onRefresh();
     } catch (e) {

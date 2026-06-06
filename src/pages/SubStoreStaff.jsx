@@ -258,6 +258,8 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setGrnRequest(res.data.data);
+      console.log("log",res.data.data);
+      
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
       showToast(msg, "error");
@@ -275,12 +277,12 @@ export default function SubStore() {
 
       const label =
         payload.grn_status === "RECEIVED"
-          ? "Delivery confirmed — marked as RECEIVED"
+          ? "ڈیلیوری کی تصدیق ہو گئی ہے — موصول مارک کر دیا گیا ہے"
           : payload.grn_status === "DISPUTED"
-            ? "Issues reported — request marked DISPUTED"
+            ? "مسائل کی اطلاع کر دی گئی ہے"
             : payload.grn_status === "RETURN_BACK"
               ? "Deliver Returned"
-              : "Delivery rejected — main store notified";
+              : "ڈیلیوری مسترد کر دی گئی ہے — مین اسٹور کو مطلع کر دیا گیا ہے";
       showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn",);
       setGrnRequest(null);
       setDetail(null);
@@ -432,7 +434,7 @@ export default function SubStore() {
       // });
 
       await createRequest(payload);
-      showToast("Request submitted successfully", "success");
+      showToast("درخواست جمع کر دی گئی ہے", "success");
       setShowCreate(false);
       setItemForm({ ...EMPTY_FORM });
       load();

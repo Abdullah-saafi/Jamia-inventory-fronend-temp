@@ -244,7 +244,7 @@ export default function MainReqToHO({ showToast }) {
       console.log("payload", payload);
 
       await createRequest(payload);
-      showToast("Request submitted successfully", "success");
+      showToast("درخواست جمع کر دی گئی ہے", "success");
       setShowCreate(false);
       setForm({
         from_store_id: "",

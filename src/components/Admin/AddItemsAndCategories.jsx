@@ -139,7 +139,7 @@ const AddItemsAndCategories = () => {
     setSubmitLoading(true);
     try {      
       await createItem(newItem);
-      showToast("Item added successfully", "success");
+      showToast("آئٹم شامل کر دیا گیا ہے", "success");
       const itemNo = await generateRandomItemNo(item_type);
       if (!itemNo) return;
       setNewItem({
@@ -164,7 +164,7 @@ const AddItemsAndCategories = () => {
     setCategorySubmitLoading(true);
     try {
       await createCategory(newCategory);
-      showToast("Category added successfully", "success");
+      showToast("کیٹیگری شامل کر دی گئی ہے", "success");
       setNewCategory(EMPTY_NEW_CATEGORY);
       fetchData();
     } catch (e) {
@@ -180,7 +180,7 @@ const AddItemsAndCategories = () => {
     setDeletingId(id);
     try {
       await deleteCategory(id);
-      showToast("Category deleted", "success");
+      showToast("کیٹیگری ڈیلیٹ کر دی گئی ہے", "success");
       fetchData();
     } catch (e) {
       const msg = handleError(e, "Failed to delete category");
@@ -493,7 +493,7 @@ const AddItemsAndCategories = () => {
                 disabled={loading}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2 rounded disabled:opacity-40 transition-all"
               >
-                {submitLoading ? "Adding..." : "آئٹم شامل کریں"}
+                {submitLoading ? "شامل ہو رہا ہے..." : "آئٹم شامل کریں"}
               </button>
             </div>
           </div>
@@ -565,7 +565,7 @@ const AddItemsAndCategories = () => {
                     disabled={categorySubmitLoading}
                     className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2 rounded disabled:opacity-40 transition-all"
                   >
-                    {categorySubmitLoading ? "Adding..." : "کیٹیگری شامل کریں"}
+                    {categorySubmitLoading ? "شامل ہو رہا ہے..." : "کیٹیگری شامل کریں"}
                   </button>
                 </div>
               </div>

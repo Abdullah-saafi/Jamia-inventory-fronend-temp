@@ -1,29 +1,29 @@
 export const ROLE_STORE_MAP = {
   "sub-store": "SUB_STORE",
-  "sub-store-approver": "SUB_STORE",
+  "sub-store-manager": "SUB_STORE",
   "main-store": "MAIN_STORE",
-  "main-store-approver": "MAIN_STORE",
+  "main-store-manager": "MAIN_STORE",
   headoffice: "HEAD_OFFICE",
-  PETTY_CASH : "PETTY_CASH"
+  pettycash : "PETTY_CASH"
 }
 
 export const ROLES = [
   { value: "sub-store", label: "اسٹور" },
-  { value: "sub-store-approver", label: "اسٹور نگران" },
+  { value: "sub-store-manager", label: "اسٹور نگران" },
   { value: "main-store", label: "مرکزی اسٹور" },
-  { value: "main-store-approver", label: "مرکزی اسٹور نگران" },
+  { value: "main-store-manager", label: "مرکزی اسٹور نگران" },
   { value: "headoffice", label: "مرکزی دفتر" },
-  { value: "PETTY_CASH", label: "پٹی کیش" },
+  { value: "pettycash", label: "پٹی کیش" },
   { value: "admin", label: "انتظامی دفتر" },
 ]
 
 export const ROLE_LABELS = {
   "sub-store":          "اسٹور",
-  "sub-store-approver": "اسٹور نگران",
+  "sub-store-manager": "اسٹور نگران",
   "main-store":         "مرکزی اسٹور",
-  "main-store-approver":"مرکزی اسٹور نگران",
+  "main-store-manager":"مرکزی اسٹور نگران",
   headoffice:           "مرکزی دفتر",
-  "PETTY_CASH":         "پٹی کیش",
+  "pettycash":         "پٹی کیش",
   admin:                "انتظامی دفتر",
   "super admin":        "سپر ایڈمن",
 }

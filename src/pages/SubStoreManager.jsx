@@ -174,7 +174,7 @@ export default function SubStoreManager() {
           approved_qty: i.approved_qty,
         })),
       });
-      showToast("Request approved — waiting for Main Store Manager", "success");
+      showToast("درخواست منظور کر دی گئی ہے — مین اسٹور کا انتظار کریں", "success");
       setApproveModal(null);
       setApproverName("");
       setEditedItems([]);
@@ -208,7 +208,7 @@ export default function SubStoreManager() {
         approved_by_name: rejecterName,
         rejection_reason: rejectReason,
       });
-      showToast("Request rejected", "success");
+      showToast("درخواست مسترد کر دی گئی ہے", "success");
       setRejectModal(null);
       setRejecterName("");
       setRejectReason("");

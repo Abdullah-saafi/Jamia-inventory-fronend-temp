@@ -4,6 +4,7 @@ import {
   getRequestById,
   approveRequest,
   rejectRequest,
+  rejectItemById,
 } from "../services/api";
 import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import { useAuth } from "../context/authContext";
@@ -37,6 +38,7 @@ export default function MainStoreApprover() {
   const [rejectReason, setRejectReason] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [rejectSpecificItem, setRejectSpecificItem] = useState(null);
 
   const { auth } = useAuth();
   const { showToast } = useToast()
@@ -130,7 +132,7 @@ export default function MainStoreApprover() {
           approved_qty: i.approved_qty,
         })),
       });
-      showToast("Request approved — Head Office will now fulfill it", "success");
+      showToast("درخواست منظور کر دی گئی ہے — ہیڈ آفس کا انتظار کریں", "success");
       setApproveModal(null);
       setApproverName("");
       setEditedItems([]);
@@ -143,6 +145,19 @@ export default function MainStoreApprover() {
     }
   };
 
+  const rejectItem = async (id, rid) => {
+      try {
+        setRejectSpecificItem(rid)
+        await rejectItemById(id, rid)
+        openApprove(id)
+      } catch (error) {
+        const msg = handleError(error, "Error approving");
+        showToast(msg, "error");
+      } finally {
+        setRejectSpecificItem(null)
+      }
+    }
+
   const handleReject = async () => {
     if (!rejecterName.trim() || !rejectReason.trim()) return;
     setActioning(true);
@@ -151,7 +166,7 @@ export default function MainStoreApprover() {
         approved_by_name: rejecterName,
         rejection_reason: rejectReason,
       });
-      showToast("Request rejected", "info");
+      showToast("درخواست مسترد کر دی گئی ہے", "info");
       setRejectModal(null);
       setRejecterName("");
       setRejectReason("");
@@ -301,6 +316,8 @@ export default function MainStoreApprover() {
           editedItems={editedItems}
           setEditedItems={setEditedItems}
           actioning={actioning}
+          rejectItem={rejectItem}
+          rejectSpecificItem={rejectSpecificItem}
           handleApprove={handleApprove}
           handleReject={handleReject}
           action={"Approve"}

@@ -97,7 +97,7 @@ export default function AddUserTab() {
             </select>
           </div>
           <div>
-            <label className={labelClass}>اسٹور / شاخ</label>
+            <label className={labelClass}>اسٹور</label>
             <select
               name="store_id"
               value={form.store_id}

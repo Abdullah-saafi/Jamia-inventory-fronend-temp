@@ -198,7 +198,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                       >
                         <option value="OK">✓ ٹھیک ہے (OK)</option>
                         <option value="DAMAGED">⚠ خراب / متاثرہ (Damaged)</option>
-                        <option value="MISSING">✕ کم (Missing)</option>
+                        <option value="MISSING">✕ کم مقدار(Missing)</option>
                         <option value="RETURN">↵ واپسی (Return)</option>
                       </select>
                     </td>

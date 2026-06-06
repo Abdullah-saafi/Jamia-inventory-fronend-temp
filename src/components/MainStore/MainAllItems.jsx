@@ -237,7 +237,7 @@ export default function MainAllItems({
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-bold text-gray-700">
-                        {i.transit_to_mainstore}
+                        {i.mainstore_transit_qty}
                       </span>
                     </td>
                     <td className="px-4 py-3">
