@@ -4,6 +4,9 @@ import {
   getRequestById,
   approveRequest,
   rejectRequest,
+  rejectItemById,
+  getItemHistory,
+  getStores,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
@@ -27,12 +30,14 @@ export default function SubStoreManager() {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterStore, setFilterStore] = useState("");
   const [subStores, setSubStores] = useState([]);
+  const [currentStore, setCurrentStore] = useState(null);
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [approveModal, setApproveModal] = useState(null);
   const [approverName, setApproverName] = useState("");
   const [editedItems, setEditedItems] = useState([]);
-  const [actioning, setActioning] = useState(false);
+  const [actioning, setActioning] = useState(null);
+  const [rejectSpecificItem, setRejectSpecificItem] = useState(null);
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
@@ -46,7 +51,7 @@ export default function SubStoreManager() {
   });
 
   const { auth } = useAuth();
-  const {showToast} = useToast()
+  const { showToast } = useToast()
   const handleError = useErrorHandler();
 
   const pageType = "subStoreManager";
@@ -86,18 +91,19 @@ export default function SubStoreManager() {
   }, [filterStatus, filterStore, auth.store_id, page, pageSize,]);
 
   useEffect(() => {
-    if (auth.role === "super admin") {
-      import("../services/api").then(({ getStores }) => {
-        getStores()
-          .then((res) =>
-            setSubStores(
-              res.data.data.filter((s) => s.store_type === "SUB_STORE"),
-            ),
-          )
-          .catch(() => { });
-      });
-    }
-  }, [auth.role]);
+    const fetchStores = async () => {
+      try {
+        const response = await getStores()
+        setSubStores(response.data.data.filter((s) => s.store_type === "SUB_STORE"))
+        setCurrentStore(response.data.data.filter((s) => s.store_name === auth.storeName))
+      } catch (e) {
+        const msg = handleError(e, "Failed to get stores")
+        showToast(msg, "error")
+      }
+    };
+
+    fetchStores();
+  }, []);
 
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
@@ -107,7 +113,9 @@ export default function SubStoreManager() {
     setDL(true);
     setDetail({ ...r, items: [] });
     try {
+      console.log("r", r);
       const res = await getRequestById(r.request_id);
+      console.log("detail", res.data.data);
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
@@ -117,29 +125,32 @@ export default function SubStoreManager() {
     }
   };
 
-  const openApprove = async (r) => {
+  const openApprove = async (request_id, request_no) => {
     try {
-      setActioning(true);
-      const res = await getRequestById(r.request_id);
+      setActioning(request_id);
+      const res = await getRequestById(request_id);
       setEditedItems(
         (res.data.data.items || []).map((i) => ({
           ...i,
           approved_qty: i.requested_qty,
         })),
       );
-      setApproveModal(r);
+      setApproveModal({
+        id: request_id,
+        no: request_no
+      });
       setApproverName(auth.username || "");
     } catch (error) {
       const msg = handleError(error, "Failed to load items");
-      showToast(msg,"error");
+      showToast(msg, "error");
     } finally {
-      setActioning(false);
+      setActioning(null);
     }
   };
 
   const openReject = async (r) => {
     try {
-      setActioning(true);
+      setActioning(r.request_id);
       const res = await getRequestById(r.request_id);
       setRejectModal(res.data.data);
       setRejecterName(auth.username || "");
@@ -148,7 +159,7 @@ export default function SubStoreManager() {
       const msg = handleError(error, "Failed to load request");
       showToast(msg, "error");
     } finally {
-      setActioning(false);
+      setActioning(null);
     }
   };
 
@@ -156,28 +167,38 @@ export default function SubStoreManager() {
     if (!approverName.trim()) return;
     setActioning(true);
     try {
-      console.log("Approver modal", approveModal);
-      console.log("edited items", editedItems);
-
-      await approveRequest(approveModal.request_id, {
+      await approveRequest(approveModal.id, {
         approved_by_name: approverName,
         approved_items: editedItems.map((i) => ({
           request_item_id: i.request_item_id,
           approved_qty: i.approved_qty,
         })),
       });
-      showToast("Request approved — waiting for Main Store Manager", "success");
+      showToast("درخواست منظور کر دی گئی ہے — مین اسٹور کا انتظار کریں", "success");
       setApproveModal(null);
       setApproverName("");
       setEditedItems([]);
       load();
     } catch (e) {
       const msg = handleError(e, "Error approving");
-      showToast(msg,"error");
+      showToast(msg, "error");
     } finally {
       setActioning(false);
     }
   };
+
+  const rejectItem = async (id, rid) => {
+    try {
+      setRejectSpecificItem(rid)
+      await rejectItemById(id, rid)
+      openApprove(id)
+    } catch (error) {
+      const msg = handleError(error, "Error approving");
+      showToast(msg, "error");
+    } finally {
+      setRejectSpecificItem(null)
+    }
+  }
 
   const handleReject = async () => {
     if (!rejecterName.trim() || !rejectReason.trim()) return;
@@ -187,18 +208,30 @@ export default function SubStoreManager() {
         approved_by_name: rejecterName,
         rejection_reason: rejectReason,
       });
-      showToast("Request rejected", "success");
+      showToast("درخواست مسترد کر دی گئی ہے", "success");
       setRejectModal(null);
       setRejecterName("");
       setRejectReason("");
       load();
     } catch (e) {
       const msg = handleError(e, "Error rejecting");
-      showToast(msg,"error");
+      showToast(msg, "error");
     } finally {
       setActioning(false);
     }
   };
+
+  const openHistory = async (item_no) => {
+    try {
+      const response = await getItemHistory(currentStore[0].store_id, item_no)
+      console.log("data",response.data.data);
+      
+      showToast("success","success")
+    } catch (e) {
+      const msg = handleError(e, "Error fetching history");
+      showToast(msg, "error");
+    }
+  }
 
   const pendingCount = allRequests.filter((r) => r.status === "PENDING").length;
 
@@ -282,7 +315,7 @@ export default function SubStoreManager() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+      <div className="overflow-x-auto text-center rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <TableHead
@@ -338,7 +371,11 @@ export default function SubStoreManager() {
           setEditedItems={setEditedItems}
           actioning={actioning}
           handleApprove={handleApprove}
+          handleReject={handleReject}
+          rejectItem={rejectItem}
+          rejectSpecificItem={rejectSpecificItem}
           action={"Approve"}
+          openHistory={openHistory}
         />
       )}
 

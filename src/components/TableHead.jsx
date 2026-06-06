@@ -41,6 +41,7 @@ const TableHead = ({ pageType }) => {
       "مرکزی اسٹور کا اسٹاک",
       "ذیلی اسٹورز کو بھیجا گیا",
       "بھیجی جا رہی",
+      "مین اسٹور ٹرانزٹ",
       "باقی اسٹاک",
       "کم از کم اسٹاک",
       // "واپس آئٹمز",
@@ -74,6 +75,24 @@ const TableHead = ({ pageType }) => {
       "منظوری کا وقت",
       "مکمل ہونے کا وقت",
       "عملیات",
+    ],
+    headOffice: [
+      "درخواست نمبر",
+      "درخواست کنندہ",
+      "درخواست کا وقت",
+      "حالت",
+      "منظوری کا وقت",
+      "مکمل ہونے کا وقت",
+      "عملیات",
+    ],
+    pettyCash: [
+      "درخواست نمبر",
+      "درخواست کنندہ",
+      "درخواست کا وقت",
+      "حالت",
+      "منظوری کا وقت",
+      "مکمل ہونے کا وقت",
+      "عملیات",
     ]
   }
   const headers = headerMap[pageType] || []
@@ -83,7 +102,7 @@ const TableHead = ({ pageType }) => {
         {headers.map((h) => (
           <th
             key={h}
-            className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
+            className="px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
           >
             {h}
           </th>

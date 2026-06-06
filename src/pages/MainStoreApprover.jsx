@@ -4,6 +4,7 @@ import {
   getRequestById,
   approveRequest,
   rejectRequest,
+  rejectItemById,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
@@ -16,8 +17,8 @@ import RequestRow from "../components/RequestRow";
 import ApproveRejectModal from "../components/ApproveRejectModal";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
-import RequestDashboard from "../components/RequestDashboard";
-import { useToast } from "../context/ToastContext";
+import ApproveRejectModal from "../components/ApproveRejectModal";
+import RequestRow from "../components/RequestRow";
 
 export default function SubStoreManager() {
   const [requests, setRequests] = useState([]);
@@ -32,18 +33,13 @@ export default function SubStoreManager() {
   const [approveModal, setApproveModal] = useState(null);
   const [approverName, setApproverName] = useState("");
   const [editedItems, setEditedItems] = useState([]);
-  const [actioning, setActioning] = useState(false);
+  const [actioning, setActioning] = useState(null);
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    pageLimit: 10,
-    totalItems: 0,
-    totalPages: 1,
-    hasNextPage: false,
-    hasPrevPage: false,
-  });
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [rejectSpecificItem, setRejectSpecificItem] = useState(null);
 
   const { auth } = useAuth();
   const { showToast } = useToast()
@@ -117,29 +113,32 @@ export default function SubStoreManager() {
     }
   };
 
-  const openApprove = async (r) => {
+  const openApprove = async (request_id, request_no) => {
     try {
-      setActioning(true);
-      const res = await getRequestById(r.request_id);
+      setActioning(request_id);
+      const res = await getRequestById(request_id);
       setEditedItems(
         (res.data.data.items || []).map((i) => ({
           ...i,
           approved_qty: i.requested_qty,
         })),
       );
-      setApproveModal(r);
+      setApproveModal({
+        id: request_id,
+        no: request_no
+      });
       setApproverName(auth.username || "");
     } catch (error) {
       const msg = handleError(error, "Failed to load items");
       showToast(msg, "error");
     } finally {
-      setActioning(false);
+      setActioning(null);
     }
   };
 
   const openReject = async (r) => {
     try {
-      setActioning(true);
+      setActioning(r.request_id);
       const res = await getRequestById(r.request_id);
       setRejectModal(res.data.data);
       setRejecterName(auth.username || "");
@@ -148,7 +147,7 @@ export default function SubStoreManager() {
       const msg = handleError(error, "Failed to load request");
       showToast(msg, "error");
     } finally {
-      setActioning(false);
+      setActioning(null);
     }
   };
 
@@ -156,17 +155,14 @@ export default function SubStoreManager() {
     if (!approverName.trim()) return;
     setActioning(true);
     try {
-      console.log("Approver modal", approveModal);
-      console.log("edited items", editedItems);
-
-      await approveRequest(approveModal.request_id, {
+      await approveRequest(approveModal.id, {
         approved_by_name: approverName,
         approved_items: editedItems.map((i) => ({
           request_item_id: i.request_item_id,
           approved_qty: i.approved_qty,
         })),
       });
-      showToast("Request approved — waiting for Main Store Manager", "success");
+      showToast("درخواست منظور کر دی گئی ہے — ہیڈ آفس کا انتظار کریں", "success");
       setApproveModal(null);
       setApproverName("");
       setEditedItems([]);
@@ -179,6 +175,19 @@ export default function SubStoreManager() {
     }
   };
 
+  const rejectItem = async (id, rid) => {
+      try {
+        setRejectSpecificItem(rid)
+        await rejectItemById(id, rid)
+        openApprove(id)
+      } catch (error) {
+        const msg = handleError(error, "Error approving");
+        showToast(msg, "error");
+      } finally {
+        setRejectSpecificItem(null)
+      }
+    }
+
   const handleReject = async () => {
     if (!rejecterName.trim() || !rejectReason.trim()) return;
     setActioning(true);
@@ -187,7 +196,7 @@ export default function SubStoreManager() {
         approved_by_name: rejecterName,
         rejection_reason: rejectReason,
       });
-      showToast("Request rejected", "success");
+      showToast("درخواست مسترد کر دی گئی ہے", "info");
       setRejectModal(null);
       setRejecterName("");
       setRejectReason("");
@@ -282,7 +291,8 @@ export default function SubStoreManager() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+      {/* ── Table ── */}
+      <div className="overflow-x-auto text-center rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <TableHead
@@ -327,7 +337,8 @@ export default function SubStoreManager() {
         />
       </div>
 
-      {/* Approve Modal */}
+      {/* ── Approve Modal ── */}
+
       {approveModal && (
         <ApproveRejectModal
           setApproveModal={setApproveModal}
@@ -337,7 +348,10 @@ export default function SubStoreManager() {
           editedItems={editedItems}
           setEditedItems={setEditedItems}
           actioning={actioning}
+          rejectItem={rejectItem}
+          rejectSpecificItem={rejectSpecificItem}
           handleApprove={handleApprove}
+          handleReject={handleReject}
           action={"Approve"}
         />
       )}

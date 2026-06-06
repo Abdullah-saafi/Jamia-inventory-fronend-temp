@@ -38,9 +38,9 @@ const Login = () => {
 
                 const routes = {
                     "sub-store": "/substore-staff",
-                    "sub-store-approver": "/substore-manager",
+                    "sub-store-manager": "/substore-manager",
                     "main-store": "/mainstore",
-                    "main-store-approver": "/mainstore-approver",
+                    "main-store-manager": "/mainstore-manager",
                     "headoffice": "/headoffice",
                     "admin": "/admin",
                     "super admin": "/substore-staff",

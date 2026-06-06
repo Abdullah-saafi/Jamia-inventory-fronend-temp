@@ -41,6 +41,7 @@ const EMPTY_FORM = {
   to_store_id: "",
   requested_by_name: "",
   notes: "",
+  images: [],
   items: [{ ...EMPTY_LINE }],
 };
 
@@ -267,6 +268,8 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setGrnRequest(res.data.data);
+      console.log("log",res.data.data);
+      
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
       showToast(msg, "error");
@@ -282,13 +285,13 @@ export default function SubStore() {
 
       const label =
         payload.grn_status === "RECEIVED"
-          ? "Delivery confirmed — marked as RECEIVED"
+          ? "ڈیلیوری کی تصدیق ہو گئی ہے — موصول مارک کر دیا گیا ہے"
           : payload.grn_status === "DISPUTED"
-            ? "Issues reported — request marked DISPUTED"
+            ? "مسائل کی اطلاع کر دی گئی ہے"
             : payload.grn_status === "RETURN_BACK"
               ? "Deliver Returned"
-              : "Delivery rejected — main store notified";
-      showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn");
+              : "ڈیلیوری مسترد کر دی گئی ہے — مین اسٹور کو مطلع کر دیا گیا ہے";
+      showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn",);
       setGrnRequest(null);
       setDetail(null);
       load();
@@ -422,7 +425,7 @@ export default function SubStore() {
       };
 
       await createRequest(payload);
-      showToast("Request submitted successfully", "success");
+      showToast("درخواست جمع کر دی گئی ہے", "success");
       setShowCreate(false);
       setItemForm({ ...EMPTY_FORM });
       load();
@@ -472,8 +475,7 @@ export default function SubStore() {
           onClick={() => {
             setItemForm({
               from_store_id: auth.store_id || "",
-              to_store_id:
-                mainStores.length === 1 ? mainStores[0].store_id : "",
+              to_store_id: mainStores.length === 1 ? mainStores[0].store_id : "",
               requested_by_name: auth.username || "",
               notes: "",
               images: [],
@@ -558,7 +560,7 @@ export default function SubStore() {
         </div>
       </div>
       {/* ── Table ── */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+      <div className="overflow-x-auto text-center rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <TableHead pageType={pageType} />

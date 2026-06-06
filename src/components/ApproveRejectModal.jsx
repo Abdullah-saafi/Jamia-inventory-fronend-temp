@@ -1,4 +1,24 @@
-const ApproveRejectModal = ({ setApproveModal, approveModal, approverName, setApproverName, editedItems,setEditedItems, actioning, handleApprove, action, setRejectModal, rejectModal, rejecterName, setRejecterName, rejectReason,setRejectReason, handleReject }) => {
+const ApproveRejectModal = ({
+    setApproveModal,
+    approveModal,
+    approverName,
+    setApproverName,
+    editedItems,
+    setEditedItems,
+    actioning,
+    handleApprove,
+    action,
+    setRejectModal,
+    rejectModal,
+    rejecterName,
+    setRejecterName,
+    rejectReason,
+    setRejectReason,
+    handleReject,
+    rejectItem,
+    rejectSpecificItem,
+    openHistory
+}) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div
@@ -10,7 +30,7 @@ const ApproveRejectModal = ({ setApproveModal, approveModal, approverName, setAp
             <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
                     <h2 className="text-gray-900 font-bold">
-                        {action === "Approve" ? `Approve — ${approveModal.request_no}` : `Reject — ${rejectModal.request_no}`}
+                        {action === "Approve" ? `Approve — ${approveModal.no}` : `Reject — ${rejectModal.request_no}`}
                     </h2>
                     <button
                         onClick={() => {
@@ -48,43 +68,80 @@ const ApproveRejectModal = ({ setApproveModal, approveModal, approverName, setAp
                                         <th className="text-left pb-2">آئٹم</th>
                                         <th className="text-center pb-2">درخواست کردہ</th>
                                         <th className="text-center pb-2">منظور شدہ مقدار</th>
+                                        {editedItems.length > 1 && (
+                                            <th className="text-center pb-2">عملیات</th>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {editedItems.map((i, idx) => (
-                                        <tr
-                                            key={i.request_item_id}
-                                            className="border-b border-gray-100"
-                                        >
-                                            <td className="py-2">
-                                                <div className="text-gray-800 text-sm">
-                                                    {i.item_name}
+                                    {actioning ? (
+                                        <tr>
+                                            <td colSpan={4}>
+                                                <div className="flex justify-center py-4">
+                                                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
                                                 </div>
-                                                <div className="text-gray-400 text-xs font-mono">
-                                                    {i.item_no} {i.item_type === "REUSABLE" ? "—" : `· ${i.item_uom}`}
-                                                </div>
-                                            </td>
-                                            <td className="py-2 font-mono text-gray-500 text-center">
-                                                {Number(i.requested_qty)}
-                                            </td>
-                                            <td className="py-2 text-center">
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    value={Number(i.approved_qty)}
-                                                    onChange={(e) => {
-                                                        const u = [...editedItems];
-                                                        u[idx] = {
-                                                            ...u[idx],
-                                                            approved_qty: +e.target.value,
-                                                        };
-                                                        setEditedItems(u);
-                                                    }}
-                                                    className="w-20 bg-gray-50 border border-gray-300 rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none focus:border-emerald-500"
-                                                />
                                             </td>
                                         </tr>
-                                    ))}
+                                    ) : (
+                                        editedItems.map((i, idx) => (
+                                            <tr
+                                                key={i.request_item_id}
+                                                className="border-b border-gray-100"
+                                            >
+                                                <td className="py-2">
+                                                    <div className="text-gray-800 text-sm">
+                                                        {i.item_name}
+                                                    </div>
+                                                    <div className="text-gray-400 text-xs font-mono">
+                                                        {i.item_no} {i.item_type === "REUSABLE" ? "—" : `· ${i.item_uom}`}
+                                                    </div>
+                                                </td>
+
+                                                <td className="py-2 font-mono text-gray-500 text-center">
+                                                    {Number(i.requested_qty)}
+                                                </td>
+
+                                                <td className="py-2 text-center">
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={Number(i.approved_qty)}
+                                                        onChange={(e) => {
+                                                            const u = [...editedItems];
+                                                            u[idx] = {
+                                                                ...u[idx],
+                                                                approved_qty: +e.target.value,
+                                                            };
+                                                            setEditedItems(u);
+                                                        }}
+                                                        className="w-20 bg-gray-50 border border-gray-300 rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none focus:border-emerald-500"
+                                                    />
+                                                </td>
+                                                <td className="text-center">
+                                                    <button
+                                                        onClick={() => {
+                                                            openHistory(i.item_no)
+                                                        }}
+                                                        // disabled={rejectSpecificItem === i.request_item_id}
+                                                        className="text-zinc-800 text-sm font-semibold px-2 py-1 rounded disabled:opacity-40 bg-gray-200 hover:bg-gray-300"
+                                                    >
+                                                        {rejectSpecificItem === i.request_item_id ? "..." : "History"}
+                                                    </button>
+                                                </td>
+                                                {editedItems.length > 1 && (
+                                                    <td className="text-center">
+                                                        <button
+                                                            onClick={() => rejectItem(i.request_id, i.request_item_id)}
+                                                            disabled={rejectSpecificItem === i.request_item_id}
+                                                            className="text-white text-sm font-semibold px-2 py-1 rounded disabled:opacity-40 bg-red-600 hover:bg-red-500"
+                                                        >
+                                                            {rejectSpecificItem === i.request_item_id ? "..." : "مسترد"}
+                                                        </button>
+                                                    </td>
+                                                )}
+                                            </tr>
+                                        ))
+                                    )}
                                 </tbody>
                             </table>
                         </div>)}
@@ -108,7 +165,7 @@ const ApproveRejectModal = ({ setApproveModal, approveModal, approverName, setAp
                         <button
                             disabled={actioning}
                             onClick={() => {
-                                {action === "Approve" ? setApproveModal(null) : setRejectModal(null)}
+                                { action === "Approve" ? setApproveModal(null) : setRejectModal(null) }
                             }}
                             className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
                         >

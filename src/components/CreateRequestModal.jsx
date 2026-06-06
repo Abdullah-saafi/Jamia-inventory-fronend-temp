@@ -1,5 +1,5 @@
-import { useState } from "react";
-import API from "../services/api";
+import { useEffect, useState } from "react";
+import API, { resendItems } from "../services/api";
 import { useAuth } from "../context/authContext";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -12,162 +12,30 @@ export default function CreateRequestModal({
   const [activeTab, setActiveTab] = useState("items");
   const { auth } = useAuth();
 
-  const uploadImages = async (files) => {
-    const uploadedUrls = [];
-    for (const file of files) {
-      const formData = new FormData();
-      formData.append("image", file);
-      const response = await API.post("/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      if (!response.data?.image_url) throw new Error("Upload failed: no URL returned");
-      uploadedUrls.push(response.data.image_url);
-    }
-    return uploadedUrls;
-  };
-
-  const handleFileChange = (e, idx) => {
-    const files = Array.from(e.target.files);
-    const oversized = files.filter((f) => f.size > MAX_FILE_SIZE);
-    if (oversized.length > 0) { showToast("ہر تصویر 5MB سے کم ہونی چاہیے", "warn"); e.target.value = null; return; }
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-    const invalidFiles = files.filter((f) => !allowedTypes.includes(f.type));
-    if (invalidFiles.length > 0) { showToast("صرف JPG، PNG، یا WEBP تصاویر قابل قبول ہیں", "warn"); e.target.value = null; return; }
-    setItemForm((f) => {
-      const updatedItems = [...f.items];
-      const currentImages = updatedItems[idx].images || [];
-      const newFiles = files.filter((file) => !currentImages.some((img) => img.name === file.name && img.size === file.size && img.lastModified === file.lastModified));
-      if (currentImages.length + newFiles.length > 1) { showToast("فی آئٹم صرف ایک تصویر قابل قبول ہے", "warn"); return f; }
-      updatedItems[idx] = { ...updatedItems[idx], images: [...currentImages, ...newFiles] };
-      return { ...f, items: updatedItems };
-    });
-    e.target.value = null;
-  };
-
-  const handleRemoveImage = (idx, imgIdx) => {
-    setItemForm((f) => {
-      const updatedItems = [...f.items];
-      updatedItems[idx] = { ...updatedItems[idx], images: updatedItems[idx].images.filter((_, i) => i !== imgIdx) };
-      return { ...f, items: updatedItems };
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setCreating(true);
-    try {
-      const itemsWithUrls = await Promise.all(
-        itemForm.items.map(async (item) => {
-          let image_url = null;
-          if (item.images && item.images.length > 0) {
-            const urls = await uploadImages([item.images[0]]);
-            image_url = urls[0] ?? null;
-          }
-          const { images, _showDropdown, item_search, ...rest } = item;
-          return { ...rest, image_url };
-        }),
-      );
-      await API.post("/requests", {
-        ...itemForm,
-        items: itemsWithUrls,
-        direction: pageType === "mainReqToHO" ? "MAIN_TO_HO" : "SUB_TO_MAIN",
-      });
-      onClose();
-      showToast("Request submitted!", "success");
-    } catch (err) {
-      console.error("ERROR:", err.response?.data || err.message);
-      showToast("Submission failed: " + (err.response?.data?.message || err.message || "unknown error"), "error");
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const ImageUploadSection = ({ item, idx }) => (
-    <div className="mt-3">
-      <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">تصویر شامل کریں (اختیاری)</label>
-      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-white hover:bg-gray-100 hover:border-gray-400 transition-colors group">
-        <div className="flex flex-col items-center justify-center pt-3 pb-3">
-          <svg className="w-6 h-6 mb-1 text-gray-400 group-hover:text-gray-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <p className="text-xs text-gray-500 font-medium">تصویر منتخب کرنے کے لیے یہاں کلک کریں</p>
-          <p className="text-[10px] text-gray-400 mt-0.5">PNG, JPG, WEBP (1 تصویر، 5MB سے کم)</p>
-        </div>
-        <input type="file" multiple={false} accept="image/jpeg,image/jpg,image/png,image/webp" onChange={(e) => handleFileChange(e, idx)} className="hidden" />
-      </label>
-      {item.images && item.images.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-2">
-          {item.images.map((img, imgIdx) => (
-            <div key={imgIdx} className="relative flex items-center">
-              <span className="text-xs bg-gray-100 px-2 py-1 rounded">{img.name}</span>
-              <button type="button" onClick={() => handleRemoveImage(idx, imgIdx)} className="ml-1 text-red-500 hover:text-red-700">✕</button>
-            </div>
-          ))}
-        </div>
-      )}
-      {item.images?.length > 0 && (
-        <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded w-fit font-medium">
-          <span>{item.images.length} تصویر منتخب کر لی گئی ہے</span>
-        </div>
-      )}
-    </div>
-  );
-
-  const ItemCard = ({ item, idx, catalogItems, catalogLabel }) => (
-    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">آئٹم {idx + 1}</span>
-        <button type="button" onClick={() => removeLine(idx)} disabled={itemForm.items.length === 1} className="text-red-400 hover:text-red-500 disabled:opacity-30 text-lg font-bold leading-none">×</button>
-      </div>
-      <div className="mb-3">
-        <label className="text-gray-500 text-xs mb-1 block">{catalogLabel}</label>
-        <div className="relative mt-1.5">
-          <input value={item.item_search}
-            onChange={(e) => { updateLine(idx, "item_search", e.target.value); updateLine(idx, "_showDropdown", true); }}
-            onFocus={() => updateLine(idx, "_showDropdown", true)}
-            onBlur={() => setTimeout(() => updateLine(idx, "_showDropdown", false), 150)}
-            placeholder="...آئٹم کے نام یا نمبر سے تلاش کریں"
-            className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-          />
-          {item._showDropdown && (
-            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-              {catalogItems.filter((si) => { const q = (item.item_search || "").toLowerCase(); return !q || si.item_no.toLowerCase().includes(q) || si.item_name.toLowerCase().includes(q); })
-                .map((si) => (
-                  <div key={si.item_id} onMouseDown={() => { updateLine(idx, "selected_item_no", si.item_no); updateLine(idx, "item_search", `${si.item_no} — ${si.item_name}`); updateLine(idx, "_showDropdown", false); }}
-                    className={`px-3 py-2 cursor-pointer hover:bg-emerald-50 border-t border-gray-100 flex items-center justify-between ${item.selected_item_no === si.item_no ? "bg-emerald-50" : ""}`}>
-                    <div>
-                      <span className="font-mono text-emerald-600 text-xs font-bold">{si.item_no}</span>
-                      <span className="text-gray-700 text-xs ml-2">{si.item_name}</span>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="flex items-center gap-2 mb-3"><div className="flex-1 h-px bg-gray-200" /><span className="text-gray-400 text-xs">آئٹم کی تفصیلات</span><div className="flex-1 h-px bg-gray-200" /></div>
-      <div className="grid grid-cols-12 gap-2">
-        <div className="col-span-3"><label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">اشیاء نمبر</label><input value={item.item_no} readOnly className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none" /></div>
-        <div className="col-span-5"><label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">نام</label><input value={item.item_name} readOnly className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none" /></div>
-        <div className="col-span-2"><label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">اکائی</label><input value={item.item_uom} readOnly className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none" /></div>
-        <div className="col-span-2"><label className="text-[10px] uppercase font-bold mb-1 block text-emerald-600">مقدار</label>
-          <input type="number" min={1} value={item.requested_qty} onChange={(e) => updateLine(idx, "requested_qty", parseFloat(e.target.value) || 0)} className="w-full bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700" />
-        </div>
-      </div>
-      <ImageUploadSection item={item} idx={idx} />
-    </div>
-  );
+  const selectedStore = toStore?.find((s) => s.store_id === itemForm.to_store_id)
+  const isHeadOffice = selectedStore?.store_name === "Head Office"
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/30" onClick={() => {
+        onClose()
+        setItemForm({...EMPTY_FORM})
+      }} />
       <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <h2 className="text-gray-900 font-bold">نئی اشیاء کی درخواست</h2>
             {itemForm.is_emergency && <span className="inline-flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">Urgent</span>}
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl">×</button>
+          <button
+            onClick={() => {
+              onClose()
+              setItemForm({...EMPTY_FORM})
+            }}
+            className="text-gray-400 hover:text-gray-700 text-xl"
+          >
+            ×
+          </button>
         </div>
         {itemForm.is_emergency && (
           <div className="bg-red-50 border-b border-red-200 px-5 py-3 flex items-center gap-2 justify-end">
@@ -220,8 +88,20 @@ export default function CreateRequestModal({
             <textarea value={itemForm.notes} onChange={(e) => setItemForm((f) => ({ ...f, notes: e.target.value }))} rows={2} placeholder="اختیاری وجہ یا نوٹ" className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none" />
           </div>
           <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-            <button type="button" onClick={() => { setActiveTab("items"); setItemForm((prev) => ({ ...EMPTY_FORM, to_store_id: prev.to_store_id, requested_by_name: auth.username || "", from_store_id: auth.store_id || "" })); }}
-              className={`flex-1 py-2 text-sm font-semibold transition-colors ${activeTab === "items" ? "bg-emerald-600 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("items");
+                setItemForm((prev) => ({
+                  ...EMPTY_FORM,
+                  to_store_id: prev.to_store_id,
+                  requested_by_name: auth.username || "",
+                  from_store_id: auth.store_id || "",
+                }));
+              }}
+              className={`flex-1 py-2 text-sm font-semibold transition-colors
+                ${activeTab === "items" ? "bg-emerald-600 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
+            >
               استعمال ہونے والی اشیاء
             </button>
             <button type="button" onClick={() => { setActiveTab("assets"); setItemForm((prev) => ({ ...EMPTY_FORM, to_store_id: prev.to_store_id, requested_by_name: auth.username || "", from_store_id: auth.store_id || "" })); }}
@@ -232,8 +112,16 @@ export default function CreateRequestModal({
           {activeTab === "items" && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-500 text-xs font-semibold uppercase">آئٹمز</span>
-                <button type="button" onClick={addLine} className="text-xs text-emerald-600 hover:text-emerald-500 border border-gray-300 rounded px-2 py-1">+ قطار شامل کریں</button>
+                <span className="text-gray-500 text-xs font-semibold uppercase">
+                  آئٹمز
+                </span>
+                <button
+                  type="button"
+                  onClick={addLine}
+                  className="text-xs text-emerald-600 hover:text-emerald-500 border border-gray-300 rounded px-2 py-1"
+                >
+                  + آئٹم شامل کریں
+                </button>
               </div>
               {!itemForm.to_store_id ? (
                 <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">
@@ -241,22 +129,528 @@ export default function CreateRequestModal({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {itemForm.items.map((item, idx) => <ItemCard key={idx} item={item} idx={idx} catalogItems={usableItems} catalogLabel={`کیٹلاگ سے منتخب کریں (${usableItems.length} آئٹم دستیاب ہے)`} />)}
+                  {itemForm.items.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-gray-50 rounded-lg p-3 border border-gray-200"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                          آئٹم {idx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeLine(idx)}
+                          disabled={itemForm.items.length === 1}
+                          className="text-red-400 hover:text-red-500 disabled:opacity-30 text-lg font-bold leading-none"
+                        >
+                          ×
+                        </button>
+                      </div>
+
+                      {/* Search */}
+                      <div className="mb-3">
+                        <label className="text-gray-500 text-xs mb-1 block">
+                          کیٹلاگ سے منتخب کریں ({usableItems.length} آئٹم دستیاب ہے)
+                        </label>
+                        <div className="relative mt-1.5">
+                          <input
+                            value={item.item_search}
+                            onChange={(e) => {
+                              updateLine(idx, "item_search", e.target.value);
+                              updateLine(idx, "_showDropdown", true);
+                            }}
+                            onFocus={() =>
+                              updateLine(idx, "_showDropdown", true)
+                            }
+                            onBlur={() =>
+                              setTimeout(
+                                () => updateLine(idx, "_showDropdown", false),
+                                150,
+                              )
+                            }
+                            placeholder="...آئٹم کے نام یا نمبر سے تلاش کریں"
+                            className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                          />
+                          {item._showDropdown && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                              {usableItems
+                                .filter((si) => {
+                                  const q = (
+                                    item.item_search || ""
+                                  ).toLowerCase();
+                                  return (
+                                    !q ||
+                                    si.item_no.toLowerCase().includes(q) ||
+                                    si.item_name.toLowerCase().includes(q)
+                                  );
+                                })
+                                .map((si) => (
+                                  <div
+                                    key={si.item_id}
+                                    onMouseDown={() => {
+                                      updateLine(
+                                        idx,
+                                        "selected_item_no",
+                                        si.item_no,
+                                      );
+                                      updateLine(
+                                        idx,
+                                        "item_search",
+                                        `${si.item_no} — ${si.item_name}`,
+                                      );
+                                      updateLine(idx, "_showDropdown", false);
+                                    }}
+                                    className={`px-3 py-2 cursor-pointer hover:bg-emerald-50 border-t border-gray-100 flex items-center justify-between ${item.selected_item_no === si.item_no ? "bg-emerald-50" : ""}`}
+                                  >
+                                    <div>
+                                      <span className="font-mono text-emerald-600 text-xs font-bold">
+                                        {si.item_no}
+                                      </span>
+                                      <span className="text-gray-700 text-xs ml-2">
+                                        {si.item_name}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="flex-1 h-px bg-gray-200" />
+                        <span className="text-gray-400 text-xs">
+                          آئٹم کی تفصیلات
+                        </span>
+                        <div className="flex-1 h-px bg-gray-200" />
+                      </div>
+
+                      <div className="grid grid-cols-12 gap-2">
+                        <div className="col-span-3">
+                          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
+                            اشیاء نمبر
+                          </label>
+                          <input
+                            value={item.item_no}
+                            readOnly
+                            className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none"
+                          />
+                        </div>
+                        <div className="col-span-5">
+                          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
+                            نام
+                          </label>
+                          <input
+                            value={item.item_name}
+                            readOnly
+                            className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
+                            اکائی
+                          </label>
+                          <input
+                            value={item.item_uom}
+                            readOnly
+                            className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="text-[10px] uppercase font-bold mb-1 block text-emerald-600">
+                            مقدار
+                          </label>
+                          <input
+                            type="number"
+                            min={1}
+                            value={item.requested_qty}
+                            onChange={(e) =>
+                              updateLine(
+                                idx,
+                                "requested_qty",
+                                parseFloat(e.target.value) || 0,
+                              )
+                            }
+                            className="w-full bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
+                          تصاویر شامل کریں (اختیاری)
+                        </label>
+
+                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-white hover:bg-gray-100 hover:border-gray-400 transition-colors group">
+                          <div className="flex flex-col items-center justify-center pt-3 pb-3">
+                            <svg
+                              className="w-6 h-6 mb-1 text-gray-400 group-hover:text-gray-500 transition-colors"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 002-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <p className="text-xs text-gray-500 font-medium">
+                              تصویر منتخب کرنے کے لیے یہاں کلک کریں
+                            </p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">
+                              PNG, JPG (زیادہ سے زیادہ 3 تصاویر)
+                            </p>
+                          </div>
+
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files);
+
+                              const currentImages = itemForm.items[idx].images || [];
+
+                              const newFiles = files.filter(
+                                (file) =>
+                                  !currentImages.some(
+                                    (img) =>
+                                      img.name === file.name &&
+                                      img.size === file.size &&
+                                      img.lastModified === file.lastModified
+                                  )
+                              );
+
+                              const total = currentImages.length + newFiles.length;
+
+                              if (total > 3) {
+                                showToast("Maximum 3 images allowed per item", "warn");
+                                e.target.value = null;
+                                return;
+                              }
+
+                              setItemForm((f) => {
+                                const updatedItems = [...f.items];
+                                updatedItems[idx].images = [...currentImages, ...newFiles];
+
+                                return {
+                                  ...f,
+                                  items: updatedItems
+                                };
+                              });
+
+                              e.target.value = null;
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                        {item.images && item.images.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {item.images.map((img, imgIdx) => (
+                              <div key={imgIdx} className="relative">
+                                <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                  {img.name}
+                                </span>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setItemForm((f) => {
+                                      const updatedItems = [...f.items];
+                                      updatedItems[idx].images =
+                                        updatedItems[idx].images.filter((_, i) => i !== imgIdx);
+
+                                      return {
+                                        ...f,
+                                        items: updatedItems
+                                      };
+                                    });
+                                  }}
+                                  className="ml-1 text-red-500"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Elegant File Count Badge */}
+                        {item.images?.length > 0 && (
+                          <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded w-fit font-medium">
+                            <span>{item.images.length} تصویر منتخب کر لی گئی ہے</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
           )}
+
+          {/* ══════════════════════════════════════════════════════════
+              Non-Consumalbe items TAB
+          ══════════════════════════════════════════════════════════ */}
           {activeTab === "assets" && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-500 text-xs font-semibold uppercase">آئٹمز</span>
-                <button type="button" onClick={addLine} className="text-xs text-emerald-600 hover:text-emerald-500 border border-gray-300 rounded px-2 py-1">+ قطار شامل کریں</button>
+                <span className="text-gray-500 text-xs font-semibold uppercase">
+                  آئٹمز
+                </span>
+                <button
+                  type="button"
+                  onClick={addLine}
+                  className="text-xs text-emerald-600 hover:text-emerald-500 border border-gray-300 rounded px-2 py-1"
+                >
+                  + آئٹم شامل کریں
+                </button>
               </div>
               {!itemForm.to_store_id ? (
                 <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">دستیاب اشیاء دیکھنے کے لیے پہلے مرکزی اسٹور کا انتخاب کریں</div>
               ) : (
                 <div className="space-y-3">
-                  {itemForm.items.map((item, idx) => <ItemCard key={idx} item={item} idx={idx} catalogItems={reusableItems} catalogLabel={`کیٹلاگ سے منتخب کریں (${reusableItems.length} آئٹم دستیاب ہے)`} />)}
+                  {itemForm.items.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-gray-50 rounded-lg p-3 border border-gray-200"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                          آئٹم {idx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeLine(idx)}
+                          disabled={itemForm.items.length === 1}
+                          className="text-red-400 hover:text-red-500 disabled:opacity-30 text-lg font-bold leading-none"
+                        >
+                          ×
+                        </button>
+                      </div>
+
+                      {/* Search */}
+                      <div className="mb-3">
+                        <label className="text-gray-500 text-xs mb-1 block">
+                          کیٹلاگ سے منتخب کریں ({reusableItems.length} آئٹم
+                          دستیاب ہے)
+                        </label>
+                        <div className="relative mt-1.5">
+                          <input
+                            value={item.item_search}
+                            onChange={(e) => {
+                              updateLine(idx, "item_search", e.target.value);
+                              updateLine(idx, "_showDropdown", true);
+                            }}
+                            onFocus={() =>
+                              updateLine(idx, "_showDropdown", true)
+                            }
+                            onBlur={() =>
+                              setTimeout(
+                                () => updateLine(idx, "_showDropdown", false),
+                                150,
+                              )
+                            }
+                            placeholder="...آئٹم کے نام یا نمبر سے تلاش کریں"
+                            className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                          />
+                          {item._showDropdown && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                              {reusableItems
+                                .filter((si) => {
+                                  const q = (
+                                    item.item_search || ""
+                                  ).toLowerCase();
+                                  return (
+                                    !q ||
+                                    si.item_no.toLowerCase().includes(q) ||
+                                    si.item_name.toLowerCase().includes(q)
+                                  );
+                                })
+                                .map((si) => (
+                                  <div
+                                    key={si.item_id}
+                                    onMouseDown={() => {
+                                      updateLine(
+                                        idx,
+                                        "selected_item_no",
+                                        si.item_no,
+                                      );
+                                      updateLine(
+                                        idx,
+                                        "item_search",
+                                        `${si.item_no} — ${si.item_name}`,
+                                      );
+                                      updateLine(idx, "_showDropdown", false);
+                                    }}
+                                    className={`px-3 py-2 cursor-pointer hover:bg-emerald-50 border-t border-gray-100 flex items-center justify-between ${item.selected_item_no === si.item_no ? "bg-emerald-50" : ""}`}
+                                  >
+                                    <div>
+                                      <span className="font-mono text-emerald-600 text-xs font-bold">
+                                        {si.item_no}
+                                      </span>
+                                      <span className="text-gray-700 text-xs ml-2">
+                                        {si.item_name}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="flex-1 h-px bg-gray-200" />
+                        <span className="text-gray-400 text-xs">
+                          آئٹم کی تفصیلات
+                        </span>
+                        <div className="flex-1 h-px bg-gray-200" />
+                      </div>
+
+                      <div className="grid grid-cols-12 gap-2">
+                        <div className="col-span-3">
+                          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
+                            اشیاء نمبر
+                          </label>
+                          <input
+                            value={item.item_no}
+                            readOnly
+                            className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none"
+                          />
+                        </div>
+                        <div className="col-span-5">
+                          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
+                            نام
+                          </label>
+                          <input
+                            value={item.item_name}
+                            readOnly
+                            className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block text-emerald-600">
+                            مقدار
+                          </label>
+                          <input
+                            type="number"
+                            min={1}
+                            value={item.requested_qty}
+                            onChange={(e) =>
+                              updateLine(
+                                idx,
+                                "requested_qty",
+                                parseFloat(e.target.value) || 0,
+                              )
+                            }
+                            className="w-full bg-emerald-50 border border-emerald-200 rounded px-2 py-1 text-sm outline-none focus:border-emerald-500 font-bold text-emerald-700"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
+                          تصاویر شامل کریں (اختیاری)
+                        </label>
+
+                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-white hover:bg-gray-100 hover:border-gray-400 transition-colors group">
+                          <div className="flex flex-col items-center justify-center pt-3 pb-3">
+                            <svg
+                              className="w-6 h-6 mb-1 text-gray-400 group-hover:text-gray-500 transition-colors"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 002-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <p className="text-xs text-gray-500 font-medium">
+                              تصویر منتخب کرنے کے لیے یہاں کلک کریں
+                            </p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">
+                              PNG, JPG (زیادہ سے زیادہ 3 تصاویر)
+                            </p>
+                          </div>
+
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files);
+
+                              const currentImages = itemForm.items[idx].images || [];
+
+                              const newFiles = files.filter(
+                                (file) =>
+                                  !currentImages.some(
+                                    (img) =>
+                                      img.name === file.name &&
+                                      img.size === file.size &&
+                                      img.lastModified === file.lastModified
+                                  )
+                              );
+
+                              const total = currentImages.length + newFiles.length;
+                              if (total > 3) {
+                                showToast("Maximum 3 images allowed per item", "warn");
+                                e.target.value = null;
+                                return;
+                              }
+
+                              setItemForm((f) => {
+                                const updatedItems = [...f.items];
+                                updatedItems[idx].images = [...currentImages, ...newFiles];
+
+                                return {
+                                  ...f,
+                                  items: updatedItems
+                                };
+                              });
+
+                              e.target.value = null;
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                        {item.images && item.images.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {item.images.map((img, imgIdx) => (
+                              <div key={imgIdx} className="relative">
+                                <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                  {img.name}
+                                </span>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setItemForm((f) => {
+                                      const updatedItems = [...f.items];
+                                      updatedItems[idx].images =
+                                        updatedItems[idx].images.filter((_, i) => i !== imgIdx);
+
+                                      return {
+                                        ...f,
+                                        items: updatedItems
+                                      };
+                                    });
+                                  }}
+                                  className="ml-1 text-red-500"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Elegant File Count Badge */}
+                        {item.images?.length > 0 && (
+                          <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded w-fit font-medium">
+                            <span>{item.images.length} تصویر منتخب کر لی گئی ہے</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -266,10 +660,27 @@ export default function CreateRequestModal({
               {itemForm.items?.length > 0 && <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded">{itemForm.items.length} آئٹم{itemForm.items.length > 1 ? "s" : ""}</span>}
             </div>
             <div className="flex items-center gap-3">
-              <button type="button" onClick={onClose} className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded">منسوخ کریں</button>
-              <button type="submit" disabled={creating || !itemForm.to_store_id}
-                className={`text-white text-sm font-bold px-8 py-2 rounded-lg transition-all disabled:opacity-50 ${itemForm.is_emergency ? "bg-red-600 hover:bg-red-500" : "bg-emerald-600 hover:bg-emerald-500"}`}>
-                {creating ? "جمع کیا جا رہا ہے..." : itemForm.is_emergency ? "ہنگامی درخواست جمع کرائیں" : "درخواست جمع کرائیں"}
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  setItemForm({...EMPTY_FORM})
+                }}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
+              >
+                منسوخ کریں
+              </button>
+              <button
+                type="submit"
+                disabled={creating || !itemForm.to_store_id}
+                className={`text-white text-sm font-bold px-8 py-2 rounded-lg transition-all disabled:opacity-50
+                  ${itemForm.is_emergency ? "bg-red-600 hover:bg-red-500" : "bg-emerald-600 hover:bg-emerald-500"}`}
+              >
+                {creating
+                  ? "جمع کیا جا رہا ہے..."
+                  : itemForm.is_emergency
+                    ? "ہنگامی درخواست جمع کرائیں"
+                    : "درخواست جمع کرائیں"}
               </button>
             </div>
           </div>

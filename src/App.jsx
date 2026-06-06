@@ -47,7 +47,7 @@ export default function App() {
                 <Route
                   element={
                     <ProtectedRoute
-                      allowedRoles={["sub-store-approver", "super admin"]}
+                      allowedRoles={["sub-store-manager", "super admin"]}
                     />
                   }
                 >
@@ -69,12 +69,12 @@ export default function App() {
                 <Route
                   element={
                     <ProtectedRoute
-                      allowedRoles={["main-store-approver", "super admin"]}
+                      allowedRoles={["main-store-manager", "super admin"]}
                     />
                   }
                 >
                   <Route
-                    path="/mainstore-approver"
+                    path="/mainstore-manager"
                     element={<MainStoreApprover />}
                   />
                 </Route>

@@ -3,6 +3,7 @@ import { useOutletContext } from "react-router-dom";
 import { addStore } from "../../services/api";
 import { inputClass, labelClass } from "../../services/constants";
 import useErrorHandler from "../useErrorHandler";
+import { useToast } from "../../context/ToastContext";
 
 export default function AddStoreTab() {
 
@@ -15,30 +16,26 @@ export default function AddStoreTab() {
     phone: "",
   });
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
 
   const handleError = useErrorHandler();
+  const { showToast } = useToast()
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: value }));
-    if (message) setMessage("");
   };
 
   const handleSubmit = async () => {
     if (!form.store_code || !form.store_name) {
-      return setMessage("اسٹور کوڈ اور اسٹور کا نام درکار ہے");
+      return showToast("اسٹور کوڈ اور اسٹور کا نام درکار ہے", "error");
     }
-
     setLoading(true);
-    setMessage("");
-
     try {
       // Force SUB_STORE type as per your requirement
       const res = await addStore({ ...form, store_type: "SUB_STORE" });
 
       const createdName = res.data?.data?.store_name || "Store";
-      setMessage(`اسٹور کامیابی سے بن گیا ہے`);
+      showToast(`اسٹور کامیابی سے بن گیا ہے`, "success");
 
       // Reset form
       setForm({ store_code: "", store_name: "", address: "", phone: "" });
@@ -47,15 +44,11 @@ export default function AddStoreTab() {
       if (loadStores) await loadStores();
     } catch (e) {
       const msg = handleError(e, "Failed to create store");
-      setMessage(msg);
+      showToast(msg);
     } finally {
       setLoading(false);
     }
   };
-
-  const isSuccess =
-    message.toLowerCase().includes("success") ||
-    message.toLowerCase().includes("successfully");
 
   return (
     <div className="max-w-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -110,7 +103,6 @@ export default function AddStoreTab() {
               // Ensure only numbers are entered
               const val = e.target.value.replace(/\D/g, "");
               setForm((f) => ({ ...f, phone: val }));
-              if (message) setMessage("");
             }}
             placeholder="e.g. 03451234567"
             className={inputClass}
@@ -142,20 +134,6 @@ export default function AddStoreTab() {
               "اسٹور بنائیں"
             )}
           </button>
-
-          {/* Status Feedback */}
-          {message && (
-            <div
-              className={`p-3 rounded-lg text-[10px] uppercase font-black border text-center animate-in fade-in slide-in-from-top-1 duration-300
-                ${
-                  isSuccess
-                    ? "bg-emerald-50 border-emerald-100 text-emerald-700"
-                    : "bg-red-50 border-red-100 text-red-700"
-                }`}
-            >
-              {message}
-            </div>
-          )}
         </div>
       </div>
     </div>

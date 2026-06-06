@@ -35,7 +35,7 @@ export default function Admin() {
     <div>
       <div className="mb-4">
         <h1 className="text-xl font-black text-gray-900">Admin Panel</h1>
-        <p className="text-gray-500 text-sm mt-0.5">Manage users, stores and branches</p>
+        <p className="text-gray-500 text-sm mt-0.5">صارفین، اسٹورز اور برانچز کا انتظام کریں</p>
       </div>
 
       <nav className="bg-white border border-gray-200 rounded-lg mb-6 px-2 py-1.5 flex items-center gap-1 shadow-sm w-fit">

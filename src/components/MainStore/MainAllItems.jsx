@@ -27,6 +27,7 @@ export default function MainAllItems({
   setFilterCategory,
   filterType,
   setFilterType,
+  categories,
 }) {
   const [showAddItem, setShowAddItem] = useState(false);
   const [showCategory, setShowCategory] = useState(false);
@@ -36,9 +37,6 @@ export default function MainAllItems({
 
   const pageType = "mainAllItems"
 
-  const categories = [
-    ...new Set(allItems.map((i) => i.category).filter(Boolean)),
-  ];
 
   return (
     <div>
@@ -98,7 +96,7 @@ export default function MainAllItems({
                       setFilterCategory("");
                       setShowCategory(false);
                     }}
-                    className=" text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 border-b border-gray-100"
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
                   >
                     تمام زمرے
                   </button>
@@ -106,15 +104,15 @@ export default function MainAllItems({
                   {/* Category list */}
                   {categories.map((c) => (
                     <button
-                      key={c}
+                      key={c.category}
                       type="button"
                       onClick={() => {
-                        setFilterCategory(c);
+                        setFilterCategory(c.category);
                         setShowCategory(false);
                       }}
                       className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
                     >
-                      {c}
+                      {c.category}
                     </button>
                   ))}
                 </div>
@@ -180,7 +178,7 @@ export default function MainAllItems({
       </div>
 
       {/* Table Section */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm mt-1">
+      <div className="overflow-x-auto text-center rounded-lg border border-gray-200 shadow-sm mt-1">
         <table className="w-full text-sm">
           <thead>
             <TableHead
@@ -207,8 +205,11 @@ export default function MainAllItems({
                         {i.item_no}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-semibold">
-                      {i.item_name}
+                    <td className="px-4 py-3">
+                      <div className="font-semibold text-gray-800">{i.item_name}</div>
+                      <div className="font-semibold text-xs text-gray-800 dir-rtl" dir="rtl">
+                        {i.item_name_urdu}
+                      </div>
                     </td>
 
                     <td className="px-4 py-3 text-gray-500 text-xs">
@@ -235,7 +236,11 @@ export default function MainAllItems({
                         {i.transit_qty}
                       </span>
                     </td>
-
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-xs font-bold text-gray-700">
+                        {i.mainstore_transit_qty}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-bold text-gray-700">
                         {(Number(i.item_quantity) - Number(i.sub_qty || 0) + Number(i.returned_qty || 0) - Number(i.scrapped_qty || 0)).toFixed(0)}

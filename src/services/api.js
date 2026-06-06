@@ -95,6 +95,12 @@ export const getItemById = (id) => API.get(`/items/${id}`);
 export const createItem = (data) => API.post("/items", data);
 export const updateItem = (id, data) => API.patch(`/items/${id}`, data);
 export const deleteItem = (id) => API.delete(`/items/${id}`);
+export const rejectItemById = (id,rid) => API.delete(`/requests/${id}/item/${rid}`);
+export const getItemHistory = (store_id, item_no) => API.get(`/items/store/${store_id}/item/${item_no}`);
+export const getItemCategories = (store_id) =>
+  API.get("/categories/availableItemCategory", {
+    params: { store_id },
+  });
 
 // ── Requests ─────────────────────────────────────────────────
 export const getRequests = (params) => API.get("/requests", { params });
@@ -111,9 +117,7 @@ export const approveRequest = (id, data) =>
   API.patch(`/requests/${id}/approve`, data);
 export const rejectRequest = (id, data) =>
   API.patch(`/requests/${id}/reject`, data);
-export const fulfillRequest = (id) => API.patch(`/requests/${id}/fulfill`, {});
-export const headOfficeFulfillRequest = (id, data) =>
-  API.patch(`/requests/${id}/fulfill`, data);
+export const fulfillRequest = (id,data) => API.patch(`/requests/${id}/fulfill`, data);
 export const sendReturnToMain = (id, data) =>
   API.patch(`/requests/${id}/send-back`, data);
 export const acceptReturnFromSub = (id, accepted_by_name) =>
