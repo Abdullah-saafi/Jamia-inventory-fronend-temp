@@ -42,6 +42,7 @@ const EMPTY_FORM = {
   to_store_id: "",
   requested_by_name: "",
   notes: "",
+  images: [],
   items: [{ ...EMPTY_LINE }],
 };
 
@@ -473,8 +474,7 @@ export default function SubStore() {
           onClick={() => {
             setItemForm({
               from_store_id: auth.store_id || "",
-              to_store_id:
-                mainStores.length === 1 ? mainStores[0].store_id : "",
+              to_store_id: mainStores.length === 1 ? mainStores[0].store_id : "",
               requested_by_name: auth.username || "",
               notes: "",
               images: [],
@@ -559,7 +559,7 @@ export default function SubStore() {
         </div>
       </div>
       {/* ── Table ── */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+      <div className="overflow-x-auto text-center rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <TableHead pageType={pageType} />

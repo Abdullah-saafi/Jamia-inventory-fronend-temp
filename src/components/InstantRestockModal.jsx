@@ -1,15 +1,19 @@
 const InstantRestockModal = ({
-    items,
     onClose,
-    onSumbit,
+    onSubmit,
     setItemForm,
     itemForm,
-    onSubmit,
     toStore,
     removeLine,
     creating,
     showToast,
 }) => {
+
+    const handleSubmit = (e) => {
+        e.preventDefault()
+        onSubmit()
+    }
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/30" onClick={onClose} />
@@ -41,7 +45,7 @@ const InstantRestockModal = ({
                     </div>
                 )}
 
-                <form onSubmit={onSubmit} className="p-5 space-y-4">
+                <form onSubmit={handleSubmit} className="p-5 space-y-4">
                     {/* ── Emergency toggle ── */}
                     <div
                         onClick={() =>
@@ -119,7 +123,6 @@ const InstantRestockModal = ({
                             className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none"
                         />
                     </div>
-                    {/* {activeTab === "items" && ( */}
                     <div>
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-gray-500 text-xs font-semibold uppercase">
@@ -249,27 +252,28 @@ const InstantRestockModal = ({
                                                     onChange={(e) => {
                                                         const files = Array.from(e.target.files);
 
+                                                        const currentImages = itemForm.items[idx].images || [];
+
+                                                        const newFiles = files.filter(
+                                                            (file) =>
+                                                                !currentImages.some(
+                                                                    (img) =>
+                                                                        img.name === file.name &&
+                                                                        img.size === file.size &&
+                                                                        img.lastModified === file.lastModified
+                                                                )
+                                                        );
+
+                                                        const total = currentImages.length + newFiles.length;
+
+                                                        if (total > 3) {
+                                                            showToast("Maximum 3 images allowed per item", "warn");
+                                                            e.target.value = null;
+                                                            return;
+                                                        }
+
                                                         setItemForm((f) => {
                                                             const updatedItems = [...f.items];
-                                                            const currentImages = updatedItems[idx].images || [];
-
-                                                            const newFiles = files.filter(
-                                                                (file) =>
-                                                                    !currentImages.some(
-                                                                        (img) =>
-                                                                            img.name === file.name &&
-                                                                            img.size === file.size &&
-                                                                            img.lastModified === file.lastModified
-                                                                    )
-                                                            );
-
-                                                            const total = currentImages.length + newFiles.length;
-
-                                                            if (total > 3) {
-                                                                showToast("Maximum 3 images allowed per item", "warn");
-                                                                return f;
-                                                            }
-
                                                             updatedItems[idx].images = [...currentImages, ...newFiles];
 
                                                             return {
@@ -326,7 +330,6 @@ const InstantRestockModal = ({
                             </div>
                         )}
                     </div>
-                    {/* )} */}
 
                     {/* ── Submit row ── */}
                     <div className="pt-4 flex items-center justify-between gap-3 border-t border-gray-100">

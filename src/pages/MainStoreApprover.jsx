@@ -19,11 +19,7 @@ import CreateRequestModal from "../components/CreateRequestModal";
 import RequestRow from "../components/RequestRow";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
-import ReturnItemsModal from "../components/ReturnItemsModal";
-import useErrorHandler from "../components/useErrorHandler";
-import RequestDashboard from "../components/RequestDashboard";
-import ToastContainer from "../components/ToastContainer";
-import { useToast } from "../context/ToastContext";
+import ApproveRejectModal from "../components/ApproveRejectModal";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -58,11 +54,13 @@ export default function SubStore() {
   const [filterStore, setFilterStore] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
-  const [showCreate, setShowCreate] = useState(false);
-  const [storeItems, setStoreItems] = useState([]);
-  const [reusableItems, setReusableItems] = useState([]);
-  const [usableItems, setUsableItems] = useState([]);
-  const [creating, setCreating] = useState(false);
+  const [approveModal, setApproveModal] = useState(null);
+  const [approverName, setApproverName] = useState("");
+  const [editedItems, setEditedItems] = useState([]);
+  const [actioning, setActioning] = useState(null);
+  const [rejectModal, setRejectModal] = useState(null);
+  const [rejecterName, setRejecterName] = useState("");
+  const [rejectReason, setRejectReason] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [grnRequest, setGrnRequest] = useState(null);
@@ -263,37 +261,60 @@ export default function SubStore() {
     }
   };
 
-  // ─── GRN ──────────────────────────────────────────────────────────────────
-  const openGRN = async (e, r) => {
-    e.stopPropagation();
-    setGrnLoading(true);
+  const openApprove = async (request_id, request_no) => {
     try {
-      const res = await getRequestById(r.request_id);
-      setGrnRequest(res.data.data);
+      setActioning(request_id);
+      const res = await getRequestById(request_id);
+      setEditedItems(
+        (res.data.data.items || []).map((i) => ({
+          ...i,
+          approved_qty: i.requested_qty,
+        })),
+      );
+      setApproveModal({
+        id: request_id,
+        no: request_no
+      });
+      setApproverName(auth.username || "");
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
       showToast(msg, "error");
     } finally {
-      setGrnLoading(false);
+      setActioning(null);
     }
   };
 
   const handleGRNSubmit = async (payload) => {
     setGrnSubmitting(true);
     try {
-      await submitGRN(grnRequest.request_id, payload);
+      setActioning(r.request_id);
+      const res = await getRequestById(r.request_id);
+      setRejectModal(res.data.data);
+      setRejecterName(auth.username || "");
+      setRejectReason("");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load request");
+      showToast(msg, "error");
+    } finally {
+      setActioning(null);
+    }
+  };
 
-      const label =
-        payload.grn_status === "RECEIVED"
-          ? "Delivery confirmed — marked as RECEIVED"
-          : payload.grn_status === "DISPUTED"
-            ? "Issues reported — request marked DISPUTED"
-            : payload.grn_status === "RETURN_BACK"
-              ? "Deliver Returned"
-              : "Delivery rejected — main store notified";
-      showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn");
-      setGrnRequest(null);
-      setDetail(null);
+  const handleApprove = async () => {
+    if (!approverName.trim()) return;
+    setActioning(true);
+    try {
+      await approveRequest(approveModal.id, {
+        approved_by_name: approverName,
+        approved_items: editedItems.map((i) => ({
+          request_item_id: i.request_item_id,
+          approved_qty: i.approved_qty,
+        })),
+      });
+      showToast("Request approved — Head Office will now fulfill it", "success");
+      setApproveModal(null);
+      setApproverName("");
+      setEditedItems([]);
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit GRN");
@@ -553,7 +574,7 @@ export default function SubStore() {
         </div>
       </div>
       {/* ── Table ── */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+      <div className="overflow-x-auto text-center rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <TableHead />
@@ -573,11 +594,10 @@ export default function SubStore() {
                   detail={detail}
                   detailLoad={detailLoad}
                   openDetail={openDetail}
-                  openGRN={openGRN}
-                  grnLoading={grnLoading}
+                  actioning={actioning}
+                  openApprove={openApprove}
+                  openReject={openReject}
                   pageType={pageType}
-                  returnItem={returnItem}
-                  returnModalLoading={returnModalLoading}
                 />
               ))
             )}
@@ -596,269 +616,39 @@ export default function SubStore() {
           }}
         />
       </div>
-      {/* GRN Modal */}
-      {grnRequest && (
-        <GRNModal
-          request={grnRequest}
-          onClose={() => setGrnRequest(null)}
-          onSubmit={handleGRNSubmit}
-          submitting={grnSubmitting}
+
+      {/* ── Approve Modal ── */}
+
+      {approveModal && (
+        <ApproveRejectModal
+          setApproveModal={setApproveModal}
+          approveModal={approveModal}
+          approverName={approverName}
+          setApproverName={setApproverName}
+          editedItems={editedItems}
+          setEditedItems={setEditedItems}
+          actioning={actioning}
+          handleApprove={handleApprove}
+          handleReject={handleReject}
+          action={"Approve"}
         />
       )}
-      {returnModal && (
-        <ReturnItemsModal
-          setReturnModal={setReturnModal}
-          handleReturn={handleReturn}
-          returnModalLoading={returnModalLoading}
-          returnForm={returnForm}
-          setReturnForm={setReturnForm}
+
+      {/* Reject Modal */}
+      {rejectModal && (
+        <ApproveRejectModal
+          setRejectModal={setRejectModal}
+          rejectModal={rejectModal}
+          rejecterName={rejecterName}
+          setRejecterName={setRejecterName}
+          rejectReason={rejectReason}
+          setRejectReason={setRejectReason}
+          actioning={actioning}
+          handleReject={handleReject}
+          action={"Reject"}
         />
-      )}
-
-      {/* Create Modal */}
-      {showCreate && (
-        <CreateRequestModal
-          itemForm={itemForm}
-          setItemForm={setItemForm}
-          mainStores={mainStores}
-          storeItems={storeItems}
-          reusableItems={reusableItems}
-          usableItems={usableItems}
-          onClose={() => setShowCreate(false)}
-          onSubmit={handleCreate}
-          addLine={addLine}
-          removeLine={removeLine}
-          updateLine={updateLine}
-          creating={creating}
-          EMPTY_FORM={EMPTY_FORM}
-        />
-      )}
-      {returnBackModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b">
-              <div>
-                <h3 className="font-bold text-gray-800">آئٹم واپس کریں</h3>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  مرکزی اسٹور کو واپس بھیجنے کے لیے مقدار درج کریں
-                </p>
-              </div>
-              <button
-                onClick={() => setReturnBackModal(false)}
-                className="text-gray-400 hover:text-gray-700 text-2xl leading-none"
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Search */}
-            <div className="px-6 py-3 border-b">
-              <input
-                placeholder="آئٹم تلاش کریں..."
-                onChange={(e) => {
-                  const q = e.target.value.toLowerCase();
-                  setReturnBackItems((prev) =>
-                    prev.map((i) => ({
-                      ...i,
-                      _hidden:
-                        q &&
-                        !i.item_name.toLowerCase().includes(q) &&
-                        !i.item_no.toLowerCase().includes(q),
-                    })),
-                  );
-                }}
-                className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 shadow-sm"
-              />
-            </div>
-
-            {/* Table Body */}
-            <div className="flex-1 overflow-y-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    {[
-                      "آئٹم نمبر",
-                      "نام",
-                      "قسم",
-                      "UOM",
-                      "دستیاب مقدار",
-                      "واپسی مقدار",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {returnBackItems.filter((i) => !i._hidden).length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="text-center text-gray-400 text-sm py-8"
-                      >
-                        کوئی آئٹم دستیاب نہیں
-                      </td>
-                    </tr>
-                  ) : (
-                    returnBackItems
-                      .filter((i) => !i._hidden)
-                      .map((item) => (
-                        <tr
-                          key={item.item_id}
-                          className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="px-4 py-3">
-                            <span className="font-mono text-emerald-600 text-xs">
-                              {item.item_no}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-gray-800 font-semibold">
-                            {item.item_name}
-                          </td>
-                          <td className="px-4 py-3 text-xs text-gray-500">
-                            {item.item_type || "—"}
-                          </td>
-                          <td className="px-4 py-3 text-xs text-gray-500">
-                            {item.item_uom || "—"}
-                          </td>
-                          <td className="px-4 py-3 font-mono font-bold text-emerald-600">
-                            {Number(item.item_quantity)}
-                          </td>
-                          <td
-                            className="px-4 py-3"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() =>
-                                  setReturnBackItems((prev) =>
-                                    prev.map((i) =>
-                                      i.item_id === item.item_id
-                                        ? {
-                                            ...i,
-                                            return_qty: Math.max(
-                                              0,
-                                              Number(i.return_qty) - 1,
-                                            ),
-                                          }
-                                        : i,
-                                    ),
-                                  )
-                                }
-                                className="w-7 h-7 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 font-bold flex items-center justify-center"
-                              >
-                                −
-                              </button>
-                              <input
-                                type="number"
-                                min={0}
-                                max={item.item_quantity}
-                                value={item.return_qty}
-                                onChange={(e) =>
-                                  setReturnBackItems((prev) =>
-                                    prev.map((i) =>
-                                      i.item_id === item.item_id
-                                        ? {
-                                            ...i,
-                                            return_qty: Math.min(
-                                              Number(item.item_quantity),
-                                              Math.max(
-                                                0,
-                                                Number(e.target.value),
-                                              ),
-                                            ),
-                                          }
-                                        : i,
-                                    ),
-                                  )
-                                }
-                                className="w-16 border border-gray-300 rounded px-2 py-1 text-center font-mono text-sm focus:outline-none focus:border-emerald-500"
-                              />
-                              <button
-                                onClick={() =>
-                                  setReturnBackItems((prev) =>
-                                    prev.map((i) =>
-                                      i.item_id === item.item_id
-                                        ? {
-                                            ...i,
-                                            return_qty: Math.min(
-                                              Number(item.item_quantity),
-                                              Number(i.return_qty) + 1,
-                                            ),
-                                          }
-                                        : i,
-                                    ),
-                                  )
-                                }
-                                className="w-7 h-7 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 font-bold flex items-center justify-center"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Summary + Footer */}
-            <div className="border-t px-6 py-4 space-y-3">
-              {/* Selected summary */}
-              {returnBackItems.filter((i) => Number(i.return_qty) > 0).length >
-                0 && (
-                <div className="flex gap-4 text-xs text-gray-500 bg-gray-50 rounded px-3 py-2">
-                  <span>
-                    منتخب آئٹمز:{" "}
-                    <strong className="text-gray-800">
-                      {
-                        returnBackItems.filter((i) => Number(i.return_qty) > 0)
-                          .length
-                      }
-                    </strong>
-                  </span>
-                  <span>
-                    کل مقدار:{" "}
-                    <strong className="text-emerald-600">
-                      {returnBackItems.reduce(
-                        (s, i) => s + Number(i.return_qty),
-                        0,
-                      )}
-                    </strong>
-                  </span>
-                </div>
-              )}
-              <input
-                value={returnBackNote}
-                onChange={(e) => setReturnBackNote(e.target.value)}
-                placeholder="نوٹ (اختیاری)"
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setReturnBackModal(false)}
-                  className="flex-1 text-gray-500 text-sm py-2 border border-gray-300 rounded hover:bg-gray-50"
-                >
-                  منسوخ
-                </button>
-                <button
-                  onClick={handleReturnBack}
-                  disabled={returnBackSubmitting}
-                  className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-sm font-semibold py-2 rounded transition-colors"
-                >
-                  {returnBackSubmitting ? "بھیج رہے ہیں..." : "واپس بھیجیں ✓"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 }

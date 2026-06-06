@@ -14,16 +14,17 @@ import Toast from "../Toast";
 import { useOutletContext } from "react-router-dom";
 
 const EMPTY_NEW_ITEM = {
-  item_no: "", // --- For create item
-  item_name: "", // --- For create item
-  item_uom: "", // --- For base unit api
-  bu_name: "", // ---  for base unit api
-  bu_value: "", // ---  for base unit api
-  category: "", // ---  For create item
-  item_quantity: "", // ---  For create item
-  min_quantity: "", // ---  For create item
-  store_id: "", // ---  For create item
-  item_type: "", // ---  For create item
+  item_no: "",
+  item_name: "",
+  item_name_urdu: "",
+  item_uom: "",
+  bu_name: "",
+  bu_value: "",
+  category: "",
+  item_quantity: "",
+  min_quantity: "",
+  store_id: "",
+  item_type: "",
 };
 
 const EMPTY_NEW_CATEGORY = {
@@ -53,7 +54,7 @@ const AddItemsAndCategories = () => {
   const [showUOMDropDown, setShowUOMDropDown] = useState(false);
   const [showInputs, setShowInputs] = useState(false);
 
-  const { showToast } = useOutletContext(); 
+  const { showToast } = useOutletContext();
 
   const handleError = useErrorHandler();
 
@@ -69,7 +70,7 @@ const AddItemsAndCategories = () => {
       }
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
-      showToast(msg,"error");
+      showToast(msg, "error");
     } finally {
       setLoading(false);
     }
@@ -111,26 +112,34 @@ const AddItemsAndCategories = () => {
     const missingFields =
       !newItem.item_no ||
       !newItem.item_name ||
+      !newItem.item_name_urdu ||
       !newItem.store_id ||
-      !newItem.item_type;
+      !newItem.item_type ||
+      !newItem.category ||
+      !newItem.item_quantity ||
+      !newItem.min_quantity
     const isUOMMissing = item_type === "USABLE" && !item_uom;
 
     if (missingFields || isUOMMissing) {
       const errs = {};
-      if (!newItem.item_no) errs.item_no = "Item No is required";
-      if (!newItem.item_name) errs.item_name = "Item Name is required";
-      if (!newItem.item_type) errs.item_type = "Item Type is required";
-      if (!newItem.store_id) errs.store_id = "Store is required";
-      if (isUOMMissing) errs.item_uom = "UOM is required for Consumable items";
+      if (!newItem.item_no) errs.item_no = "آئٹم نمبر لازمی ہے۔";
+      if (!newItem.item_name) errs.item_name = "انگریزی میں آئٹم کا نام لازمی ہے۔";
+      if (!newItem.item_name_urdu) errs.item_name_urdu = "اردو میں آئٹم کا نام لازمی ہے۔";
+      if (!newItem.item_type) errs.item_type = "آئٹم کی قسم لازمی ہے۔";
+      if (!newItem.store_id) errs.store_id = "اسٹور لازمی ہے۔";
+      if (isUOMMissing) errs.item_uom = "اشیاء کے لیے یونٹ لازمی ہے۔";
+      if (!newItem.category) errs.category = "کیٹیگری لازمی ہے۔";
+      if (!newItem.item_quantity) errs.item_quantity = "آئٹم کی مقدار لازمی ہے۔";
+      if (!newItem.min_quantity) errs.min_quantity = "کم از کم مقدار لازمی ہے۔";
       setItemErrors(errs);
       return;
     }
 
     setItemErrors({});
     setSubmitLoading(true);
-    try {
+    try {      
       await createItem(newItem);
-      showToast("Item added successfully","success");
+      showToast("Item added successfully", "success");
       const itemNo = await generateRandomItemNo(item_type);
       if (!itemNo) return;
       setNewItem({
@@ -140,7 +149,7 @@ const AddItemsAndCategories = () => {
       fetchData();
     } catch (e) {
       const msg = handleError(e, "Failed to add item");
-      showToast( msg,"error" );
+      showToast(msg, "error");
     } finally {
       setSubmitLoading(false);
     }
@@ -171,11 +180,11 @@ const AddItemsAndCategories = () => {
     setDeletingId(id);
     try {
       await deleteCategory(id);
-      showToast( "Category deleted","success" );
+      showToast("Category deleted", "success");
       fetchData();
     } catch (e) {
       const msg = handleError(e, "Failed to delete category");
-      showToast(msg,"error");
+      showToast(msg, "error");
     } finally {
       setDeletingId(null);
     }
@@ -187,12 +196,11 @@ const AddItemsAndCategories = () => {
 
   const fieldError = (key) =>
     itemErrors[key] ? (
-      <p className="text-red-500 text-l mt-1">{itemErrors[key]}</p>
+      <p className="text-red-500 text-sm mt-1">{itemErrors[key]}</p>
     ) : null;
 
   const inputCls = (key) =>
-    `w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${
-      itemErrors[key] ? "border-red-400" : "border-gray-300"
+    `w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${itemErrors[key] ? "border-red-400" : "border-gray-300"
     }`;
 
   return (
@@ -201,23 +209,21 @@ const AddItemsAndCategories = () => {
       <div className="flex gap-1 mb-4">
         <button
           onClick={() => setActiveTab("item")}
-          className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${
-            activeTab === "item"
-              ? "bg-emerald-600 text-white shadow-sm"
-              : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
-          }`}
+          className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === "item"
+            ? "bg-emerald-600 text-white shadow-sm"
+            : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
+            }`}
         >
-          Add Item
+          آئٹم شامل کریں
         </button>
         <button
           onClick={() => setActiveTab("category")}
-          className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${
-            activeTab === "category"
-              ? "bg-emerald-600 text-white shadow-sm"
-              : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
-          }`}
+          className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === "category"
+            ? "bg-emerald-600 text-white shadow-sm"
+            : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
+            }`}
         >
-          Add Category
+          کیٹیگری شامل کریں
         </button>
       </div>
 
@@ -238,6 +244,7 @@ const AddItemsAndCategories = () => {
                     <div className="flex gap-2">
                       <input
                         value={newItem.item_no}
+                        placeholder="خودکارتیارکردہ،آئٹم کی قسم منتخب کریں"
                         onChange={(e) => {
                           setNewItem((f) => ({
                             ...f,
@@ -255,23 +262,54 @@ const AddItemsAndCategories = () => {
                     {fieldError("item_no")}
                   </div>
 
-                  <div>
-                    <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
-                      اشیاء کا نام
-                    </label>
-                    <input
-                      value={newItem.item_name}
-                      onChange={(e) => {
-                        setNewItem((f) => ({
-                          ...f,
-                          item_name: e.target.value,
-                        }));
-                        setItemErrors((f) => ({ ...f, item_name: undefined }));
-                      }}
-                      placeholder="e.g. Surgical Gloves"
-                      className={inputCls("item_name")}
-                    />
-                    {fieldError("item_name")}
+                  <div className="item-english-urdu-container grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
+                        (English) اشیاء کا نام
+                      </label>
+                      <input
+                        value={newItem.item_name}
+                        onChange={(e) => {
+                          const value = e.target.value;
+
+                          if (!/^[A-Za-z\s]*$/.test(value)) return;
+
+                          setNewItem((f) => ({
+                            ...f,
+                            item_name: value,
+                          }));
+
+                          setItemErrors((f) => ({ ...f, item_name: undefined }));
+                        }}
+                        placeholder="English"
+                        className={inputCls("item_name")}
+                      />
+                      {fieldError("item_name")}
+                    </div>
+
+                    <div>
+                      <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
+                        (اردو) اشیاء کا نام
+                      </label>
+                      <input
+                        value={newItem.item_name_urdu}
+                        onChange={(e) => {
+                          const value = e.target.value;
+
+                          if (!/^[\u0600-\u06FF\s]*$/.test(value)) return;
+
+                          setNewItem((f) => ({
+                            ...f,
+                            item_name_urdu: value,
+                          }));
+
+                          setItemErrors((f) => ({ ...f, item_name_urdu: undefined }));
+                        }}
+                        placeholder="اردو"
+                        className={inputCls("item_name_urdu")}
+                      />
+                      {fieldError("item_name_urdu")}
+                    </div>
                   </div>
 
                   <div>
@@ -305,7 +343,7 @@ const AddItemsAndCategories = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div id="uom-dropdown-wrapper" className="relative">
                       <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
-                        UOM *
+                        اکائی *
                       </label>
                       <input
                         value={newItem.item_uom}
@@ -319,13 +357,10 @@ const AddItemsAndCategories = () => {
                           }));
                           setItemErrors((f) => ({ ...f, item_uom: undefined }));
                         }}
-                        placeholder="Select or Type UOM"
-                        className={`w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                          itemErrors.item_uom
-                            ? "border-red-400"
-                            : "border-gray-300"
-                        }`}
+                        placeholder="Type UOM"
+                        className={inputCls("item_uom")}
                       />
+                      {fieldError("item_uom")}
                     </div>
 
                     <div id="category-dropdown-wrapper" className="relative">
@@ -342,9 +377,10 @@ const AddItemsAndCategories = () => {
                         }
                         onFocus={() => setShowCategoryDropdown(true)}
                         placeholder="Select Category"
-                        className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                        className={inputCls("category")}
                         autoComplete="off"
                       />
+                      {fieldError("category")}
                       {showCategoryDropdown && categories.length > 0 && (
                         <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                           {categories
@@ -374,10 +410,10 @@ const AddItemsAndCategories = () => {
                               .toLowerCase()
                               .includes(newItem.category.toLowerCase()),
                           ).length === 0 && (
-                            <p className="px-3 py-2 text-sm text-gray-400 italic">
-                              No matching categories
-                            </p>
-                          )}
+                              <p className="px-3 py-2 text-sm text-gray-400 italic">
+                                No matching categories
+                              </p>
+                            )}
                         </div>
                       )}
                     </div>
@@ -399,8 +435,9 @@ const AddItemsAndCategories = () => {
                           }))
                         }
                         placeholder="0"
-                        className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                        className={inputCls("item_quantity")}
                       />
+                      {fieldError("item_quantity")}
                     </div>
                     <div>
                       <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
@@ -417,8 +454,9 @@ const AddItemsAndCategories = () => {
                           }))
                         }
                         placeholder="0"
-                        className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                        className={inputCls("min_quantity")}
                       />
+                      {fieldError("min_quantity")}
                     </div>
                   </div>
 
@@ -452,7 +490,7 @@ const AddItemsAndCategories = () => {
                 disabled={loading}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2 rounded disabled:opacity-40 transition-all"
               >
-                {submitLoading ? "Adding..." : "Add Item"}
+                {submitLoading ? "Adding..." : "آئٹم شامل کریں"}
               </button>
             </div>
           </div>
@@ -524,7 +562,7 @@ const AddItemsAndCategories = () => {
                     disabled={categorySubmitLoading}
                     className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2 rounded disabled:opacity-40 transition-all"
                   >
-                    {categorySubmitLoading ? "Adding..." : "Add Category"}
+                    {categorySubmitLoading ? "Adding..." : "کیٹیگری شامل کریں"}
                   </button>
                 </div>
               </div>

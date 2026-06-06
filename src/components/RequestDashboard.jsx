@@ -38,7 +38,7 @@ const RequestDashboard = ({
       )}
 
       {/* Emergency Card */}
-      {/* {pageType === "mainSubStoreReqs" && (
+      {/* {(pageType === "headOffice" || pageType === "pettyCash") && (
         <StatusCard
           title="ہنگامی درخواستیں"
           count={counts.emergency}
@@ -50,7 +50,7 @@ const RequestDashboard = ({
 
       {/* Approved Card */}
 
-      {pageType === "mainSubStoreReqs" && (
+      {(pageType === "mainSubStoreReqs" || pageType === "headOffice" || pageType === "pettyCash") && (
         <StatusCard
           title="منظور شدہ"
           count={counts.pending}
@@ -61,7 +61,7 @@ const RequestDashboard = ({
       )}
 
       {/* Disputed Card */}
-      {pageType === "mainSubStoreReqs" && (
+      {(pageType === "mainSubStoreReqs" || pageType === "headOffice" || pageType === "pettyCash") && (
         <StatusCard
           title="متنازع درخواستیں"
           count={counts.disputed}

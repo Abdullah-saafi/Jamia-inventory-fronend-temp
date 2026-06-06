@@ -21,11 +21,11 @@ export default function ItemsTable({
           <tr className="border-b border-gray-200 text-gray-400 text-xs">
             <th className="text-left pb-2 pr-4">اشیاء نمبر</th>
             <th className="text-left pb-2 pr-4">اشیاء کا نام</th>
-            <th className="text-left pb-2 pr-4">UOM</th>
+            <th className="text-left pb-2 pr-4">اکائی</th>
             {(pageType === "subStore" || pageType === "subStoreManager") && (
               <th className="text-center pb-2 pr-4">درخواست شدہ</th>
             )}
-            {pageType === "mainSubStoreReqs" && (
+            {(pageType === "mainSubStoreReqs" || pageType === "headOffice") && (
               <th className="text-center pb-2 pr-4">درخواست کردہ</th>
             )}
             <th className="text-center pb-2 pr-4">منظور شدہ</th>
@@ -57,18 +57,18 @@ export default function ItemsTable({
 
                 <td className="py-2 pr-4 text-gray-800">{i.item_name}</td>
 
-                <td className="py-2 pr-4 text-gray-500 text-sm">
+                <td className="py-2 pr-4 text-gray-700 text-sm">
                   {i.item_uom || "―"}
                 </td>
 
-                <td className="py-2 pr-4 font-mono text-gray-800 text-center">
+                <td className="py-2 pr-4 font-mono text-gray-700 text-center">
                   {i.requested_qty}
                 </td>
 
                 <td className="py-2 pr-4 font-mono text-center">
                   <span
                     className={
-                      i.approved_qty != null ? "text-emerald-600" : "text-gray-300"
+                      i.approved_qty != null ? "text-emerald-600" : "text-gray-700"
                     }
                   >
                     {i.approved_qty ?? "—"}
@@ -78,7 +78,7 @@ export default function ItemsTable({
                 <td className="py-2 pr-4 font-mono text-center">
                   <span
                     className={
-                      i.fulfilled_qty != null ? "text-blue-600" : "text-gray-300"
+                      i.fulfilled_qty != null ? "text-blue-600" : "text-gray-700"
                     }
                   >
                     {i.fulfilled_qty ?? "—"}
@@ -91,7 +91,7 @@ export default function ItemsTable({
                         className={
                           Number(i.returned_qty) > 0
                             ? "text-orange-500 font-bold"
-                            : "text-gray-300"
+                            : "text-gray-700"
                         }
                       >
                         {Number(i.returned_qty) > 0 ? i.returned_qty : "—"}
@@ -108,7 +108,7 @@ export default function ItemsTable({
                             ? Number(i.received_qty) < Number(i.fulfilled_qty)
                               ? "text-amber-600"
                               : "text-teal-600"
-                            : "text-gray-300"
+                            : "text-gray-700"
                         }
                       >
                         {i.received_qty ?? "—"}
@@ -118,26 +118,9 @@ export default function ItemsTable({
                       {i.item_condition ? (
                         <StatusBadge status={i.item_condition} />
                       ) : (
-                        <span className="text-gray-300">—</span>
+                        <span className="text-gray-700">—</span>
                       )}
                     </td>
-                    {pageType === "mainSubStoreReqs" && (
-                      <>
-                        <td className="py-2 pr-4 font-mono text-center">
-                          <span
-                            className={
-                              i.received_qty != null
-                                ? Number(i.received_qty) < Number(i.fulfilled_qty)
-                                  ? "text-amber-600"
-                                  : "text-teal-600"
-                                : "text-gray-300"
-                            }
-                          >
-                            {i.received_qty ?? "—"}
-                          </span>
-                        </td>
-                      </>
-                    )}
                   </>
                 )}
               </tr>
@@ -153,8 +136,7 @@ export default function ItemsTable({
           showToast={showToast}
           managerName={username}
         />
-      )
-      }
+      )}
     </>
   );
 }

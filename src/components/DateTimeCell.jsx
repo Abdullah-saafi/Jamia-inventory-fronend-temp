@@ -1,6 +1,6 @@
 
 const DateTimeCell = ({ ts }) => {
-  if (!ts) return <span className="text-gray-300 text-xs">—</span>;
+  if (!ts) return <span className="text-gray-700 text-xs">—</span>;
   const d = new Date(ts);
   return (
     <div>

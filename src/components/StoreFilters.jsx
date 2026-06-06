@@ -23,6 +23,14 @@ const pages = {
   mainStoreApprover: {
     page: "mainStoreApprover",
     store: false
+  },
+  headOffice: {
+    page: "headOffice",
+    store: false
+  },
+  pettyCash: {
+    page: "pettyCash",
+    store: false
   }
 }
 
@@ -49,9 +57,9 @@ export default function StoreFilters({
     { label: "وصول ہو گیا", value: "RECEIVED" },
     { label: "متنازع", value: "DISPUTED" },
     // { label: "واپسی کی منتظر", value: "RECEIVED"},
-    ...(pageType === "mainSubStoreReqs"
-      ? [{ label: "واپس کر دیا گیا", value: "RETURN_BACK" }]
-      : [])
+    // ...(pageType === "mainSubStoreReqs"
+    //   ? [{ label: "واپس کر دیا گیا", value: "RETURN_BACK" }]
+    //   : [])
   ];
 
   const selectedLabel = categories.find((c) => c.value === filterStatus)?.label || "تمام حالتیں";

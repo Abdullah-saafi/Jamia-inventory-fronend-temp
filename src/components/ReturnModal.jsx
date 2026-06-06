@@ -9,7 +9,10 @@ const ReturnModal = ({
 }) => {
     return (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
-            <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => setReturnBackModal(false)} />
+            <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => {
+                setReturnBackModal(false)
+                setReturnBackNote("")
+            }} />
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col relative z-10">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
@@ -20,7 +23,10 @@ const ReturnModal = ({
                         </p>
                     </div>
                     <button
-                        onClick={() => setReturnBackModal(false)}
+                        onClick={() => {
+                            setReturnBackModal(false)
+                            setReturnBackNote("")
+                        }}
                         className="text-gray-400 hover:text-gray-700 text-2xl leading-none cursor-pointer"
                     >
                         ×
@@ -217,7 +223,10 @@ const ReturnModal = ({
                     />
                     <div className="flex gap-3">
                         <button
-                            onClick={() => setReturnBackModal(false)}
+                            onClick={() => {
+                                setReturnBackModal(false)
+                                setReturnBackNote("")
+                            }}
                             className="flex-1 text-gray-500 text-sm py-2 border border-gray-300 rounded hover:bg-gray-50"
                         >
                             منسوخ کریں

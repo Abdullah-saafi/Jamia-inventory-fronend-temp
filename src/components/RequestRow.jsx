@@ -24,11 +24,10 @@ export default function RequestRow({
   handleResolved,
   showToast,
   username,
-  setInstantRequest,
-  instantRequest,
-  getDetail,
   setItemForm,
   EMPTY_LINE,
+  setFulfillModal,
+  setRequestNo,
 }) {
   const isExpanded = detail && detail.request_id === r.request_id;
   const needsGRN = r.status === "FULFILLED" && !r.grn_at;
@@ -37,10 +36,11 @@ export default function RequestRow({
   const isReceived = r.status === "RECEIVED" || r.status === "PARTIALLY_RECEIVED";
   const isREUSABLE = r.item
   const hasItems = (r.item_count ?? 0) > 0;
-  const hasAssets = (r.asset_count ?? 0) > 0;
   const isReturnable = r.item_type === "REUSABLE" && r.has_returnable_items && (r.status === "RECEIVED" || r.status === "PARTIALLY_RECEIVED");
   const isEmergency = r.is_emergency;
   const isClosed = r.status === "CLOSED";
+  const canFulfill = r.status === "APPROVED";
+  const hasGRN = isDisputed || isReceived || isClosed;
 
   const { auth } = useAuth()
 
@@ -83,7 +83,7 @@ export default function RequestRow({
         {(pageType === "subStore" || pageType === "subStoreManager") && (
           <>
             <td className="px-4 py-3">
-              <TypeBadge hasItems={hasItems} hasAssets={hasAssets} />
+              <TypeBadge hasItems={hasItems} itemType={r.item_type} />
             </td>
           </>
         )}
@@ -115,7 +115,7 @@ export default function RequestRow({
         </td>
         {pageType === "mainSubStoreReqs" && (
           <>
-            <td className="px-4 py-3 text-gray-700">
+            <td className="px-4 py-3">
               <DateTimeCell ts={r.fulfilled_at} />
             </td>
           </>
@@ -123,9 +123,9 @@ export default function RequestRow({
         <td className="px-4 py-3">
           <StatusBadge status={r.status} />
         </td>
-        {(pageType === "subStore" || pageType === "subStoreManager") && (
+        {(pageType === "subStore" || pageType === "subStoreManager" || pageType === "headOffice" || pageType === "mainStoreApprover" || pageType === "mainReqToHO" || pageType === "pettyCash") && (
           <>
-            <td className="px-4 py-3">
+            <td className="px-4 py-3 ">
               <DateTimeCell ts={r.approved_at} />
             </td>
             <td className="px-4 py-3">
@@ -135,13 +135,13 @@ export default function RequestRow({
         )}
         <td className="px-4 py-3 text-right">
           <div className="flex items-center justify-end gap-2">
-            {(needsGRN && pageType === "subStore") && (
+            {(needsGRN && (pageType === "subStore" || pageType === "mainReqToHO")) && (
               <button
                 onClick={(e) => openGRN(e, r)}
                 disabled={grnLoading}
                 className="text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
               >
-                {grnLoading ? "…" : "Verify Delivery"}
+                {grnLoading ? "…" : "ڈلیوری کی تصدیق"}
               </button>
             )}
             {isReturnable && pageType === "subStore" && (
@@ -156,61 +156,53 @@ export default function RequestRow({
                 {returnModalLoading ? "…" : "Return Items"}
               </button>
             )}
-            {(r.status === "PENDING" && pageType === "subStoreManager") && (
+            {((pageType === "subStoreManager" || pageType === "mainStoreApprover") && r.status === "PENDING") && (
               <>
                 <button
-                  disabled={actioning}
+                  disabled={actioning === r.request_id}
                   onClick={(e) => {
                     e.stopPropagation();
-                    openApprove(r);
+                    openApprove(r.request_id, r.request_no);
                   }}
                   className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {actioning ? "..." : "Approve"}
+                  {actioning === r.request_id ? "..." : "منظور کریں"}
                 </button>
                 <button
-                  disabled={actioning}
+                  disabled={actioning === r.request_id}
                   onClick={(e) => {
                     e.stopPropagation();
                     openReject(r)
                   }}
                   className="text-xs bg-red-500 hover:bg-red-400 text-white rounded px-2 py-1 disabled:opacity-40"
                 >
-                  {actioning ? "..." : "Reject"}
+                  {actioning === r.request_id ? "..." : "مسترد کریں"}
                 </button>
               </>
             )}
-            {(pageType === "mainSubStoreReqs" && r.status === "APPROVED") && (
+            {((pageType === "mainSubStoreReqs" || pageType === "headOffice") && canFulfill) && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleFulfill(r.request_id);
+
+                  if (pageType === "mainSubStoreReqs") {
+                    handleFulfill(r.request_id);
+                  } else {
+                    setFulfillModal(true);
+                    setRequestNo({
+                      id: r.request_id,
+                      no: r.request_no
+                    });
+                  }
                 }}
-                className={`text-white text-sm font-semibold px-2.5 ml-2 py-1.5 rounded disabled:opacity-40 ${isEmergency
+                className={`text-white text-sm font-bold px-2.5 ml-2 py-1.5 cursor-pointer rounded disabled:opacity-40 ${isEmergency
                   ? "bg-red-500 hover:bg-red-600"
                   : "bg-blue-600 hover:bg-blue-500"
                   }`}
                 disabled={fulfilling === r.request_id}
               >
-                {fulfilling === r.request_id ? "..." : "Fulfill"}
+                {fulfilling === r.request_id ? "..." : "تکمیل"}
               </button>
-            )}
-            {/* Temporary */}
-            {pageType === "mainSubStoreReqs" && (
-              <button onClick={(e) => {
-                e.stopPropagation();
-                setItemForm({
-                  from_store_id: auth.store_id || "",
-                  requested_by_name: auth.username || "",
-                  to_store_id: "",
-                  notes: "",
-                  is_emergency: false,
-                  items: [{ ...EMPTY_LINE }],
-                })
-                getDetail(r)
-                console.log("clicked")
-
-              }}>Instant Request</button>
             )}
             {(pageType === "mainSubStoreReqs" && r.item_type === "REUSABLE" && r.status === "RETURN_BACK") && (
               <button
@@ -248,7 +240,7 @@ export default function RequestRow({
                   : "bg-gray-50 border-emerald-200"
             }`}
         >
-          <td colSpan={10} className="px-6 py-4">
+          <td colSpan={10} className="px-6 py-4 text-left leading-relaxed">
             {detailLoad ? (
               <div className="flex justify-center py-6">
                 <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
@@ -273,21 +265,21 @@ export default function RequestRow({
                     <div className="text-gray-600 text-sm">
                       Resolution:{" "}
                       <span className="font-semibold">
-                        {d.resolution === "RETURN_ACCEPTED"
+                        {detail.resolution === "RETURN_ACCEPTED"
                           ? "Return accepted — stock restored"
-                          : d.resolution === "RESENT"
+                          : detail.resolution === "RESENT"
                             ? "Fresh items resent via new request"
-                            : d.resolution}
+                            : detail.resolution}
                       </span>
                     </div>
-                    {d.resolved_by_name && (
+                    {detail.resolved_by_name && (
                       <div className="text-gray-400 text-xs mt-1">
-                        By {d.resolved_by_name}
+                        By {detail.resolved_by_name}
                       </div>
                     )}
-                    {d.resolved_at && (
+                    {detail.resolved_at && (
                       <div className="text-gray-400 text-xs">
-                        {new Date(d.resolved_at).toLocaleString()}
+                        {new Date(detail.resolved_at).toLocaleString()}
                       </div>
                     )}
                   </div>
@@ -309,7 +301,7 @@ export default function RequestRow({
                 {(isDisputed || isReceived) && detail?.grn_note && (
                   <div className={`rounded-xl p-3 border text-sm ${isDisputed ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-teal-50 border-teal-200 text-teal-700"}`}>
                     <div className="text-xs font-bold uppercase tracking-wider mb-1">
-                      {isDisputed ? "⚠ Sub Store Reported Issues" : "✓ Sub Store Confirmed Receipt"}
+                      {isDisputed ? "⚠ Sub Store Reported Issues" : (pageType === "headOffice" && isDisputed) ? "✓ Main Store Confirmed Receipt" : "✓ Sub Store Confirmed Receipt"}
                     </div>
                     <div>{detail.grn_note}</div>
                     {detail.grn_at && <div className="text-xs opacity-60 mt-1">{new Date(detail.grn_at).toLocaleString()}</div>}
@@ -317,9 +309,46 @@ export default function RequestRow({
                 )}
 
                 <div>
-                  <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
-                    آئٹمز
+                  {/* Title */}
+                  <div className="text-gray-400 text-[11px] uppercase font-bold tracking-wider mb-3">
+                    آئٹم کی تفصیلات
                   </div>
+
+                  {/* Driver Info */}
+                  {(r.driver_name || r.driver_no || r.vehicle_no) && (pageType === "headOffice" || pageType === "mainReqToHO") (
+                    <div className="bg-gray-100 border border-gray-200 rounded-xl p-4 mb-3 ">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+
+                        <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                          <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
+                            ڈرائیور کا نام
+                          </div>
+                          <div className="text-gray-800 font-medium">
+                            {r.driver_name || "-"}
+                          </div>
+                        </div>
+
+                        <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                          <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
+                            ڈرائیور کا نمبر
+                          </div>
+                          <div className="text-gray-800 font-medium">
+                            {r.driver_no || "-"}
+                          </div>
+                        </div>
+
+                        <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                          <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
+                            گاڑی کا نمبر
+                          </div>
+                          <div className="text-gray-800 font-medium">
+                            {r.vehicle_no || "-"}
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+                  )}
                   <ItemsTable
                     items={detail?.items || []}
                     isDisputed={isDisputed}
