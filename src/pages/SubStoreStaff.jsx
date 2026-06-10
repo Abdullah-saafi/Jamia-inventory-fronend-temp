@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createReturnRequest } from "../services/api";
+import { createReturnRequest, uploadImg } from "../services/api";
 import {
   getStores,
   getItems,
@@ -232,7 +232,6 @@ export default function SubStore() {
 
   // ─── Detail ───────────────────────────────────────────────────────────────
   const openDetail = async (r) => {
-    console.log("r is here", r);
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
       return;
@@ -242,7 +241,6 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-      console.log("detail", res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to open detail");
       showToast(msg, "error");
@@ -258,8 +256,6 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setGrnRequest(res.data.data);
-      console.log("log",res.data.data);
-      
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
       showToast(msg, "error");
@@ -271,8 +267,6 @@ export default function SubStore() {
   const handleGRNSubmit = async (payload) => {
     setGrnSubmitting(true);
     try {
-      console.log("payload", payload);
-      console.log("paylod id", grnRequest.request_id);
       await submitGRN(grnRequest.request_id, payload);
 
       const label =
@@ -361,8 +355,6 @@ export default function SubStore() {
           .filter((i) => i.returned_qty > 0),
       };
 
-      console.log("payload", payload);
-
       await sendReturnToMain(id, payload);
       setReturnForm(() => ({
         sendByName: "",
@@ -409,6 +401,20 @@ export default function SubStore() {
 
     setCreating(true);
     try {
+      const itemsWithImageUrls = [];
+      for (const item of itemLines) {
+        const { selected_item_no, item_search, _showDropdown, images, ...rest } = item;
+        const payloadItem = { ...rest };
+
+        if (images && images.length > 0) {
+          const formData = new FormData();
+          formData.append("image", images[0]);
+          const uploadRes = await uploadImg(formData)
+          payloadItem.image_url = uploadRes.data.image_url;
+        }
+
+        itemsWithImageUrls.push(payloadItem);
+      }
       const payload = {
         from_store_id,
         to_store_id,
@@ -416,22 +422,8 @@ export default function SubStore() {
         notes: itemForm.notes,
         is_emergency: itemForm.is_emergency,
         direction: "SUB_TO_MAIN",
-        items: itemLines.map(
-          ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
-        ),
+        items: itemsWithImageUrls,
       };
-
-      // const formData = new FormData();
-      // formData.append("from_store_id", itemForm.from_store_id);
-      // formData.append("to_store_id", itemForm.to_store_id);
-      // formData.append("requested_by_name", itemForm.requested_by_name);
-      // formData.append("notes", itemForm.notes);
-      // formData.append("is_emergency", itemForm.is_emergency);
-      // formData.append("direction", payload.direction);
-      // formData.append("items", JSON.stringify(payload.items));
-      // itemForm.images.forEach((img) => {
-      //   formData.append("images", img);
-      // });
 
       await createRequest(payload);
       showToast("درخواست جمع کر دی گئی ہے", "success");

@@ -65,7 +65,7 @@ export default function MainStoreProcessReturns({ showToast }) {
       setItemActions(defaults);
     } catch (err) {
       const msg = handleError(err, "Failed to load return details");
-      showToast( msg,"error");
+      showToast(msg, "error");
     } finally {
       setModalLoading(false);
     }
@@ -102,12 +102,12 @@ export default function MainStoreProcessReturns({ showToast }) {
         })),
       };
       await processReturnRequest(selected.return_id, payload);
-      showToast("Return request processed successfully","success",);
+      showToast("Return request processed successfully", "success",);
       closeModal();
       fetchReturns();
     } catch (err) {
       const msg = handleError(err, "Failed to process return");
-      showToast(msg,"error");
+      showToast(msg, "error");
     } finally {
       setSubmitting(false);
     }
@@ -205,10 +205,9 @@ export default function MainStoreProcessReturns({ showToast }) {
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
-                        STATUS_COLORS[r.status] ||
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[r.status] ||
                         "bg-gray-100 text-gray-600 border-gray-200"
-                      }`}
+                        }`}
                     >
                       {r.status}
                     </span>
@@ -239,8 +238,10 @@ export default function MainStoreProcessReturns({ showToast }) {
 
       {/* Process Modal */}
       {(selected || modalLoading) && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={closeModal}>
+          {/* <div className="absolute inset-0 z-40 bg-black/30" onClick={closeModal} /> */}
+          <div onClick={(e) => {e.stopPropagation()}} 
+            className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
               <div>
@@ -282,11 +283,10 @@ export default function MainStoreProcessReturns({ showToast }) {
                       return (
                         <div
                           key={item.return_item_id}
-                          className={`border rounded-lg p-4 transition-colors ${
-                            isScrap
+                          className={`border rounded-lg p-4 transition-colors ${isScrap
                               ? "border-red-200 bg-red-50"
                               : "border-emerald-200 bg-emerald-50"
-                          }`}
+                            }`}
                         >
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">
@@ -316,11 +316,10 @@ export default function MainStoreProcessReturns({ showToast }) {
                                       "ADD_TO_STOCK",
                                     )
                                   }
-                                  className={`text-xs font-semibold px-3 py-1.5 rounded border transition-colors ${
-                                    action === "ADD_TO_STOCK"
+                                  className={`text-xs font-semibold px-3 py-1.5 rounded border transition-colors ${action === "ADD_TO_STOCK"
                                       ? "bg-emerald-600 text-white border-emerald-600"
                                       : "bg-white text-emerald-600 border-emerald-300 hover:bg-emerald-50"
-                                  }`}
+                                    }`}
                                 >
                                   ✓ اسٹاک میں
                                 </button>
@@ -328,11 +327,10 @@ export default function MainStoreProcessReturns({ showToast }) {
                                   onClick={() =>
                                     setAction(item.return_item_id, "SCRAP")
                                   }
-                                  className={`text-xs font-semibold px-3 py-1.5 rounded border transition-colors ${
-                                    action === "SCRAP"
+                                  className={`text-xs font-semibold px-3 py-1.5 rounded border transition-colors ${action === "SCRAP"
                                       ? "bg-red-600 text-white border-red-600"
                                       : "bg-white text-red-500 border-red-300 hover:bg-red-50"
-                                  }`}
+                                    }`}
                                 >
                                   ✕ اسکریپ
                                 </button>

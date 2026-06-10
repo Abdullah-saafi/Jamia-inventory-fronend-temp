@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { createItem } from "../../services/api";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
 import { useAuth } from "../../context/authContext";
@@ -228,7 +227,7 @@ export default function MainAllItems({
                       </span>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">
-                      {Number(i.sub_qty).toFixed(0)}
+                      {Number(i.sub_qty - i.returned_qty - i.scrapped_qty).toFixed(0)}
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-bold text-gray-700">
@@ -259,12 +258,9 @@ export default function MainAllItems({
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-bold text-red-500">
-                        {Number(i.scrap_qty) || "0"}
+                        {Number(i.scrapped_qty) || "0"}
                       </span>
                     </td>
-
-
-
                     <td className="px-4 py-3">
                       <span
                         className={`text-xs font-semibold ${isLow ? "text-red-500" : "text-emerald-600"}`}

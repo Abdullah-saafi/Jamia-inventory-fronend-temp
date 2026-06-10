@@ -5,6 +5,8 @@ import {
   approveRequest,
   rejectRequest,
   rejectItemById,
+  getStores,
+  getItemHistory,
 } from "../services/api";
 import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import { useAuth } from "../context/authContext";
@@ -20,6 +22,7 @@ import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import ApproveRejectModal from "../components/ApproveRejectModal";
 import RequestRow from "../components/RequestRow";
+import ItemHistoryModal from "../components/ItemHistoryModal";
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MainStoreApprover() {
@@ -35,10 +38,14 @@ export default function MainStoreApprover() {
   const [actioning, setActioning] = useState(null);
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
+  const [currentStore, setCurrentStore] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [rejectSpecificItem, setRejectSpecificItem] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(null);
+  const [itemHistory, setItemHistory] = useState({ itemNo: null, rows: [] });
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
 
   const { auth } = useAuth();
   const { showToast } = useToast()
@@ -64,6 +71,20 @@ export default function MainStoreApprover() {
   useEffect(() => {
     load();
   }, [filter]);
+
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const response = await getStores()
+        setCurrentStore(response.data.data.filter((s) => s.store_name === auth.storeName))
+      } catch (e) {
+        const msg = handleError(e, "Failed to get stores")
+        showToast(msg, "error")
+      }
+    };
+
+    fetchStores();
+  }, []);
 
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
@@ -146,17 +167,17 @@ export default function MainStoreApprover() {
   };
 
   const rejectItem = async (id, rid) => {
-      try {
-        setRejectSpecificItem(rid)
-        await rejectItemById(id, rid)
-        openApprove(id)
-      } catch (error) {
-        const msg = handleError(error, "Error approving");
-        showToast(msg, "error");
-      } finally {
-        setRejectSpecificItem(null)
-      }
+    try {
+      setRejectSpecificItem(rid)
+      await rejectItemById(id, rid)
+      openApprove(id)
+    } catch (error) {
+      const msg = handleError(error, "Error approving");
+      showToast(msg, "error");
+    } finally {
+      setRejectSpecificItem(null)
     }
+  }
 
   const handleReject = async () => {
     if (!rejecterName.trim() || !rejectReason.trim()) return;
@@ -179,6 +200,36 @@ export default function MainStoreApprover() {
     }
   };
 
+  const openHistory = async (item_no) => {
+    try {
+      setHistoryLoading(item_no)
+      const storeId = (currentStore && currentStore[0] && currentStore[0].store_id) ? currentStore[0].store_id : auth.store_id;
+      if (!storeId) {
+        showToast("Store information unavailable", "error");
+        return;
+      }
+
+      const response = await getItemHistory(storeId, item_no);
+      if (!response || !response.data) {
+        showToast("Server Error: empty response", "error");
+        return;
+      }
+      if (response.data.success === false) {
+        showToast(response.data.message || "Server Error", "error");
+        return;
+      }
+
+      const data = response.data.data || {};
+      setItemHistory({ itemNo: item_no, rows: data.history || [] });
+      setHistoryModalOpen(true);
+    } catch (e) {
+      const msg = handleError(e, "Error fetching history");
+      showToast(msg, "error");
+    } finally {
+      setHistoryLoading(null)
+    }
+  }
+
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
 
   if (auth.isBlocked) {
@@ -192,7 +243,7 @@ export default function MainStoreApprover() {
         <div>
           <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
           <p className="text-gray-500 text-sm mt-0.5">
-            Approve or reject Main Store requests to Head Office
+            مین اسٹور کی طرف سے ہیڈ آفس یا پیٹی کیش کو بھیجی گئی درخواستوں کو منظور یا مسترد کریں
           </p>
         </div>
       </div>
@@ -303,6 +354,12 @@ export default function MainStoreApprover() {
           pageSizeOptions={[10, 25, 50]}
           onPageSizeChange={setPageSize}
         />
+        <ItemHistoryModal
+          open={historyModalOpen}
+          onClose={() => setHistoryModalOpen(false)}
+          itemNo={itemHistory.itemNo}
+          history={itemHistory.rows}
+        />
       </div>
 
       {/* ── Approve Modal ── */}
@@ -321,6 +378,8 @@ export default function MainStoreApprover() {
           handleApprove={handleApprove}
           handleReject={handleReject}
           action={"Approve"}
+          openHistory={openHistory}
+          historyLoading={historyLoading}
         />
       )}
 

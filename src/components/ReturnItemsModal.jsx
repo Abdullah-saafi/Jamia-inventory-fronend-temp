@@ -9,9 +9,6 @@ const ReturnItemsModal = ({
     const handleQtyChange = (idx, newValue) => {
         const originalQty = Number(returnForm.returnData.items[idx].received_qty);
         let value = Number(newValue);
-        console.log("qty", originalQty);
-
-
         if (value < 0) value = 0;
         if (value > originalQty) value = originalQty;
         const updatedData = { ...returnForm.returnData };

@@ -40,13 +40,8 @@ const DisputeResolutionPanel = ({
           action,
         })),
       };
-
-      console.log("payload",payload);
       await resolveDispute(request.request_id, payload);
-      
-
       onResolved();
-
     } catch (error) {
       const msg = handleError(error, "Failed to perform action");
       showToast(msg,"error");

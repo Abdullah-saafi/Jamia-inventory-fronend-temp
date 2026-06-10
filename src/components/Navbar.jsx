@@ -19,7 +19,7 @@ const links = [
     roles: ["main-store-approver"],
   },
   { to: "/headoffice", label: "مرکزی دفتر", roles: ["headoffice"] },
-  { to: "/pettycash", label: "پٹی کیش", roles: ["PETTY_CASH"] },
+  { to: "/pettycash", label: "پٹی کیش", roles: ["pettycash"] },
   { to: "/admin", label: "انتظامی دفتر", roles: ["admin"] },
 ];
 
@@ -35,7 +35,6 @@ export default function Navbar() {
     try {
       setLogoutLoading(true);
       const response = await logout();
-      if (response.data.message) console.log("successfully logout");
       setAuth({
         accessToken: null,
         username: null,
@@ -47,7 +46,6 @@ export default function Navbar() {
       });
       navigate("/login");
     } catch (error) {
-      console.error("Logout failed", error);
       setAuth({
         accessToken: null,
         username: null,

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import * as XLSX from "xlsx";
+import { useToast } from "../context/ToastContext";
 
 /**
  * ExcelDownloaderWithDates
@@ -28,6 +29,8 @@ export default function c({
   const [toDate, setToDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const {showToast} = useToast()
 
   const handleExport = async () => {
     setError("");
@@ -106,7 +109,7 @@ export default function c({
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
       XLSX.writeFile(wb, `${fileName}_${fromDate}_to_${toDate}.xlsx`);
     } catch (err) {
-      console.error(err);
+      showToast(err, "error");
       setError("Export failed. Please try again.");
     } finally {
       setLoading(false);

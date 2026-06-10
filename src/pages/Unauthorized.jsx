@@ -14,7 +14,6 @@ const Unauthorized = () => {
     try {
       setLogoutLoading(true);
       const response = await logout();
-      if (response.data.message) console.log("successfully logout");
       setAuth({
         accessToken: null,
         username: null,
@@ -26,7 +25,6 @@ const Unauthorized = () => {
       });
       navigate("/login");
     } catch (error) {
-      console.error("Logout failed", error);
       setAuth({
         accessToken: null,
         username: null,

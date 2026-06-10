@@ -1,3 +1,4 @@
+import { useState } from "react";
 import DisputeResolutionPanel from "./DisputeResolutionPanel";
 import StatusBadge from "./StatusBadge";
 
@@ -12,10 +13,10 @@ export default function ItemsTable({
   showToast,
   username
 }) {
+  const [previewImg, setPreviewImg] = useState(null);
   const isClosed = d.status === "CLOSED";
   return (
     <>
-
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-200 text-gray-400 text-xs">
@@ -30,9 +31,6 @@ export default function ItemsTable({
             )}
             <th className="text-center pb-2 pr-4">منظور شدہ</th>
             <th className="text-center pb-2 pr-4">مکمل شدہ</th>
-            {(pageType === "subStore" || pageType === "subStoreManager") && (
-              <th className="text-center pb-2 pr-4">واپس کیا گیا</th>
-            )}
             {(isDisputed || isReceived || isReturned || isClosed) && (
               <>
                 <th className="text-center pb-2 pr-4">وصول شدہ</th>
@@ -40,6 +38,7 @@ export default function ItemsTable({
                 <th className="text-center pb-2">حالت</th>
               </>
             )}
+            <th className="text-center pb-2 pr-4">تصویر</th>
           </tr>
         </thead>
 
@@ -77,28 +76,12 @@ export default function ItemsTable({
 
                 <td className="py-2 pr-4 font-mono text-center">
                   <span
-                    className={
-                      i.fulfilled_qty != null ? "text-blue-600" : "text-gray-700"
-                    }
+                    className="text-gray-700"
                   >
-                    {i.fulfilled_qty ?? "—"}
+                    {Number(i.fulfilled_qty)}
                   </span>
                 </td>
-                {(pageType === "subStore" || pageType === "subStoreManager") && (
-                  <>
-                    <td className="py-2 pr-4 font-mono text-center">
-                      <span
-                        className={
-                          Number(i.returned_qty) > 0
-                            ? "text-orange-500 font-bold"
-                            : "text-gray-700"
-                        }
-                      >
-                        {Number(i.returned_qty) > 0 ? i.returned_qty : "—"}
-                      </span>
-                    </td>
-                  </>
-                )}
+
                 {(isDisputed || isReceived || isReturned || isClosed) && (
                   <>
                     <td className="py-2 pr-4 font-mono text-center">
@@ -123,6 +106,19 @@ export default function ItemsTable({
                     </td>
                   </>
                 )}
+                <td className="px-4 py-3 text-center">
+                  {i.image_url ? (
+                    <button
+                      onClick={() => setPreviewImg(i.image_url)}
+                      title="تصویر دیکھیں"
+                      className="text-xl hover:scale-125 transition-transform"
+                    >
+                      🖼️
+                    </button>
+                  ) : (
+                    <span className="text-gray-300 text-lg">—</span>
+                  )}
+                </td>
               </tr>
             )
           })}
@@ -136,6 +132,18 @@ export default function ItemsTable({
           showToast={showToast}
           managerName={username}
         />
+      )}
+      {previewImg && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setPreviewImg(null)}
+        >
+          <img
+            src={previewImg}
+            alt="preview"
+            className="max-w-[90vw] max-h-[85vh] rounded-xl shadow-2xl border-4 border-white"
+          />
+        </div>
       )}
     </>
   );

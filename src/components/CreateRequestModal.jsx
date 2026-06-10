@@ -145,7 +145,7 @@ export default function CreateRequestModal({
                 <select
                   value={itemForm.to_store_id}
                   onChange={(e) =>
-                    setItemForm((f) => ({ ...f, to_store_id: e.target.value }))
+                    setItemForm((f) => ({ ...f, to_store_id: Number(e.target.value) }))
                   }
                   className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                 >
@@ -638,7 +638,7 @@ export default function CreateRequestModal({
                           />
                         </div>
                         <div className="col-span-2">
-                          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block text-emerald-600">
+                          <label className="text-[10px] uppercase font-bold mb-1 block text-emerald-600">
                             مقدار
                           </label>
                           <input

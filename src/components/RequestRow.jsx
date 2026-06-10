@@ -82,7 +82,7 @@ export default function RequestRow({
 
         {(pageType === "subStore" || pageType === "subStoreManager") && (
           <>
-            <td className="px-4 py-3">
+            <td className="px-2 py-3">
               <TypeBadge hasItems={hasItems} itemType={r.item_type} />
             </td>
           </>

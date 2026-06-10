@@ -505,14 +505,14 @@ const AddItemsAndCategories = () => {
           <div className="Categorey bg-white border border-gray-200 rounded-xl shadow-sm">
             <div className="flex justify-between  px-5 py-4 space-y-4">
               {categoryServerError && (
-                <div className="flex gap-5  gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                <div className="flex gap-5 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
                   <svg
                     className="w-4 h-4 text-red-500 mt-0.5 shrink-0"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     strokeWidth={2}
-                  >
+                  > 
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"

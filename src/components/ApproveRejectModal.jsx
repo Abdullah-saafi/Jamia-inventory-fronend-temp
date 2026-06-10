@@ -17,7 +17,8 @@ const ApproveRejectModal = ({
     handleReject,
     rejectItem,
     rejectSpecificItem,
-    openHistory
+    openHistory,
+    historyLoading
 }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -27,7 +28,7 @@ const ApproveRejectModal = ({
                     action === "Approve" ? setApproveModal(null) : setRejectModal(null)
                 }}
             />
-            <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-[72vh] max-h-[90vh] overflow-y-auto shadow-2xl">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
                     <h2 className="text-gray-900 font-bold">
                         {action === "Approve" ? `Approve — ${approveModal.no}` : `Reject — ${rejectModal.request_no}`}
@@ -122,10 +123,10 @@ const ApproveRejectModal = ({
                                                         onClick={() => {
                                                             openHistory(i.item_no)
                                                         }}
-                                                        // disabled={rejectSpecificItem === i.request_item_id}
-                                                        className="text-zinc-800 text-sm font-semibold px-2 py-1 rounded disabled:opacity-40 bg-gray-200 hover:bg-gray-300"
+                                                        disabled={rejectSpecificItem === i.request_item_id}
+                                                        className="text-zinc-800 bg-gray-200 text-sm font-semibold px-2 py-1 rounded disabled:opacity-40 hover:bg-gray-300"
                                                     >
-                                                        {rejectSpecificItem === i.request_item_id ? "..." : "History"}
+                                                        {historyLoading === i.item_no ? "..." : "ہسٹری"}
                                                     </button>
                                                 </td>
                                                 {editedItems.length > 1 && (

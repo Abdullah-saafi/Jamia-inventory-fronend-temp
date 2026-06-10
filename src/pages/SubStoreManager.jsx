@@ -21,6 +21,7 @@ import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import RequestDashboard from "../components/RequestDashboard";
 import { useToast } from "../context/ToastContext";
+import ItemHistoryModal from "../components/ItemHistoryModal";
 
 export default function SubStoreManager() {
   const [requests, setRequests] = useState([]);
@@ -38,9 +39,12 @@ export default function SubStoreManager() {
   const [editedItems, setEditedItems] = useState([]);
   const [actioning, setActioning] = useState(null);
   const [rejectSpecificItem, setRejectSpecificItem] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(null);
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [itemHistory, setItemHistory] = useState({ itemNo: null, rows: [] });
   const [pagination, setPagination] = useState({
     currentPage: 1,
     pageLimit: 10,
@@ -113,9 +117,7 @@ export default function SubStoreManager() {
     setDL(true);
     setDetail({ ...r, items: [] });
     try {
-      console.log("r", r);
       const res = await getRequestById(r.request_id);
-      console.log("detail", res.data.data);
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
@@ -223,13 +225,31 @@ export default function SubStoreManager() {
 
   const openHistory = async (item_no) => {
     try {
-      const response = await getItemHistory(currentStore[0].store_id, item_no)
-      console.log("data",response.data.data);
-      
-      showToast("success","success")
+      setHistoryLoading(item_no)
+      const storeId = (currentStore && currentStore[0] && currentStore[0].store_id) ? currentStore[0].store_id : auth.store_id;
+      if (!storeId) {
+        showToast("Store information unavailable", "error");
+        return;
+      }
+
+      const response = await getItemHistory(storeId, item_no);
+      if (!response || !response.data) {
+        showToast("Server Error: empty response", "error");
+        return;
+      }
+      if (response.data.success === false) {
+        showToast(response.data.message || "Server Error", "error");
+        return;
+      }
+
+      const data = response.data.data || {};
+      setItemHistory({ itemNo: item_no, rows: data.history || [] });
+      setHistoryModalOpen(true);
     } catch (e) {
       const msg = handleError(e, "Error fetching history");
       showToast(msg, "error");
+    } finally{
+      setHistoryLoading(null)
     }
   }
 
@@ -358,6 +378,12 @@ export default function SubStoreManager() {
             setPage(1);
           }}
         />
+        <ItemHistoryModal
+          open={historyModalOpen}
+          onClose={() => setHistoryModalOpen(false)}
+          itemNo={itemHistory.itemNo}
+          history={itemHistory.rows}
+        />
       </div>
 
       {/* Approve Modal */}
@@ -376,6 +402,7 @@ export default function SubStoreManager() {
           rejectSpecificItem={rejectSpecificItem}
           action={"Approve"}
           openHistory={openHistory}
+          historyLoading={historyLoading}
         />
       )}
 

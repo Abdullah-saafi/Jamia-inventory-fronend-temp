@@ -55,7 +55,7 @@ export default function MainSubStoreReqs({
   mainStores,
   toStore
 }) {
-  const [reqFilter, setReqFilter] = useState("APPROVED");
+  const [reqFilter, setReqFilter] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [fulfilling, setFulfilling] = useState(null);
@@ -81,8 +81,6 @@ export default function MainSubStoreReqs({
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-      console.log("detail", res.data.data);
-      console.log("r", r);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
       showToast(msg, "error");
@@ -147,7 +145,6 @@ export default function MainSubStoreReqs({
       const response = await getRequestById(id);
       const accepted_by_name = auth.username;
       const requestId = response.data.data.request_id;
-      console.log("requesid", requestId);
       await acceptReturnFromSub(requestId, accepted_by_name);
       showToast("Return accepted successfully", "success");
       onRefresh();

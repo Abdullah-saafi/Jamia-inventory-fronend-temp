@@ -184,7 +184,7 @@ export default function MainStore() {
                 {t.label}
                 {badge && (
                   <span
-                    className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none
+                    className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-4.5 text-center leading-none
                       ${tab === t.id
                         ? "bg-white/20 text-white"
                         : "bg-emerald-600 text-white"
