@@ -19,7 +19,7 @@ export default function CreateRequestModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30" onClick={() => {
         onClose()
-        setItemForm({...EMPTY_FORM})
+        setItemForm({ ...EMPTY_FORM })
       }} />
       <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
@@ -30,7 +30,7 @@ export default function CreateRequestModal({
           <button
             onClick={() => {
               onClose()
-              setItemForm({...EMPTY_FORM})
+              setItemForm({ ...EMPTY_FORM })
             }}
             className="text-gray-400 hover:text-gray-700 text-xl"
           >
@@ -42,7 +42,7 @@ export default function CreateRequestModal({
             <span className="text-red-600 text-sm font-semibold text-left">یہ درخواست براہ راست مرکزی اسٹور کو بھیجی جائے گی</span>
           </div>
         )}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={onSubmit} className="p-5 space-y-4">
           {pageType === "mainReqToHO" && (
             <div onClick={() => setItemForm((f) => ({ ...f, is_emergency: !f.is_emergency }))}
               className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none ${itemForm.is_emergency ? "bg-red-50 border-red-400" : "bg-gray-50 border-gray-200 hover:border-red-300"}`}>
@@ -664,7 +664,7 @@ export default function CreateRequestModal({
                 type="button"
                 onClick={() => {
                   onClose()
-                  setItemForm({...EMPTY_FORM})
+                  setItemForm({ ...EMPTY_FORM })
                 }}
                 className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
               >

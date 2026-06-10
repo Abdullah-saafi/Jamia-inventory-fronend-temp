@@ -14,7 +14,6 @@ const ReturnModal = ({
                 setReturnBackNote("")
             }} />
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col relative z-10">
-                {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
                     <div>
                         <h3 className="font-bold text-gray-800">آئٹم واپس کریں</h3>

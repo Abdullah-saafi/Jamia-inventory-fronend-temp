@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createReturnRequest } from "../services/api";
+import API, { createReturnRequest } from "../services/api";
 import {
   getStores,
   getItems,
@@ -268,8 +268,8 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setGrnRequest(res.data.data);
-      console.log("log",res.data.data);
-      
+      console.log("log", res.data.data);
+
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
       showToast(msg, "error");
@@ -412,6 +412,23 @@ export default function SubStore() {
 
     setCreating(true);
     try {
+      const itemsWithImageUrls = [];
+      for (const item of itemLines) {
+        const { selected_item_no, item_search, _showDropdown, images, ...rest } = item;
+        const payloadItem = { ...rest };
+
+        if (images && images.length > 0) {
+          const formData = new FormData();
+          formData.append("image", images[0]);
+          const uploadRes = await API.post("/upload", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          payloadItem.image_url = uploadRes.data.image_url;
+        }
+
+        itemsWithImageUrls.push(payloadItem);
+      }
+
       const payload = {
         from_store_id,
         to_store_id,
@@ -419,9 +436,7 @@ export default function SubStore() {
         notes: itemForm.notes,
         is_emergency: itemForm.is_emergency,
         direction: "SUB_TO_MAIN",
-        items: itemLines.map(
-          ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
-        ),
+        items: itemsWithImageUrls,
       };
 
       await createRequest(payload);

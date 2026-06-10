@@ -20,12 +20,10 @@ const Login = () => {
         if (auth?.message) setAuth(prev => ({ ...prev, message: null }))
         if (!form.email) return setMessage("ای میل درکار ہے۔")
         if (!form.password) return setMessage("پاس ورڈ درکار ہے۔")
-        
         try {
             setLoading(true)
             const response = await login(form)
             const data = response.data
-            
             if (data) {
                 setMessage(data.message)
                 setAuth({
@@ -44,32 +42,32 @@ const Login = () => {
                     "headoffice": "/headoffice",
                     "admin": "/admin",
                     "super admin": "/substore-staff",
-                    "PETTY_CASH": "/pettycash",
+                    "pettycash": "/pettycash",
                 }
                 navigate(routes[data.role] || "/unauthorized")
             }
         } catch (err) {
-          const msg = handleError(err, "Failed to login")
-          setMessage(msg)
+            const msg = handleError(err, "Failed to login")
+            setMessage(msg)
         } finally {
             setLoading(false)
         }
     }
 
     const handleChange = (e) => {
-        if (message){
-             setMessage(null)
+        if (message) {
+            setMessage(null)
         }
         setForm({ ...form, [e.target.name]: e.target.value })
     }
 
     const inputWrapperClass = (fieldError) => `
         flex items-center w-full rounded-lg overflow-hidden border-2 transition-all duration-200
-        ${fieldError 
-            ? 'border-red-400 bg-red-50' 
+        ${fieldError
+            ? 'border-red-400 bg-red-50'
             : 'border-gray-300 bg-white focus-within:border-emerald-500'}
     `
-    
+
     const autofillFix = "autofill:shadow-[inset_0_0_0px_1000px_#ffffff] [-webkit-text-fill-color:black]";
     const hasError = !!(message || auth?.message);
 
@@ -101,7 +99,7 @@ const Login = () => {
                 <form className="w-full max-w-[350px] space-y-4" onSubmit={handleSubmit}>
                     {/* Email Field */}
                     <div className={inputWrapperClass(hasError)}>
-                        <label htmlFor="email" className={message || auth?.message ? "p-3 bg-red-300 text-gray-500":"p-3 bg-gray-100 text-gray-500"}>
+                        <label htmlFor="email" className={message || auth?.message ? "p-3 bg-red-300 text-gray-500" : "p-3 bg-gray-100 text-gray-500"}>
                             <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280 320-200v-80L480-520 160-720v80l320 200Z" /></svg>
                         </label>
                         <input
@@ -118,7 +116,7 @@ const Login = () => {
 
                     {/* Password Field */}
                     <div className={inputWrapperClass(hasError)}>
-                        <label htmlFor="password" className={message || auth?.message ? "p-3 bg-red-300 text-gray-500":"p-3 bg-gray-100 text-gray-500"}>
+                        <label htmlFor="password" className={message || auth?.message ? "p-3 bg-red-300 text-gray-500" : "p-3 bg-gray-100 text-gray-500"}>
                             <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm296.5-223.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z" /></svg>
                         </label>
                         <div className="flex-grow flex items-center pr-2">
@@ -142,15 +140,15 @@ const Login = () => {
                         </div>
                     </div>
 
-                    <button 
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg transition-all transform active:scale-[0.98] disabled:opacity-50 mt-4 shadow-lg shadow-emerald-900/10" 
+                    <button
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg transition-all transform active:scale-[0.98] disabled:opacity-50 mt-4 shadow-lg shadow-emerald-900/10"
                         disabled={loading}
                     >
                         {loading ? (
-                             <span className="flex items-center justify-center gap-2">
+                            <span className="flex items-center justify-center gap-2">
                                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                 Processing...
-                             </span>
+                            </span>
                         ) : "Login"}
                     </button>
                 </form>

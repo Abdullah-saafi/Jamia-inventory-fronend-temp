@@ -17,6 +17,7 @@ import Pagination from "../components/Pagination";
 import StoreFilters from "../components/StoreFilters";
 import RequestRow from "../components/RequestRow";
 import ApproveRejectModal from "../components/ApproveRejectModal";
+import ItemHistoryModal from "../components/ItemHistoryModal";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import RequestDashboard from "../components/RequestDashboard";
@@ -49,6 +50,8 @@ export default function SubStoreManager() {
     hasNextPage: false,
     hasPrevPage: false,
   });
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [itemHistory, setItemHistory] = useState({ itemNo: null, rows: [] });
 
   const { auth } = useAuth();
   const { showToast } = useToast()
@@ -223,10 +226,25 @@ export default function SubStoreManager() {
 
   const openHistory = async (item_no) => {
     try {
-      const response = await getItemHistory(currentStore[0].store_id, item_no)
-      console.log("data",response.data.data);
-      
-      showToast("success","success")
+      const storeId = (currentStore && currentStore[0] && currentStore[0].store_id) ? currentStore[0].store_id : auth.store_id;
+      if (!storeId) {
+        showToast("Store information unavailable", "error");
+        return;
+      }
+
+      const response = await getItemHistory(storeId, item_no);
+      if (!response || !response.data) {
+        showToast("Server Error: empty response", "error");
+        return;
+      }
+      if (response.data.success === false) {
+        showToast(response.data.message || "Server Error", "error");
+        return;
+      }
+
+      const data = response.data.data || {};
+      setItemHistory({ itemNo: item_no, rows: data.history || [] });
+      setHistoryModalOpen(true);
     } catch (e) {
       const msg = handleError(e, "Error fetching history");
       showToast(msg, "error");
@@ -357,6 +375,12 @@ export default function SubStoreManager() {
             setPageSize(s);
             setPage(1);
           }}
+        />
+        <ItemHistoryModal
+          open={historyModalOpen}
+          onClose={() => setHistoryModalOpen(false)}
+          itemNo={itemHistory.itemNo}
+          history={itemHistory.rows}
         />
       </div>
 

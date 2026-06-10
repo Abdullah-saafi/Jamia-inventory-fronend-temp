@@ -188,8 +188,10 @@ export default function MainSubStoreReqs({
         (s) => s.store_id === itemForm.to_store_id
       )
 
+      const stype = (selectedStore?.store_type || "").toUpperCase();
+      const sname = (selectedStore?.store_name || "").toLowerCase();
       const direction =
-        selectedStore?.store_type === "PETTY_CASH"
+        stype === "PETTYCASH" || sname.includes("petty") || sname.includes("پٹی")
           ? "MAIN_TO_PCASH"
           : "MAIN_TO_HO";
 

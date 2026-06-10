@@ -112,7 +112,7 @@ export default function PettyCash() {
             console.log("id", id);
             console.log("ref_no", ref_no);
 
-            await fulfillRequest(id, { ref_no });
+            await fulfillRequest(id, { ref_no: ref_no });
             showToast(fulfillMode === "refulfill"
                 ? "Re-dispatched — Main Store will verify the corrected delivery"
                 : "Request fulfilled — Main Store will verify delivery", "success");

@@ -13,6 +13,13 @@ export default function ItemsTable({
   username
 }) {
   const isClosed = d.status === "CLOSED";
+  const hasActionColumn = items.some((item) => item.action_type);
+  const resolveActionLabel = (action) => {
+    if (action === "RESEND") return "Resend";
+    if (action === "RETURN_ACCEPT") return "Accept Return";
+    return action || "—";
+  };
+
   return (
     <>
 
@@ -39,6 +46,9 @@ export default function ItemsTable({
 
                 <th className="text-center pb-2">حالت</th>
               </>
+            )}
+            {hasActionColumn && (
+              <th className="text-center pb-2 pr-4">Action</th>
             )}
           </tr>
         </thead>
@@ -122,6 +132,13 @@ export default function ItemsTable({
                       )}
                     </td>
                   </>
+                )}
+                {hasActionColumn && (
+                  <td className="py-2 pr-4 text-center">
+                    <span className="text-xs font-semibold text-blue-700">
+                      {resolveActionLabel(i.action_type)}
+                    </span>
+                  </td>
                 )}
               </tr>
             )

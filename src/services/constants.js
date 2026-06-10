@@ -4,7 +4,7 @@ export const ROLE_STORE_MAP = {
   "main-store": "MAIN_STORE",
   "main-store-manager": "MAIN_STORE",
   headoffice: "HEAD_OFFICE",
-  pettycash : "PETTY_CASH"
+  pettycash: "pettycash"
 }
 
 export const ROLES = [
@@ -18,14 +18,14 @@ export const ROLES = [
 ]
 
 export const ROLE_LABELS = {
-  "sub-store":          "اسٹور",
+  "sub-store": "اسٹور",
   "sub-store-manager": "اسٹور نگران",
-  "main-store":         "مرکزی اسٹور",
-  "main-store-manager":"مرکزی اسٹور نگران",
-  headoffice:           "مرکزی دفتر",
-  "pettycash":         "پٹی کیش",
-  admin:                "انتظامی دفتر",
-  "super admin":        "سپر ایڈمن",
+  "main-store": "مرکزی اسٹور",
+  "main-store-manager": "مرکزی اسٹور نگران",
+  headoffice: "مرکزی دفتر",
+  "pettycash": "پٹی کیش",
+  admin: "انتظامی دفتر",
+  "super admin": "سپر ایڈمن",
 }
 
 export const TABS = [
@@ -33,14 +33,14 @@ export const TABS = [
   { id: "store", label: "اسٹورز شامل کریں" },
   { id: "all-users", label: "تمام نمائندے" },
   { id: "all-stores", label: "تمام اسٹورز" },
-  {id: "items-and-categories", label: " آئٹم اور کیٹیگری شامل کریں"}
+  { id: "items-and-categories", label: " آئٹم اور کیٹیگری شامل کریں" }
 ]
 
 export const STORE_TYPE_LABELS = {
   MAIN_STORE: "مرکزی اسٹور",
-  SUB_STORE:  "اسٹور",
+  SUB_STORE: "اسٹور",
   HEAD_OFFICE: "مرکزی دفتر",
-  PETTY_CASH: "پٹی کیش",
+  pettycash: "پٹی کیش",
 }
 export const inputClass =
   "w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400";

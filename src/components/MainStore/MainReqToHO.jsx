@@ -429,7 +429,6 @@ export default function MainReqToHO({ showToast }) {
           creating={creating}
           EMPTY_FORM={EMPTY_FORM}
           pageType={pageType}
-          setCreating={setCreating}
           toStore={toStore}
         />
       )}

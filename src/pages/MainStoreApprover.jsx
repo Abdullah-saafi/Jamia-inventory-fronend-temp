@@ -5,65 +5,60 @@ import {
   approveRequest,
   rejectRequest,
   rejectItemById,
+  getItemHistory,
+  getStores,
 } from "../services/api";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import { useAuth } from "../context/authContext";
-import Toast from "../components/Toast";
+import { useToast } from "../context/ToastContext";
 import BlockedUI from "../components/BlockedUI";
 import useErrorHandler from "../components/useErrorHandler";
-import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Pagination from "../components/Pagination";
+import StatusBadge from "../components/StatusBadge"
+import DateTimeCell from "../components/DateTimeCell"
+import RequestDashboard from "../components/RequestDashboard";
 import StoreFilters from "../components/StoreFilters";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import ApproveRejectModal from "../components/ApproveRejectModal";
 import RequestRow from "../components/RequestRow";
+import ItemHistoryModal from "../components/ItemHistoryModal";
 
-export default function SubStoreManager() {
+// ── Main component ────────────────────────────────────────────────────────────
+export default function MainStoreApprover() {
   const [requests, setRequests] = useState([]);
-  const [allRequests, setAllRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterStore, setFilterStore] = useState("");
-  const [subStores, setSubStores] = useState([]);
+  const [filter, setFilter] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [approveModal, setApproveModal] = useState(null);
   const [approverName, setApproverName] = useState("");
   const [editedItems, setEditedItems] = useState([]);
   const [actioning, setActioning] = useState(null);
+  const [rejectSpecificItem, setRejectSpecificItem] = useState(null);
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [rejectSpecificItem, setRejectSpecificItem] = useState(null);
+  const [currentStore, setCurrentStore] = useState(null);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [itemHistory, setItemHistory] = useState({ itemNo: null, rows: [] });
 
   const { auth } = useAuth();
   const { showToast } = useToast()
-  const handleError = useErrorHandler();
 
-  const pageType = "subStoreManager";
+  const handleError = useErrorHandler();
+  const pageType = "mainStoreApprover"
 
   const load = async () => {
     setLoading(true);
     try {
-      const params = {
-        direction: "MAIN_TO_HO",
-        page,
-        limit: pageSize,
-      };
-      if (filterStatus) params.status = filterStatus;
-      if (auth.role !== "super admin" && auth.store_id)
-        params.store_id = auth.store_id;
-      if (auth.role === "super admin" && filterStore)
-        params.store_id = filterStore;
+      const params = { direction: ["MAIN_TO_PCASH", "MAIN_TO_HO"] };
+      if (filter) params.status = filter;
       const r = await getRequests(params);
-      if (!filterStatus) {
-        setAllRequests(r.data.data)
-      }
-      setRequests(r.data.data || []);
-      setPagination(r.data.pagination);
+      setRequests(r.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load requests");
       setError(msg);
@@ -74,21 +69,20 @@ export default function SubStoreManager() {
 
   useEffect(() => {
     load();
-  }, [filterStatus, filterStore, auth.store_id, page, pageSize,]);
+  }, [filter]);
 
   useEffect(() => {
-    if (auth.role === "super admin") {
-      import("../services/api").then(({ getStores }) => {
-        getStores()
-          .then((res) =>
-            setSubStores(
-              res.data.data.filter((s) => s.store_type === "SUB_STORE"),
-            ),
-          )
-          .catch(() => { });
-      });
-    }
-  }, [auth.role]);
+    const fetchStores = async () => {
+      try {
+        const response = await getStores();
+        setCurrentStore(response.data.data.filter((s) => s.store_name === auth.storeName));
+      } catch (e) {
+        const msg = handleError(e, "Failed to get stores");
+        showToast(msg, "error");
+      }
+    };
+    fetchStores();
+  }, []);
 
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
@@ -171,17 +165,17 @@ export default function SubStoreManager() {
   };
 
   const rejectItem = async (id, rid) => {
-      try {
-        setRejectSpecificItem(rid)
-        await rejectItemById(id, rid)
-        openApprove(id)
-      } catch (error) {
-        const msg = handleError(error, "Error approving");
-        showToast(msg, "error");
-      } finally {
-        setRejectSpecificItem(null)
-      }
+    try {
+      setRejectSpecificItem(rid);
+      await rejectItemById(id, rid);
+      openApprove(id);
+    } catch (error) {
+      const msg = handleError(error, "Error approving");
+      showToast(msg, "error");
+    } finally {
+      setRejectSpecificItem(null);
     }
+  };
 
   const handleReject = async () => {
     if (!rejecterName.trim() || !rejectReason.trim()) return;
@@ -204,7 +198,32 @@ export default function SubStoreManager() {
     }
   };
 
-  const pendingCount = allRequests.filter((r) => r.status === "PENDING").length;
+  const openHistory = async (item_no) => {
+    try {
+      const storeId = (currentStore && currentStore[0] && currentStore[0].store_id) ? currentStore[0].store_id : auth.store_id;
+      if (!storeId) {
+        showToast("Store information unavailable", "error");
+        return;
+      }
+      const response = await getItemHistory(storeId, item_no);
+      if (!response || !response.data) {
+        showToast("Server Error: empty response", "error");
+        return;
+      }
+      if (response.data.success === false) {
+        showToast(response.data.message || "Server Error", "error");
+        return;
+      }
+      const data = response.data.data || {};
+      setItemHistory({ itemNo: item_no, rows: data.history || [] });
+      setHistoryModalOpen(true);
+    } catch (e) {
+      const msg = handleError(e, "Error fetching history");
+      showToast(msg, "error");
+    }
+  };
+
+  const pendingCount = requests.filter((r) => r.status === "PENDING").length;
 
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message} />;
@@ -223,10 +242,11 @@ export default function SubStoreManager() {
         </div>
       </div>
 
+      {/* ── Pending alert ── */}
       <RequestDashboard
         pageType={pageType}
-        setFilterStatus={setFilterStatus}
-        filterStatus={filterStatus}
+        setFilterStatus={setFilter}
+        filterStatus={filter}
         counts={{
           pending: pendingCount,
           returnBack: 0,
@@ -235,20 +255,22 @@ export default function SubStoreManager() {
         }}
       />
 
-      <div className="flex h-full py-2  items-end justify-between">
-        <div className="Filter">
+      {/* ── Filter ── */}
+      <div className="flex h-full py-2 items-end justify-between">
+        <div>
           <StoreFilters
-            filterStatus={filterStatus}
-            setFilterStatus={setFilterStatus}
+            filterStatus={filter}
+            setFilterStatus={setFilter}
             pageType={pageType}
-            filterStore={filterStore}
-            setFilterStore={setFilterStore}
-            role={auth.role}
-            subStores={subStores}
           />
+
           <button
-            onClick={load}
-            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto hover:bg-gray-50 shadow-sm"
+            onClick={() => {
+              setFilter("")
+              setPage(1)
+              load()
+            }}
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >
             ↻ Refresh
           </button>
@@ -318,22 +340,23 @@ export default function SubStoreManager() {
             )}
           </tbody>
         </table>
-
         <Pagination
-          currentPage={pagination.currentPage}
-          totalItems={pagination.totalItems}
-          pageSize={pagination.pageLimit}
+          currentPage={page}
+          totalItems={requests.length}
+          pageSize={pageSize}
           onPageChange={setPage}
           pageSizeOptions={[10, 25, 50]}
-          onPageSizeChange={(s) => {
-            setPageSize(s);
-            setPage(1);
-          }}
+          onPageSizeChange={setPageSize}
+        />
+        <ItemHistoryModal
+          open={historyModalOpen}
+          onClose={() => setHistoryModalOpen(false)}
+          itemNo={itemHistory.itemNo}
+          history={itemHistory.rows}
         />
       </div>
 
       {/* ── Approve Modal ── */}
-
       {approveModal && (
         <ApproveRejectModal
           setApproveModal={setApproveModal}
@@ -343,11 +366,12 @@ export default function SubStoreManager() {
           editedItems={editedItems}
           setEditedItems={setEditedItems}
           actioning={actioning}
-          rejectItem={rejectItem}
-          rejectSpecificItem={rejectSpecificItem}
           handleApprove={handleApprove}
           handleReject={handleReject}
+          rejectItem={rejectItem}
+          rejectSpecificItem={rejectSpecificItem}
           action={"Approve"}
+          openHistory={openHistory}
         />
       )}
 
@@ -365,7 +389,6 @@ export default function SubStoreManager() {
           action={"Reject"}
         />
       )}
-
     </div>
   );
 }

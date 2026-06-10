@@ -89,7 +89,7 @@ export default function MainStore() {
             limit: pageLimit,
             status: requestStatusFilter || undefined,
           }),
-          getStores(),
+          getStores({ all: true }),
           getItems({
             store_id: auth.store_id, // ← add this
             page: currentPage,
@@ -111,9 +111,13 @@ export default function MainStore() {
         setPendingReturns(retRes.data.data?.length || 0);
 
         const allStores = sRes.data.data;
-        setToStore(allStores.filter((s) => s.store_type === "PETTY_CASH" || s.store_type === "HEAD_OFFICE"))
-        setMainStores(allStores.filter((s) => s.store_type === "MAIN_STORE"));
-        setHeadOffices(allStores.filter((s) => s.store_type === "HEAD_OFFICE"));
+        setToStore(allStores.filter((s) => {
+          const t = (s.store_type || "").toUpperCase();
+          const name = (s.store_name || "").toLowerCase();
+          return t === "PETTYCASH" || t === "HEAD_OFFICE" || name.includes("petty") || name.includes("پٹی");
+        }))
+        setMainStores(allStores.filter((s) => (s.store_type || "").toUpperCase() === "MAIN_STORE"));
+        setHeadOffices(allStores.filter((s) => (s.store_type || "").toUpperCase() === "HEAD_OFFICE"));
       } catch (error) {
         const msg = handleError(error, "Failed to load data");
         setMainStoreError(msg);

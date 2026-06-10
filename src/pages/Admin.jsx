@@ -10,15 +10,15 @@ export default function Admin() {
   const navigate = useNavigate();
   const location = useLocation();
   const [stores, setStores] = useState([]);
-  
-  const {auth} = useAuth()
-  const {showToast} = useToast()
+
+  const { auth } = useAuth()
+  const { showToast } = useToast()
   const currentTab = location.pathname.split("/").pop() || "user";
 
   const loadStores = () =>
     getStores({ all: true })
       .then((r) => setStores(r.data.data || []))
-      .catch(() => {});
+      .catch(() => { });
 
   useEffect(() => {
     loadStores();
@@ -27,8 +27,8 @@ export default function Admin() {
     }
   }, [location.pathname, navigate]);
 
-  if(auth.isBlocked){
-    return <BlockedUI message={auth.message}/>
+  if (auth.isBlocked) {
+    return <BlockedUI message={auth.message} />
   }
 
   return (

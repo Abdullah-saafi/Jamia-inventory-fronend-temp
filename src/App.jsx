@@ -95,7 +95,7 @@ export default function App() {
                 <Route
                   element={
                     <ProtectedRoute
-                      allowedRoles={["PETTY_CASH", "super admin"]}
+                      allowedRoles={["pettycash", "super admin"]}
                     />
                   }
                 >

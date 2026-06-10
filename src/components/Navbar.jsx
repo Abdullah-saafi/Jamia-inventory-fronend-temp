@@ -19,7 +19,7 @@ const links = [
     roles: ["main-store-approver"],
   },
   { to: "/headoffice", label: "مرکزی دفتر", roles: ["headoffice"] },
-  { to: "/pettycash", label: "پٹی کیش", roles: ["PETTY_CASH"] },
+  { to: "/pettycash", label: "پٹی کیش", roles: ["pettycash"] },
   { to: "/admin", label: "انتظامی دفتر", roles: ["admin"] },
 ];
 
@@ -86,10 +86,9 @@ export default function Navbar() {
                   key={to}
                   to={to}
                   className={({ isActive }) =>
-                    `px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-emerald-600 text-white"
-                        : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                    `px-3 py-1.5 rounded text-sm font-medium transition-colors ${isActive
+                      ? "bg-emerald-600 text-white"
+                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                     }`
                   }
                 >
