@@ -496,7 +496,7 @@ export default function SubStore() {
         filterStatus={filterStatus}
         counts={{
           pending: pendingGRN,
-          returnBack: pendingReturn,
+          returnBack: 0,
           emergency: 0,
           disputed: 0,
         }}

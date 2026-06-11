@@ -102,7 +102,7 @@ export default function MainStoreProcessReturns({ showToast }) {
         })),
       };
       await processReturnRequest(selected.return_id, payload);
-      showToast("Return request processed successfully", "success",);
+      showToast("واپسی کی درخواست کامیابی سے مکمل ہو گئی ہے", "success",);
       closeModal();
       fetchReturns();
     } catch (err) {
@@ -151,7 +151,7 @@ export default function MainStoreProcessReturns({ showToast }) {
           <option value="PENDING">زیر التواء</option>
           <option value="ADDED_TO_STOCK">اسٹاک میں شامل کر دیا گیا</option>
           <option value="SCRAPPED">اسکریپ کر دیا گیا</option>
-          <option value="PARTIALLY_SCRAPPED">جزوی طور پر اسکریپ کیا گیا</option>
+          <option value="SCRAPPED_AND_STOCKED">اسکریپ شدہ اور اسٹاک میں محفوظ</option>
         </select>
         {filterStatus && (
           <button

@@ -148,7 +148,7 @@ export default function HeadOffice() {
         <div>
           <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
           <p className="text-gray-500 text-sm mt-0.5">
-            Head Office — fulfill approved Main Store requests
+            ہیڈ آفس — مین اسٹور کی منظور شدہ درخواست کو پورا کریں
           </p>
         </div>
       </div>

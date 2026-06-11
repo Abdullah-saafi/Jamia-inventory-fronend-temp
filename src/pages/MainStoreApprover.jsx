@@ -170,7 +170,7 @@ export default function MainStoreApprover() {
     try {
       setRejectSpecificItem(rid)
       await rejectItemById(id, rid)
-      openApprove(id)
+      openApprove(id, approveModal.no)
     } catch (error) {
       const msg = handleError(error, "Error approving");
       showToast(msg, "error");

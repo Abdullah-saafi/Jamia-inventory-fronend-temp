@@ -72,14 +72,14 @@ const RequestDashboard = ({
       )}
 
       {/* Return Card */}
-      {pageType === "subStore" && (
+      {/* {pageType === "subStore" && (
         <StatusCard
           title="واپسی کی منتظر"
           count={counts.returnBack}
           colorClass="bg-amber-500"
           isActive={filterStatus === (pageType === "mainSubStoreReqs" ? "RETURN_BACK" : "RECEIVED")}
           onClick={() => handleFilter(pageType === "mainSubStoreReqs" ? "RETURN_BACK" : "RECEIVED")}
-        />)}
+        />)} */}
     </div>
   );
 };

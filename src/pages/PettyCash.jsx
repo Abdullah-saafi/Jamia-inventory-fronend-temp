@@ -111,8 +111,8 @@ export default function PettyCash() {
         try {
             await fulfillRequest(id, { ref_no });
             showToast(fulfillMode === "refulfill"
-                ? "Re-dispatched — Main Store will verify the corrected delivery"
-                : "Request fulfilled — Main Store will verify delivery", "success");
+                ? "دوبارہ روانہ کر دیا گیا ہے — مین اسٹور درست شدہ ڈیلیوری کی تصدیق کرے گا"
+                : "درخواست پوری کر دی گئی ہے — مین اسٹور ڈیلیوری کی تصدیق کرے گا", "success");
             setFulfillModal(false)
             load();
         } catch (e) {
@@ -120,6 +120,7 @@ export default function PettyCash() {
             showToast(msg, "error");
         } finally {
             setFulfilling(null);
+            setReferenceNo("")
         }
     };
 
@@ -142,7 +143,7 @@ export default function PettyCash() {
                 <div>
                     <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
                     <p className="text-gray-500 text-sm mt-0.5">
-                        Petty Cash — fulfill approved Main Store requests
+                        پیٹی کیش — مین اسٹور کی منظور شدہ درخواست کو پورا کریں
                     </p>
                 </div>
             </div>

@@ -26,7 +26,7 @@ export default function ItemsTable({
             {(pageType === "subStore" || pageType === "subStoreManager") && (
               <th className="text-center pb-2 pr-4">درخواست شدہ</th>
             )}
-            {(pageType === "mainSubStoreReqs" || pageType === "headOffice") && (
+            {(pageType === "mainSubStoreReqs" || pageType === "headOffice" || pageType === "pettyCash") && (
               <th className="text-center pb-2 pr-4">درخواست کردہ</th>
             )}
             <th className="text-center pb-2 pr-4">منظور شدہ</th>
@@ -125,7 +125,7 @@ export default function ItemsTable({
         </tbody>
       </table>
 
-      {isDisputed && (
+      {isDisputed && (pageType === "mainSubStoreReqs" || pageType === "headOffice" || pageType === "pettyCash") && (
         <DisputeResolutionPanel
           request={d}
           onResolved={handleResolved}
