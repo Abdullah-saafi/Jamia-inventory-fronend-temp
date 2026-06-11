@@ -5,6 +5,7 @@ import useErrorHandler from "../useErrorHandler";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import Pagination from "../Pagination";
 import Toast from "../Toast"
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 export default function AllUsersTab() {
   const [users, setUsers] = useState([]);
@@ -14,6 +15,9 @@ export default function AllUsersTab() {
   const [storeFilter, setStoreFilter] = useState("");
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [showStoreTypeDropdown, setShowStoreTypeDropdown] = useState(false);
+  const [showStoreDropdown, setShowStoreDropdown] = useState(false);
   const [pageSize, setPageSize] = useState(10);
 
   const handleError = useErrorHandler();
@@ -24,9 +28,15 @@ export default function AllUsersTab() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await getUsers();
-      const userData = response.data?.data || response.data || [];
-      setUsers(userData);
+      const response = await getUsers({
+        page,
+        limit: pageSize,
+        search,
+        role: roleFilter,
+        store: storeFilter,
+      });
+      setUsers(response.data.data);
+      setTotalUsers(response.data.total);
     } catch (error) {
       const msg = handleError(error, "Failed to get users");
       setError(msg);
@@ -37,20 +47,24 @@ export default function AllUsersTab() {
 
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [page, pageSize, search, roleFilter, storeFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, roleFilter, storeFilter]);
 
   const handleAction = async (id, currentStatus) => {
     try {
       setLoading(true);
       const toggledStatus = !currentStatus;
       const response = await userStatus({ id, status: toggledStatus });
-      showToast(response.data.message,"success");
+      showToast(response.data.message, "success");
       if (response.status === 200) {
         await loadUsers();
       }
     } catch (error) {
       const msg = handleError(error, "Failed to update user");
-      showToast(msg, "error" );
+      showToast(msg, "error");
     } finally {
       setLoading(false);
     }
@@ -60,23 +74,7 @@ export default function AllUsersTab() {
     ...new Set(users.map((u) => u.store_name).filter(Boolean)),
   ].sort();
 
-  const displayed = users.filter((u) => {
-    const q = search.toLowerCase();
-    const matchSearch =
-      !q ||
-      u.name.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q);
-    const matchRole = !roleFilter || u.role === roleFilter;
-    const matchStore = !storeFilter || u.store_name === storeFilter;
-    return matchSearch && matchRole && matchStore;
-  });
-
   const hasFilters = search || roleFilter || storeFilter;
-
-  const paginatedRequests = displayed.slice(
-    (page - 1) * pageSize,
-    page * pageSize,
-  );
 
   return (
     <div>
@@ -85,33 +83,130 @@ export default function AllUsersTab() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name or email..."
+          placeholder="نام یا ای میل سے تلاش کریں..."
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400 w-56 shadow-sm"
         />
-        <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm"
-        >
-          <option value="">تمام شعبہ جات</option>
-          {ROLES.map((r) => (
-            <option key={r.value} value={r.value}>
-              {r.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={storeFilter}
-          onChange={(e) => setStoreFilter(e.target.value)}
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm"
-        >
-          <option value="">تمام اسٹورز</option>
-          {uniqueStoreNames.map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
-          ))}
-        </select>
+
+
+        {/* Store Type Filter */}
+
+        {showStoreTypeDropdown && (
+          <div className="absolute inset-0" onClick={() => setShowStoreTypeDropdown((prev) => !prev)} />
+        )}
+        <div className="relative min-w-45">
+          <button
+            type="button"
+            onClick={() => {
+              setShowStoreTypeDropdown((prev) => !prev)
+              setShowStoreDropdown(false)
+            }}
+            className=" w-full h-10 px-3 flex items-center justify-between bg-white border border-gray-300 rounded-lg shadow-sm hover:border-emerald-400 focus:border-emerald-500 transition-all text-sm text-gray-700">
+            <span>
+              {roleFilter
+                ? ROLES.find((r) => r.value === roleFilter)?.label
+                : "تمام کردار"}
+            </span>
+
+            {showStoreTypeDropdown ? (
+              <ChevronUp size={16} className="text-gray-400" />
+            ) : (
+              <ChevronDown size={16} className="text-gray-400" />
+            )}
+          </button>
+
+          {showStoreTypeDropdown && (
+            <div
+              className=" absolute z-50 mt-2 w-full max-h-48 bg-white border border-gray-200 rounded-xl shadow-xl overflow-y-auto">
+              <button
+                className=" w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-sm"
+                onClick={() => {
+                  setRoleFilter("");
+                  setShowStoreTypeDropdown(false);
+                }}
+              >
+                تمام کردار
+              </button>
+
+              {ROLES.map((r) => (
+                <button
+                  key={r.value}
+                  onClick={() => {
+                    setRoleFilter(r.value);
+                    setShowStoreTypeDropdown(false);
+                  }}
+                  className={` w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${roleFilter === r.value
+                    ? "bg-emerald-100 text-emerald-700 font-semibold"
+                    : "text-gray-700"
+                    }
+          `}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Store Type filter ends here */}
+
+
+        {/* Store filter */}
+
+        {showStoreDropdown && (
+          <div className="absolute inset-0" onClick={() => setShowStoreDropdown((prev) => !prev)} />
+        )}
+
+        <div className="relative min-w-50">
+          <button
+            type="button"
+            onClick={() => {
+              setShowStoreDropdown((prev) => !prev)
+              setShowStoreTypeDropdown(false)
+            }}
+            className=" w-full h-10 px-3 flex items-center justify-between bg-white border border-gray-300 rounded-lg shadow-sm hover:border-emerald-400 focus:border-emerald-500 transition-all text-sm text-gray-700">
+            <span>{storeFilter || "تمام اسٹورز"}</span>
+
+            {showStoreDropdown ? (
+              <ChevronUp size={16} className="text-gray-400" />
+            ) : (
+              <ChevronDown size={16} className="text-gray-400" />
+            )}
+          </button>
+
+          {showStoreDropdown && (
+            <div
+              className=" absolute max-h-48 z-50 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden overflow-y-auto">
+              <button
+                className=" w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-sm"
+                onClick={() => {
+                  setStoreFilter("");
+                  setShowStoreDropdown(false);
+                }}
+              >
+                تمام اسٹورز
+              </button>
+              {uniqueStoreNames.map((n) => (
+                <button
+                  key={n}
+                  onClick={() => {
+                    setStoreFilter(n);
+                    setShowStoreDropdown(false);
+                  }}
+                  className={` w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${storeFilter === n
+                    ? "bg-emerald-100 text-emerald-700 font-semibold"
+                    : "text-gray-700"
+                    }
+          `}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Store filter ends here */}
+
         {hasFilters && (
           <button
             onClick={() => {
@@ -134,7 +229,7 @@ export default function AllUsersTab() {
 
       {/* Table Container */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm ">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm text-left">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
@@ -148,7 +243,7 @@ export default function AllUsersTab() {
               ].map((h) => (
                 <th
                   key={h}
-                  className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
+                  className=" px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
                 >
                   {h}
                 </th>
@@ -172,14 +267,14 @@ export default function AllUsersTab() {
                   </div>
                 </td>
               </tr>
-            ) : displayed.length === 0 ? (
+            ) : users.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-gray-400">
                   No users found.
                 </td>
               </tr>
             ) : (
-              paginatedRequests.map((u) => (
+              users.map((u) => (
                 <tr
                   key={u.id}
                   className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${!u.is_active ? "opacity-60" : ""}`}
@@ -236,15 +331,12 @@ export default function AllUsersTab() {
         </table>
         <Pagination
           currentPage={page}
-          totalItems={displayed.length}
+          totalItems={totalUsers}
           pageSize={pageSize}
           onPageChange={setPage}
           pageSizeOptions={[10, 25, 50]}
           onPageSizeChange={setPageSize}
         />
-      </div>
-      <div className="mt-2 text-gray-400 text-[10px] uppercase font-bold px-1">
-        {displayed.length} user{displayed.length !== 1 ? "s" : ""} shown
       </div>
     </div>
   );

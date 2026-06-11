@@ -10,13 +10,13 @@ const links = [
   {
     to: "/substore-manager",
     label: "اسٹور نگران",
-    roles: ["sub-store-approver"],
+    roles: ["sub-store-manager"],
   },
   { to: "/mainstore", label: "مرکزی اسٹور", roles: ["main-store"] },
   {
-    to: "/mainstore-approver",
+    to: "/mainstore-manager",
     label: "مرکزی اسٹور نگران",
-    roles: ["main-store-approver"],
+    roles: ["main-store-manager"],
   },
   { to: "/headoffice", label: "مرکزی دفتر", roles: ["headoffice"] },
   { to: "/pettycash", label: "پٹی کیش", roles: ["pettycash"] },
@@ -84,10 +84,9 @@ export default function Navbar() {
                   key={to}
                   to={to}
                   className={({ isActive }) =>
-                    `px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-emerald-600 text-white"
-                        : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                    `px-3 py-1.5 rounded text-sm font-medium transition-colors ${isActive
+                      ? "bg-emerald-600 text-white"
+                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                     }`
                   }
                 >
@@ -116,15 +115,28 @@ export default function Navbar() {
           )}
         </div>
         {/* Badge */}
-        <div className="flex items-center ">
-          <span className="text-xs text-gray-500 font-mono flex flex-col items-center ">
-            <span>اسلام علیکم</span>
-            <span className="font-bold text-md">{auth.username}</span>
-            <span className="font-medium text-xs border bg-gray-100 border-gray-200 rounded">
+        <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg">
+          <div className="relative">
+            {/* Online Indicator */}
+            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full animate-pulse" />
+          </div>
+
+          <div className="flex flex-col">
+            <span className="text-[10px] text-gray-500">
+              اسلام علیکم
+            </span>
+
+            <span
+              className="font-semibold text-sm text-gray-800 truncate max-w-[180px]"
+              title={auth.username}
+            >
+              {auth.username}
+            </span>
+
+            <span className="text-[10px] text-emerald-700 font-medium">
               {auth.role}
             </span>
-          </span>
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          </div>
         </div>
         <div className="date text-xs text-gray-500 font-mono flex flex-col items-center ">
           <p>Gregorian: {date.toDateString()}</p>

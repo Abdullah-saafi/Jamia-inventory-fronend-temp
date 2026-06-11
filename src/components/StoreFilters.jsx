@@ -56,10 +56,6 @@ export default function StoreFilters({
     { label: "مکمل کیا گیا", value: "FULFILLED" },
     { label: "وصول ہو گیا", value: "RECEIVED" },
     { label: "متنازع", value: "DISPUTED" },
-    // { label: "واپسی کی منتظر", value: "RECEIVED"},
-    // ...(pageType === "mainSubStoreReqs"
-    //   ? [{ label: "واپس کر دیا گیا", value: "RETURN_BACK" }]
-    //   : [])
   ];
 
   const selectedLabel = categories.find((c) => c.value === filterStatus)?.label || "تمام حالتیں";

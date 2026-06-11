@@ -12,6 +12,8 @@ import {
 import useErrorHandler from "../useErrorHandler";
 import Toast from "../Toast";
 import { useOutletContext } from "react-router-dom";
+import { ITEM_CONDITIONS } from "../../services/constants";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 const EMPTY_NEW_ITEM = {
   item_no: "",
@@ -53,6 +55,9 @@ const AddItemsAndCategories = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [showUOMDropDown, setShowUOMDropDown] = useState(false);
   const [showInputs, setShowInputs] = useState(false);
+  const [showItemTypeDropdown, setShowItemTypeDropdown] = useState(false);
+  const [randomNumberLoading, setRandomNumberLoading] = useState(false);
+  const [showStoreDropdown, setShowStoreDropdown] = useState(false);
 
   const { showToast } = useOutletContext();
 
@@ -78,10 +83,18 @@ const AddItemsAndCategories = () => {
 
   let latestRequest = useRef(0);
   const generateRandomItemNo = async (type) => {
-    const reqId = ++latestRequest.current;
-    const response = await generateRandomNumber({ type });
-    if (reqId !== latestRequest.current) return;
-    return response.data.data;
+    try {
+      setRandomNumberLoading(true);
+      const reqId = ++latestRequest.current;
+      const response = await generateRandomNumber({ type });
+      if (reqId !== latestRequest.current) return;
+      return response.data.data;
+    } catch (e) {
+      const msg = handleError(e, "Failed to generate item number");
+      showToast(msg, "error");
+    } finally {
+      setRandomNumberLoading(false);
+    }
   };
 
   const regenerateItemNo = async () => {
@@ -137,7 +150,7 @@ const AddItemsAndCategories = () => {
 
     setItemErrors({});
     setSubmitLoading(true);
-    try {      
+    try {
       await createItem(newItem);
       showToast("آئٹم شامل کر دیا گیا ہے", "success");
       const itemNo = await generateRandomItemNo(item_type);
@@ -241,9 +254,10 @@ const AddItemsAndCategories = () => {
                     <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                       اشیاء نمبر{" "}
                     </label>
-                    <div className="flex gap-2">
+                    <div className="relative">
                       <input
                         value={newItem.item_no}
+                        readOnly
                         placeholder="خودکارتیارکردہ،آئٹم کی قسم منتخب کریں"
                         onChange={(e) => {
                           setNewItem((f) => ({
@@ -252,12 +266,16 @@ const AddItemsAndCategories = () => {
                           }));
                           setItemErrors((f) => ({ ...f, item_no: undefined }));
                         }}
-                        className={`flex-1 bg-white border rounded px-3 py-2 text-emerald-600 font-mono font-bold text-sm focus:outline-none focus:border-emerald-500 ${
-                          itemErrors.item_no
-                            ? "border-red-400"
-                            : "border-gray-300"
-                        }`}
+                        className={`w-full bg-white border rounded px-3 py-2 pr-10 text-emerald-600 font-mono font-bold text-sm focus:outline-none focus:border-emerald-500 ${itemErrors.item_no
+                          ? "border-red-400"
+                          : "border-gray-300"
+                          }`}
                       />
+                      {randomNumberLoading && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
                     </div>
                     {fieldError("item_no")}
                   </div>
@@ -313,32 +331,79 @@ const AddItemsAndCategories = () => {
                   </div>
 
                   <div>
-                    <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
-                      آئٹم کی قسم
-                    </label>
-                    <select
-                      value={newItem.item_type}
-                      onChange={async (e) => {
-                        const selectedType = e.target.value;
-                        const newItemNo =
-                          await generateRandomItemNo(selectedType);
-                        if (!newItemNo) return;
-                        setNewItem((f) => ({
-                          ...f,
-                          item_type: selectedType,
-                          item_uom:
-                            selectedType === "REUSABLE" ? "" : f.item_uom,
-                          item_no: newItemNo,
-                        }));
-                        setItemErrors((f) => ({ ...f, item_type: undefined }));
-                      }}
-                      className={inputCls("item_type")}
-                    >
-                      <option value="">آئٹم کی قسم</option>
-                      <option value="USABLE">USABLE</option>
-                      <option value="REUSABLE">REUSABLE</option>
-                    </select>
-                    {fieldError("item_type")}
+                    {showItemTypeDropdown && (
+                      <div className="fixed inset-0 z-40" onClick={() => setShowItemTypeDropdown((prev) => !prev)} />
+                    )}
+                    <div className="relative min-w-45">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowItemTypeDropdown((prev) => !prev)
+                          setShowStoreDropdown(false)
+                        }}
+                        className={`${inputCls("item_type")} flex items-center justify-between`}
+                      >
+                        <span>
+                          {newItem.item_type
+                            ? ITEM_CONDITIONS.find((r) => r.value === newItem.item_type)?.label
+                            : "آئٹم کی قسم"}
+                        </span>
+
+                        {showItemTypeDropdown ? (
+                          <ChevronUp size={16} className="text-gray-400" />
+                        ) : (
+                          <ChevronDown size={16} className="text-gray-400" />
+                        )}
+                      </button>
+
+                      {showItemTypeDropdown && (
+                        <div
+                          className=" absolute z-50 mt-2 w-full max-h-48 bg-white border border-gray-200 rounded-xl shadow-xl overflow-y-auto">
+                          <button
+                            className=" w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-sm"
+                            onClick={() => {
+                              setShowItemTypeDropdown(false);
+
+                              setNewItem((f) => ({
+                                ...f,
+                                item_type: "",
+                                item_no: "",
+                              }));
+                            }}
+                          >
+                            آئٹم کی قسم
+                          </button>
+
+                          {ITEM_CONDITIONS.map((r) => (
+                            <button
+                              key={r.value}
+                              onClick={async () => {
+                                setShowItemTypeDropdown(false);
+                                const selectedType = r.value
+                                const newItemNo = await generateRandomItemNo(selectedType);
+                                if (!newItemNo) return;
+                                setNewItem((f) => ({
+                                  ...f,
+                                  item_type: selectedType,
+                                  item_uom:
+                                    selectedType === "REUSABLE" ? "" : f.item_uom,
+                                  item_no: newItemNo,
+                                }));
+                                setItemErrors((f) => ({ ...f, item_type: undefined }));
+                              }}
+                              className={` w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${newItem.item_type === r.value
+                                ? "bg-emerald-100 text-emerald-700 font-semibold"
+                                : "text-gray-700"
+                                }
+                              `}
+                            >
+                              {r.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {fieldError("item_type")}
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div id="uom-dropdown-wrapper" className="relative">
@@ -358,7 +423,6 @@ const AddItemsAndCategories = () => {
                           setItemErrors((f) => ({ ...f, item_uom: undefined }));
                         }}
                         placeholder="Type UOM"
-                        // className={inputCls("item_uom")}
                         className={`w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 disabled:bg-gray-100 ${itemErrors.item_uom ? "border-red-400" : "border-gray-300"
                           }`}
                         onFocus={() => setShowUOMDropDown(true)}
@@ -464,25 +528,90 @@ const AddItemsAndCategories = () => {
                   </div>
 
                   <div>
-                    <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
-                      اسٹور*
-                    </label>
-                    <select
-                      value={newItem.store_id}
-                      onChange={(e) => {
-                        setNewItem((f) => ({ ...f, store_id: e.target.value }));
-                        setItemErrors((f) => ({ ...f, store_id: undefined }));
-                      }}
-                      className={inputCls("store_id")}
-                    >
-                      <option value="">اسٹور منتخب کریں</option>
-                      {mainStores.map((s) => (
-                        <option key={s.store_id} value={s.store_id}>
-                          {s.store_name}
-                        </option>
-                      ))}
-                    </select>
-                    {fieldError("store_id")}
+                    <div>
+                      <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
+                        اسٹور*
+                      </label>
+
+                      {showStoreDropdown && (
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setShowStoreDropdown(false)}
+                        />
+                      )}
+
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowStoreDropdown((prev) => !prev)
+                            setShowItemTypeDropdown(false)
+                          }}
+                          className={`${inputCls("store_id")} flex items-center justify-between`}
+                        >
+                          <span>
+                            {newItem.store_id
+                              ? mainStores.find(
+                                (s) => s.store_id === newItem.store_id
+                              )?.store_name
+                              : "اسٹور منتخب کریں"}
+                          </span>
+
+                          {showStoreDropdown ? (
+                            <ChevronUp size={16} className="text-gray-400" />
+                          ) : (
+                            <ChevronDown size={16} className="text-gray-400" />
+                          )}
+                        </button>
+
+                        {showStoreDropdown && (
+                          <div className="absolute z-50 mt-2 w-full max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-xl">
+                            <button
+                              type="button"
+                              className="w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50"
+                              onClick={() => {
+                                setShowStoreDropdown(false);
+
+                                setNewItem((f) => ({
+                                  ...f,
+                                  store_id: "",
+                                }));
+                              }}
+                            >
+                              اسٹور منتخب کریں
+                            </button>
+
+                            {mainStores.map((s) => (
+                              <button
+                                key={s.store_id}
+                                type="button"
+                                onClick={() => {
+                                  setShowStoreDropdown(false);
+
+                                  setNewItem((f) => ({
+                                    ...f,
+                                    store_id: s.store_id,
+                                  }));
+
+                                  setItemErrors((f) => ({
+                                    ...f,
+                                    store_id: undefined,
+                                  }));
+                                }}
+                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${newItem.store_id === s.store_id
+                                    ? "bg-emerald-100 text-emerald-700 font-semibold"
+                                    : "text-gray-700"
+                                  }`}
+                              >
+                                {s.store_name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {fieldError("store_id")}
+                      </div>
+                    </div>
                   </div>
                 </>
               )}
@@ -512,7 +641,7 @@ const AddItemsAndCategories = () => {
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     strokeWidth={2}
-                  > 
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"

@@ -9,6 +9,7 @@ import {
   labelClass,
 } from "../../services/constants";
 import useErrorHandler from "../useErrorHandler";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 const addUser = (data) => API.post("/users/addUser", data);
 
@@ -19,12 +20,15 @@ export default function AddUserTab() {
     name: "",
     email: "",
     role: "",
+    phone: "",
     store_id: "",
     password: "",
     confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [showStoreTypeDropdown, setShowStoreTypeDropdown] = useState(false);
+  const [showStoreDropdown, setShowStoreDropdown] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleError = useErrorHandler();
@@ -50,7 +54,7 @@ export default function AddUserTab() {
     if (password !== confirmPassword)
       return showToast("پاس ورڈ میچ نہیں کر رہے", "error");
     if (password.length < 6)
-      return showToast("پاس ورڈ کم از کم 6 حروف پر مشتمل ہونا چاہیے","warn");
+      return showToast("پاس ورڈ کم از کم 6 حروف پر مشتمل ہونا چاہیے", "warn");
 
     setLoading(true);
     try {
@@ -60,6 +64,7 @@ export default function AddUserTab() {
         name: "",
         email: "",
         role: "",
+        phone: "",
         store_id: "",
         password: "",
         confirmPassword: "",
@@ -80,43 +85,129 @@ export default function AddUserTab() {
 
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <div>
+          {showStoreTypeDropdown && (
+            <div className="absolute inset-0" onClick={() => setShowStoreTypeDropdown((prev) => !prev)} />
+          )}
+          <div className="relative min-w-45">
             <label className={labelClass}>شعبہ</label>
-            <select
-              name="role"
-              value={form.role}
-              onChange={handleChange}
-              className={inputClass}
-            >
-              <option value="">شعبہ منتخب کریں</option>
-              {ROLES.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowStoreTypeDropdown((prev) => !prev)
+              }}
+              className=" w-full h-10 px-3 flex items-center justify-between bg-white border border-gray-300 rounded-lg shadow-sm hover:border-emerald-400 focus:border-emerald-500 transition-all text-sm text-gray-700">
+              <span>
+                {form.role ? ROLES.find((r) => r.value === form.role)?.label : "شعبہ منتخب کریں"}
+              </span>
+
+              {showStoreTypeDropdown ? (
+                <ChevronUp size={16} className="text-gray-400" />
+              ) : (
+                <ChevronDown size={16} className="text-gray-400" />
+              )}
+            </button>
+
+            {showStoreTypeDropdown && (
+              <div
+                className=" absolute z-50 mt-2 w-full max-h-48 bg-white border border-gray-200 rounded-xl shadow-xl overflow-y-auto">
+                <button
+                  className=" w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-sm"
+                  onClick={() => {
+                    handleChange({ target: { name: "role", value: "" } });
+                    setShowStoreTypeDropdown(false);
+                  }}
+                >
+                  شعبہ منتخب کریں
+                </button>
+
+                {ROLES.map((r) => (
+                  <button
+                    key={r.value}
+                    onClick={() => {
+                      const storesForRole = stores.filter(
+                        (s) => s.store_type === r.value
+                      );
+
+                      setForm((prev) => ({
+                        ...prev,
+                        role: r.value,
+                        store_id: storesForRole[0]?.store_id || "",
+                      }));
+
+                      setShowStoreTypeDropdown(false);
+                    }}
+                    className={` w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${form.role === r.value
+                      ? "bg-emerald-100 text-emerald-700 font-semibold"
+                      : "text-gray-700"
+                      }
+          `}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <div>
+          {showStoreDropdown && (
+            <div className="absolute inset-0" onClick={() => setShowStoreDropdown((prev) => !prev)} />
+          )}
+
+          <div className="relative min-w-50">
             <label className={labelClass}>اسٹور</label>
-            <select
-              name="store_id"
-              value={form.store_id}
-              onChange={handleChange}
+            <button
+              type="button"
+              onClick={() => {
+                setShowStoreDropdown((prev) => !prev)
+                setShowStoreTypeDropdown(false)
+              }}
               disabled={!form.role}
-              className={
-                inputClass +
-                (!form.role ? " opacity-50 cursor-not-allowed" : "")
-              }
-            >
-              <option value="">
-                {form.role ? "Select Store" : "Select role first"}
-              </option>
-              {filteredStores.map((s) => (
-                <option key={s.store_id} value={s.store_id}>
-                  {s.store_name}
-                </option>
-              ))}
-            </select>
+              className=" w-full h-10 px-3 flex items-center justify-between bg-white border border-gray-300 rounded-lg shadow-sm hover:border-emerald-400 focus:border-emerald-500 transition-all text-sm text-gray-700">
+              <span>
+                {!form.role
+                  ? "پہلے شعبہ منتخب کریں"
+                  : filteredStores.find(
+                    (s) => s.store_id === form.store_id
+                  )?.store_name || "اسٹور منتخب کریں"}
+              </span>
+              {showStoreDropdown ? (
+                <ChevronUp size={16} className="text-gray-400" />
+              ) : (
+                <ChevronDown size={16} className="text-gray-400" />
+              )}
+            </button>
+
+            {showStoreDropdown && (
+              <div
+                className=" absolute max-h-48 z-50 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden overflow-y-auto">
+                <button
+                  className={`w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-sm ${!form.role ? "cursor-not-allowed text-gray-300" : "text-gray-700"}`}
+                  onClick={() => {
+                    handleChange({ target: { name: "store_id", value: "" } });
+                    setShowStoreDropdown(false);
+                  }}
+                  disabled={!form.role}
+                >
+                  {form.role ? "اسٹور منتخب کریں" : "پہلے شعبہ منتخب کریں"}
+                </button>
+                {filteredStores.map((s) => (
+                  <button
+                    key={s.store_id}
+                    onClick={() => {
+                      handleChange({ target: { name: "store_id", value: s.store_id } });
+                      setShowStoreDropdown(false);
+                    }}
+                    className={` w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${form.store_id === s.store_id
+                      ? "bg-emerald-100 text-emerald-700 font-semibold"
+                      : "text-gray-700"
+                      }
+          `}
+                  >
+                    {s.store_name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -141,6 +232,25 @@ export default function AddUserTab() {
               value={form.email}
               onChange={handleChange}
               placeholder="ahmed@company.com"
+              className={inputClass}
+            />
+          </div>
+        </div>
+
+        <div>
+          {/* Phone Field with Numeric Enforcement */}
+          <div>
+            <label className={labelClass}>فون</label>
+            <input
+              name="phone"
+              inputMode="numeric"
+              maxLength={11}
+              value={form.phone}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, "");
+                setForm((f) => ({ ...f, phone: val }));
+              }}
+              placeholder="03451234567"
               className={inputClass}
             />
           </div>

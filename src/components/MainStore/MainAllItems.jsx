@@ -7,6 +7,7 @@ import CheckLoadingAndError from "../CheckLoadingAndError";
 import AddItemModal from "../AddItemModal";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import TableHead from "../TableHead";
+import { ITEM_CONDITIONS } from "../../services/constants";
 
 export default function MainAllItems({
   allItems,
@@ -30,6 +31,7 @@ export default function MainAllItems({
 }) {
   const [showAddItem, setShowAddItem] = useState(false);
   const [showCategory, setShowCategory] = useState(false);
+  const [showItemTypeDropdown, setShowItemTypeDropdown] = useState(false);
 
   const { auth } = useAuth();
   const handleError = useErrorHandler();
@@ -49,8 +51,10 @@ export default function MainAllItems({
                 setCurrentPage(1);
               }}
               placeholder="آئٹم کے نام یا نمبر سے تلاش کریں..."
-              className="bg-white border leading-none border-gray-300 rounded px-3 py-3 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-64 shadow-sm"
+              className="bg-white border leading-none border-gray-300 rounded px-3 py-3 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
             />
+
+            {/* Category drop down */}
 
             {showCategory && (
               <div className="absolute inset-0" onClick={() => setShowCategory((prev) => !prev)} />
@@ -72,7 +76,7 @@ export default function MainAllItems({
                     : "تمام زمرے"
                 }
                 onClick={() => setShowCategory((prev) => !prev)}
-                className="bg-white leading-none border w-full border-gray-300 rounded pl-3 pr-10 py-3 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 cursor-pointer shadow-sm"
+                className="bg-white leading-none rounded-lg border w-full border-gray-300 pl-3 pr-10 py-3 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 cursor-pointer shadow-sm"
               />
 
               {/* Arrow */}
@@ -86,7 +90,7 @@ export default function MainAllItems({
 
               {/* Dropdown */}
               {showCategory && (
-                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
 
                   {/* Default option */}
                   <button
@@ -118,18 +122,71 @@ export default function MainAllItems({
               )}
             </div>
 
-            <select
-              value={filterType}
-              onChange={(e) => {
-                setFilterType(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-white border border-gray-300 rounded px-3 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm mr-2"
-            >
-              <option value="">آئٹم کی قسم</option>
-              <option value="USABLE">USABLE</option>
-              <option value="REUSABLE">REUSABLE</option>
-            </select>
+            {/* Category drop down end  */}
+
+
+            {/* Item type drop down */}
+
+            {showItemTypeDropdown && (
+              <div className="absolute inset-0" onClick={() => setShowItemTypeDropdown((prev) => !prev)} />
+            )}
+            <div className="relative min-w-45">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowItemTypeDropdown((prev) => !prev)
+                  setShowCategory(false);
+                }}
+                className=" w-full h-10.5 px-3 flex items-center justify-between bg-white border border-gray-300 rounded-lg shadow-sm hover:border-emerald-400 focus:border-emerald-500 transition-all text-sm text-gray-700">
+                <span>
+                  {filterType
+                    ? ITEM_CONDITIONS.find((r) => r.value === filterType)?.label
+                    : "آئٹم کی قسم"}
+                </span>
+
+                {showItemTypeDropdown ? (
+                  <ChevronUp size={16} className="text-gray-400" />
+                ) : (
+                  <ChevronDown size={16} className="text-gray-400" />
+                )}
+              </button>
+
+              {showItemTypeDropdown && (
+                <div
+                  className=" absolute z-50 mt-2 w-full max-h-48 bg-white border border-gray-200 rounded-xl shadow-xl overflow-y-auto">
+                  <button
+                    className=" w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-sm"
+                    onClick={() => {
+                      setFilterType("");
+                      setShowItemTypeDropdown(false);
+                      setShowCategory(false);
+                    }}
+                  >
+                    آئٹم کی قسم
+                  </button>
+
+                  {ITEM_CONDITIONS.map((r) => (
+                    <button
+                      key={r.value}
+                      onClick={() => {
+                        setFilterType(r.value);
+                        setShowItemTypeDropdown(false);
+                      }}
+                      className={` w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${filterType === r.value
+                        ? "bg-emerald-100 text-emerald-700 font-semibold"
+                        : "text-gray-700"
+                        }
+                      `}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Item type drop down end */}
+
             {(search || filterCategory || filterType) && (
               <button
                 onClick={() => {

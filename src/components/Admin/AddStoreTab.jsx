@@ -13,7 +13,6 @@ export default function AddStoreTab() {
     store_code: "",
     store_name: "",
     address: "",
-    phone: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -38,7 +37,7 @@ export default function AddStoreTab() {
       showToast(`اسٹور کامیابی سے بن گیا ہے`, "success");
 
       // Reset form
-      setForm({ store_code: "", store_name: "", address: "", phone: "" });
+      setForm({ store_code: "", store_name: "", address: "",});
 
       // 3. Refresh the global stores list in Admin.jsx
       if (loadStores) await loadStores();
@@ -87,24 +86,6 @@ export default function AddStoreTab() {
             value={form.address}
             onChange={handleChange}
             placeholder="e.g. Block 5, Karachi"
-            className={inputClass}
-          />
-        </div>
-
-        {/* Phone Field with Numeric Enforcement */}
-        <div>
-          <label className={labelClass}>فون</label>
-          <input
-            name="phone"
-            inputMode="numeric"
-            maxLength={11}
-            value={form.phone}
-            onChange={(e) => {
-              // Ensure only numbers are entered
-              const val = e.target.value.replace(/\D/g, "");
-              setForm((f) => ({ ...f, phone: val }));
-            }}
-            placeholder="e.g. 03451234567"
             className={inputClass}
           />
         </div>

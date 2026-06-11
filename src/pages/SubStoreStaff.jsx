@@ -534,17 +534,18 @@ export default function SubStore() {
         <div className="Temp-downloader flex justify-center items-center gap-4">
           <div className="">
             <ExcelDownloaderWithDates
+            data={requests}
               dateKey="created_at"
               fileName="requests"
               columns={[
                 { key: "request_id", label: "درخواست نمبر" },
+                { key: "item_type", label: "نوع" },
                 { key: "requested_by_name", label: "درخواست کنندہ" },
                 {
                   key: "created_at",
                   label: "درخواست کی تاریخ",
                   format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                 },
-                { key: "status", label: "حالت" },
                 {
                   key: "approved_at",
                   label: "منظوری کی تاریخ",
@@ -555,6 +556,7 @@ export default function SubStore() {
                   label: "تکمیل کی تاریخ",
                   format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                 },
+                { key: "status", label: "حالت" },
               ]}
             />
           </div>

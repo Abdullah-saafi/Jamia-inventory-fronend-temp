@@ -8,12 +8,14 @@ import {
   processReturnRequest,
 } from "../../services/api";
 import TableHead from "../TableHead";
+import { RETURN_STATUSES } from "../../services/constants";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 const STATUS_COLORS = {
   PENDING: "bg-yellow-100 text-yellow-700 border-yellow-200",
   ADDED_TO_STOCK: "bg-emerald-100 text-emerald-700 border-emerald-200",
   SCRAPPED: "bg-red-100 text-red-700 border-red-200",
-  PARTIALLY_SCRAPPED: "bg-orange-100 text-orange-700 border-orange-200",
+  SCRAPPED_AND_STOCKED: "bg-orange-100 text-orange-700 border-orange-200",
 };
 
 export default function MainStoreProcessReturns({ showToast }) {
@@ -29,6 +31,8 @@ export default function MainStoreProcessReturns({ showToast }) {
   const [modalLoading, setModalLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [itemActions, setItemActions] = useState({});
+  const [showDropdown, setShowDropdown] = useState(false);
+
 
   useEffect(() => {
     fetchReturns();
@@ -142,17 +146,57 @@ export default function MainStoreProcessReturns({ showToast }) {
 
       {/* Filter */}
       <div className="flex items-center gap-3 mb-4">
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm"
-        >
-          <option value="">تمام اسٹیٹس</option>
-          <option value="PENDING">زیر التواء</option>
-          <option value="ADDED_TO_STOCK">اسٹاک میں شامل کر دیا گیا</option>
-          <option value="SCRAPPED">اسکریپ کر دیا گیا</option>
-          <option value="SCRAPPED_AND_STOCKED">اسکریپ شدہ اور اسٹاک میں محفوظ</option>
-        </select>
+        {showDropdown && (
+          <div className="absolute inset-0" onClick={() => setShowDropdown((prev) => !prev)} />
+        )}
+
+        <div className="relative min-w-50">
+          <button
+            type="button"
+            onClick={() => {
+              setShowDropdown((prev) => !prev)
+            }}
+            className=" w-full h-10 px-3 flex items-center justify-between bg-white border border-gray-300 rounded-lg shadow-sm hover:border-emerald-400 focus:border-emerald-500 transition-all text-sm text-gray-700">
+            <span>{RETURN_STATUSES.find((s) => s.value === filterStatus)?.label || "تمام اسٹیٹس"}</span>
+
+            {showDropdown ? (
+              <ChevronUp size={16} className="text-gray-400" />
+            ) : (
+              <ChevronDown size={16} className="text-gray-400" />
+            )}
+          </button>
+
+          {showDropdown && (
+            <div
+              className=" absolute max-h-48 z-50 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden overflow-y-auto">
+              <button
+                className=" w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-sm"
+                onClick={() => {
+                  setFilterStatus("");
+                  setShowDropdown(false);
+                }}
+              >
+                تمام اسٹیٹس
+              </button>
+              {RETURN_STATUSES.map((n) => (
+                <button
+                  key={n.value}
+                  onClick={() => {
+                    setFilterStatus(n.value);
+                    setShowDropdown(false);
+                  }}
+                  className={` w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${filterStatus === n.value
+                    ? "bg-emerald-100 text-emerald-700 font-semibold"
+                    : "text-gray-700"
+                    }
+          `}
+                >
+                  {n.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         {filterStatus && (
           <button
             onClick={() => setFilterStatus("")}
@@ -240,7 +284,7 @@ export default function MainStoreProcessReturns({ showToast }) {
       {(selected || modalLoading) && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={closeModal}>
           {/* <div className="absolute inset-0 z-40 bg-black/30" onClick={closeModal} /> */}
-          <div onClick={(e) => {e.stopPropagation()}} 
+          <div onClick={(e) => { e.stopPropagation() }}
             className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
@@ -284,8 +328,8 @@ export default function MainStoreProcessReturns({ showToast }) {
                         <div
                           key={item.return_item_id}
                           className={`border rounded-lg p-4 transition-colors ${isScrap
-                              ? "border-red-200 bg-red-50"
-                              : "border-emerald-200 bg-emerald-50"
+                            ? "border-red-200 bg-red-50"
+                            : "border-emerald-200 bg-emerald-50"
                             }`}
                         >
                           <div className="flex items-start justify-between gap-4">
@@ -304,6 +348,9 @@ export default function MainStoreProcessReturns({ showToast }) {
                                   مقدار: {item.return_qty} {item.item_uom}
                                 </span>
                               </div>
+                              <span className="font-mono font-bold text-sm text-gray-700">
+                                کارروائی کی قسم: {item.action_type}
+                              </span>
                             </div>
 
                             {/* Only show action buttons if PENDING */}
@@ -317,8 +364,8 @@ export default function MainStoreProcessReturns({ showToast }) {
                                     )
                                   }
                                   className={`text-xs font-semibold px-3 py-1.5 rounded border transition-colors ${action === "ADD_TO_STOCK"
-                                      ? "bg-emerald-600 text-white border-emerald-600"
-                                      : "bg-white text-emerald-600 border-emerald-300 hover:bg-emerald-50"
+                                    ? "bg-emerald-600 text-white border-emerald-600"
+                                    : "bg-white text-emerald-600 border-emerald-300 hover:bg-emerald-50"
                                     }`}
                                 >
                                   ✓ اسٹاک میں
@@ -328,8 +375,8 @@ export default function MainStoreProcessReturns({ showToast }) {
                                     setAction(item.return_item_id, "SCRAP")
                                   }
                                   className={`text-xs font-semibold px-3 py-1.5 rounded border transition-colors ${action === "SCRAP"
-                                      ? "bg-red-600 text-white border-red-600"
-                                      : "bg-white text-red-500 border-red-300 hover:bg-red-50"
+                                    ? "bg-red-600 text-white border-red-600"
+                                    : "bg-white text-red-500 border-red-300 hover:bg-red-50"
                                     }`}
                                 >
                                   ✕ اسکریپ

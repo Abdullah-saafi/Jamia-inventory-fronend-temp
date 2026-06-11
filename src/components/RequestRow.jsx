@@ -120,9 +120,6 @@ export default function RequestRow({
             </td>
           </>
         )}
-        <td className="px-4 py-3">
-          <StatusBadge status={r.status} />
-        </td>
         {(pageType === "subStore" || pageType === "subStoreManager" || pageType === "headOffice" || pageType === "mainStoreApprover" || pageType === "mainReqToHO" || pageType === "pettyCash") && (
           <>
             <td className="px-4 py-3 ">
@@ -133,6 +130,9 @@ export default function RequestRow({
             </td>
           </>
         )}
+        <td className="px-4 py-3">
+          <StatusBadge status={r.status} />
+        </td>
         <td className="px-4 py-3 text-right">
           <div className="flex items-center justify-end gap-2">
             {(needsGRN && (pageType === "subStore" || pageType === "mainReqToHO")) && (
@@ -144,18 +144,6 @@ export default function RequestRow({
                 {grnLoading ? "…" : "ڈلیوری کی تصدیق"}
               </button>
             )}
-            {/* {isReturnable && pageType === "subStore" && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  returnItem(r.request_id,)
-                }}
-                disabled={returnModalLoading}
-                className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
-              >
-                {returnModalLoading ? "…" : "Return Items"}
-              </button>
-            )} */}
             {((pageType === "subStoreManager" || pageType === "mainStoreApprover") && r.status === "PENDING") && (
               <>
                 <button
