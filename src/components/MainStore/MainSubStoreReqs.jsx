@@ -53,7 +53,10 @@ export default function MainSubStoreReqs({
   loading,
   mainStoreError,
   mainStores,
-  toStore
+  toStore,
+  setSearch,
+  search,
+  setDebouncedSearch,
 }) {
   const [reqFilter, setReqFilter] = useState("");
   const [detail, setDetail] = useState(null);
@@ -115,14 +118,7 @@ export default function MainSubStoreReqs({
         showToast("Cannot fulfill — dispute resolution required", "error");
         return;
       }
-
-      const fullfilldata = {
-        ref_no: "",
-        vehicle_no: "",
-        driver_name: "",
-        driver_no: "",
-      }
-      await fulfillRequest(requestId, fullfilldata);
+      await fulfillRequest(requestId, { fulfilled_by_name: auth.username });
       showToast("درخواست پوری کر دی گئی اور انوینٹری اپڈیٹ ہو گئی ہے", "success");
       setDetail(null);
       onRefresh();
@@ -202,18 +198,6 @@ export default function MainSubStoreReqs({
         ),
       };
 
-      // const formData = new FormData();
-      // formData.append("from_store_id", itemForm.from_store_id);
-      // formData.append("to_store_id", itemForm.to_store_id);
-      // formData.append("requested_by_name", itemForm.requested_by_name);
-      // formData.append("notes", itemForm.notes);
-      // formData.append("is_emergency", itemForm.is_emergency);
-      // formData.append("direction", payload.direction);
-      // formData.append("items", JSON.stringify(payload.items));
-      // itemForm.images.forEach((img) => {
-      //   formData.append("images", img);
-      // });
-
       await createRequest(payload);
       showToast("Request submitted successfully", "success");
       setShowInstantRequestModal(false)
@@ -256,21 +240,52 @@ export default function MainSubStoreReqs({
         }}
       />
 
-      <div className="flex h-full py-2 items-end justify-between">
+      <div className="flex py-2 items-end justify-between">
         <div>
-          <StoreFilters
-            filterStatus={reqFilter}
-            setFilterStatus={(v) => {
-              setReqFilter(v);
-              setCurrentPage(1);
-              onFilterChange(v);
-            }}
-            pageType={pageType}
-          />
+          <div className="flex gap-2">
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+            />
+            <StoreFilters
+              filterStatus={reqFilter}
+              setFilterStatus={(v) => {
+                setReqFilter(v);
+                setCurrentPage(1);
+                onFilterChange(v);
+              }}
+              pageType={pageType}
+            />
+            {(search || reqFilter) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setReqFilter("");
+                  setCurrentPage(1);
+                  setDebouncedSearch("")
+
+                }}
+                className="text-gray-500 hover:text-gray-800 text-sm px-3 h-7.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
           <button
             onClick={() => {
-              setCurrentPage(1);
               onRefresh();
+              setCurrentPage(1);
+              setSearch("");
+              setReqFilter("");
+              setCurrentPage(1);
+              setDebouncedSearch("")
+
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >
@@ -285,27 +300,17 @@ export default function MainSubStoreReqs({
               dateKey="created_at"
               fileName={auth.username}
               columns={[
-                { key: "request_id", label: "درخواست نمبر" },
-                { key: "i.item_no", label: "test" },
-                // {}
-                { key: "requested_by_name", label: "درخواست کنندہ" },
-                {
-                  key: "created_at",
-                  label: "درخواست کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                { key: "status", label: "حالت" },
-                {
-                  key: "approved_at",
-                  label: "منظوری کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                {
-                  key: "fulfilled_at",
-                  label: "تکمیل کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
+                { key: "request_no", label: "درخواست نمبر", format: (v) => (v ? v : "—") },
+                { key: "from_store_name", label: "اسٹور سے", format: (v) => (v ? v : "—") },
+                { key: "to_store_name", label: "مرکزی اسٹور کو", format: (v) => (v ? v : "—") },
+                { key: "requested_by_name", label: "درخواست کنندہ", format: (v) => (v ? v : "—") },
+                { key: "approved_by_name", label: "منظور کنندہ", format: (v) => (v ? v : "—") },
+                { key: "fulfilled_by_name", label: "مکمل کرنے والا", format: (v) => (v ? v : "—") },
+                { key: "created_at", label: "درخواست کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"), },
+                { key: "fulfilled_at", label: "تکمیل کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"), },
+                { key: "status", label: "حالت", format: (v) => (v ? v : "—") },
               ]}
+              pageLoading={loading}
             />
           </div>
         </div>

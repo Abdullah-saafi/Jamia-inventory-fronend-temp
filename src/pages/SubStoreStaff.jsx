@@ -63,6 +63,7 @@ export default function SubStore() {
   const [usableItems, setUsableItems] = useState([]);
   const [creating, setCreating] = useState(false);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState(10);
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
@@ -70,6 +71,7 @@ export default function SubStore() {
   const [returnModal, setReturnModal] = useState(false);
   const [returnModalLoading, setReturnModalLoading] = useState(false);
   const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [username, setUsername] = useState("");
   const [returnItemData, setReturnItemData] = useState([]);
   const [returnBackModal, setReturnBackModal] = useState(false);
@@ -156,6 +158,7 @@ export default function SubStore() {
         direction: "SUB_TO_MAIN",
         page,
         limit: pageSize,
+        search: debouncedSearch,
       };
 
       if (filterStatus) params.status = filterStatus;
@@ -218,7 +221,7 @@ export default function SubStore() {
     if (auth.store_id || auth.role === "super admin") {
       load();
     }
-  }, [filterStatus, filterStore, auth.store_id, page, pageSize]);
+  }, [filterStatus, filterStore, auth.store_id, page, pageSize, debouncedSearch]);
 
   useEffect(() => {
     fetchStoreData();
@@ -229,6 +232,11 @@ export default function SubStore() {
       setItemForm((f) => ({ ...f, to_store_id: mainStores[0].store_id }));
     }
   }, [mainStores]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // ─── Detail ───────────────────────────────────────────────────────────────
   const openDetail = async (r) => {
@@ -502,28 +510,59 @@ export default function SubStore() {
         }}
       />
       {/* ── Filters ── */}
-      <div className="flex h-full py-2  items-end justify-between">
+      <div className="flex py-2 items-end justify-between">
         <div className="Filter">
-          <StoreFilters
-            filterStatus={filterStatus}
-            setFilterStatus={(v) => {
-              setFilterStatus(v);
-              setPage(1);
-            }}
-            pageType={pageType}
-            filterStore={filterStore}
-            setFilterStore={(v) => {
-              setFilterStore(v);
-              setPage(1);
-            }}
-            role={auth.role}
-            subStores={subStores}
-            loading={pageLoading}
-          />
+          <div className="flex gap-2">
+
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+            />
+            <StoreFilters
+              filterStatus={filterStatus}
+              setFilterStatus={(v) => {
+                setFilterStatus(v);
+                setPage(1);
+              }}
+              pageType={pageType}
+              filterStore={filterStore}
+              setFilterStore={(v) => {
+                setFilterStore(v);
+                setPage(1);
+              }}
+              role={auth.role}
+              subStores={subStores}
+              loading={pageLoading}
+            />
+            {(search || filterStatus) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilterStatus("");
+                  setPage(1);
+                  setDebouncedSearch("")
+                }}
+                className="text-gray-500 hover:text-gray-800 text-sm px-3 h-7.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
           <button
             onClick={() => {
               load();
               fetchStoreData();
+              setSearch("");
+              setFilterStatus("");
+              setPage(1);
+              setDebouncedSearch("")
+
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto hover:bg-gray-50 shadow-sm"
           >
@@ -534,30 +573,19 @@ export default function SubStore() {
         <div className="Temp-downloader flex justify-center items-center gap-4">
           <div className="">
             <ExcelDownloaderWithDates
-            data={requests}
+              data={requests}
               dateKey="created_at"
-              fileName="requests"
+              fileName={auth.username}
               columns={[
-                { key: "request_id", label: "درخواست نمبر" },
-                { key: "item_type", label: "نوع" },
-                { key: "requested_by_name", label: "درخواست کنندہ" },
-                {
-                  key: "created_at",
-                  label: "درخواست کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                {
-                  key: "approved_at",
-                  label: "منظوری کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                {
-                  key: "fulfilled_at",
-                  label: "تکمیل کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                { key: "status", label: "حالت" },
+                { key: "request_no", label: "درخواست نمبر", format: (v) => (v ? v : "—") },
+                { key: "item_type", label: "نوع", format: (v) => (v ? v : "—") },
+                { key: "requested_by_name", label: "درخواست کنندہ", format: (v) => (v ? v : "—") },
+                { key: "created_at", label: "درخواست کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"), },
+                { key: "approved_at", label: "منظوری کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"), },
+                { key: "fulfilled_at", label: "تکمیل کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"), },
+                { key: "status", label: "حالت", format: (v) => (v ? v : "—") },
               ]}
+              pageLoading={pageLoading}
             />
           </div>
 

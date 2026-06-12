@@ -109,7 +109,7 @@ export default function PettyCash() {
     const handleFulfill = async (id, ref_no) => {
         setFulfilling(id);
         try {
-            await fulfillRequest(id, { ref_no });
+            await fulfillRequest(id, { ref_no, fulfilled_by_name: auth.username });
             showToast(fulfillMode === "refulfill"
                 ? "دوبارہ روانہ کر دیا گیا ہے — مین اسٹور درست شدہ ڈیلیوری کی تصدیق کرے گا"
                 : "درخواست پوری کر دی گئی ہے — مین اسٹور ڈیلیوری کی تصدیق کرے گا", "success");
@@ -192,14 +192,14 @@ export default function PettyCash() {
                             dateKey="created_at"
                             fileName={auth.username}
                             columns={[
-                                { key: "request_id", label: "درخواست نمبر" },
-                                { key: "requested_by_name", label: "درخواست کنندہ" },
+                                { key: "request_no", label: "درخواست نمبر", format: (v) => (v ? v : "—") },
+                                { key: "requested_by_name", label: "درخواست کنندہ", format: (v) => (v ? v : "—") },
+                                { key: "fulfilled_by_name", label: "مکمل کرنے والا", format: (v) => (v ? v : "—")},
                                 {
                                     key: "created_at",
                                     label: "درخواست کی تاریخ",
                                     format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                                 },
-                                { key: "status", label: "حالت" },
                                 {
                                     key: "approved_at",
                                     label: "منظوری کی تاریخ",
@@ -210,7 +210,9 @@ export default function PettyCash() {
                                     label: "تکمیل کی تاریخ",
                                     format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                                 },
+                                { key: "status", label: "حالت", format: (v) => (v ? v : "—") },
                             ]}
+                            pageLoading={loading}
                         />
                     </div>
                 </div>

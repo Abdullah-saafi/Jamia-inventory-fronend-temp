@@ -28,6 +28,7 @@ export default function MainAllItems({
   filterType,
   setFilterType,
   categories,
+  setDebouncedSearch,
 }) {
   const [showAddItem, setShowAddItem] = useState(false);
   const [showCategory, setShowCategory] = useState(false);
@@ -194,6 +195,7 @@ export default function MainAllItems({
                   setFilterType("");
                   setFilterCategory("");
                   setCurrentPage(1);
+                  setDebouncedSearch("")
                 }}
                 className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
               >
@@ -203,10 +205,13 @@ export default function MainAllItems({
           </div>
           <button
             onClick={() => {
+              onRefresh();
               setSearch("");
               setFilterCategory("");
+              setFilterType("");
               setCurrentPage(1);
-              onRefresh();
+              setDebouncedSearch("")
+
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >
@@ -220,15 +225,28 @@ export default function MainAllItems({
             dateKey="created_at"
             fileName={auth.username}
             columns={[
-              { key: "item_id", label: "آئٹم نمبر" },
-              { key: "item_name", label: "نام" },
-              { key: "category", label: "زمرہ" },
-              { key: "item_uom", label: "اکائی / UOM" },
-              { key: "item_quantity", label: "مرکزی اسٹور کا اسٹاک" },
-              { key: "sub_qty", label: "ذیلی اسٹورز کو بھیجا گیا" },
-              { key: "total_qty", label: "باقی اسٹاک" },
-              { key: "min_quantity", label: "کم از کم اسٹاک" },
+              { key: "item_no", label: "آئٹم نمبر", format: (v) => (v ? v : "—") },
+              { key: "item_name", label: "نام", format: (v) => (v ? v : "—") },
+              { key: "category", label: "زمرہ", format: (v) => (v ? v : "—") },
+              { key: "item_uom", label: "اکائی / UOM", format: (v) => (v ? v : "—") },
+              { key: "item_quantity", label: "مرکزی اسٹور کا اسٹاک", format: (v) => (v ? v : "—") },
+              { key: "sub_qty", label: "ذیلی اسٹورز کو بھیجا گیا", format: (v) => (v ? v : "—") },
+              { key: "transit_qty", label: "ذیلی اسٹورزکوبھیجی جارہی", format: (v) => (v ? v : "—") },
+              { key: "mainstore_transit_qty", label: "مین اسٹور کو بھیجی جارہی", format: (v) => (v ? v : "—") },
+              { key: "total_qty", label: "باقی اسٹاک", format: (v) => (v ? v : "—") },
+              { key: "min_quantity", label: "کم از کم اسٹاک", format: (v) => (v ? v : "—") },
+              { key: "returned_qty", label: "واپس آئٹمز", format: (v) => (v ? v : "—") },
+              { key: "scrapped_qty", label: "اسکریپ", format: (v) => (v ? v : "—") },
+              {
+                key: "condition",
+                label: "حالت",
+                format: (_, row) =>
+                  row.current_quantity <= row.minimum_quantity
+                    ? "Low"
+                    : "OK",
+              },
             ]}
+            pageLoading={loading}
           />
         </div>
       </div>

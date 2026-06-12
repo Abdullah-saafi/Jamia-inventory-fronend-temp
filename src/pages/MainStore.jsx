@@ -42,7 +42,9 @@ export default function MainStore() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageLimit, setPageLimit] = useState(10);
   const [search, setSearch] = useState("");
+  const [requestSearch, setRequestSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [requestDebouncedSearch, setRequestDebouncedSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [filterType, setFilterType] = useState("");
 
@@ -77,17 +79,23 @@ export default function MainStore() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setRequestDebouncedSearch(requestSearch), 500);
+    return () => clearTimeout(timer);
+  }, [requestSearch]);
+
   // ── Fetch data ────────────────────────────────────────────────────────────
   const fetchData = useCallback(
     async (silent = false) => {
       if (!silent) setLoading(true);
       try {
-        const [rRes, sRes, iRes, hoReqRes, retRes, catRes] = await Promise.all([
+        const [rRes, sRes, iRes, retRes, catRes] = await Promise.all([
           getRequests({
             direction: "SUB_TO_MAIN",
             page: currentPage,
             limit: pageLimit,
             status: requestStatusFilter || undefined,
+            search: requestDebouncedSearch
           }),
           getStores(),
           getItems({
@@ -98,14 +106,14 @@ export default function MainStore() {
             category: filterCategory || undefined,
             item_type: filterType || undefined,
           }),
-          getRequests({ direction: "MAIN_TO_HO" }),
+          // getRequests({ direction: "MAIN_TO_HO" }),
           getReturnRequests({ to_store_id: auth.store_id, status: "PENDING" }),
           getItemCategories(auth.store_id),
         ]);
         setCategories(catRes.data.data);
         setRequests(rRes.data.data);
         setRequestsPagination(rRes.data.pagination);
-        setHoRequests(hoReqRes.data.data);
+        // setHoRequests(hoReqRes.data.data);
         setAllItems(iRes.data.data);
         setItemsPagination(iRes.data.pagination);
         setPendingReturns(retRes.data.data?.length || 0);
@@ -126,6 +134,7 @@ export default function MainStore() {
       pageLimit,
       requestStatusFilter,
       debouncedSearch,
+      requestDebouncedSearch,
       filterCategory,
       filterType,
       auth.store_id,
@@ -142,7 +151,7 @@ export default function MainStore() {
   const pendingApproved = requests.filter(
     (r) => r.status === "APPROVED",
   ).length;
-  const pendingHo = hoRequests.filter((r) => r.status === "PENDING").length;
+  const pendingHo = requests.filter((r) => r.status === "PENDING").length;
 
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message} />;
@@ -236,6 +245,7 @@ export default function MainStore() {
           filterType={filterType}
           categories={categories}
           setFilterType={setFilterType}
+          setDebouncedSearch={setDebouncedSearch}
         />
       )}
 
@@ -253,6 +263,10 @@ export default function MainStore() {
           mainStoreError={mainStoreError}
           mainStores={mainStores}
           toStore={toStore}
+          debouncedSearch={requestDebouncedSearch}
+          setDebouncedSearch={setRequestDebouncedSearch}
+          setSearch={setRequestSearch}
+          search={requestSearch}
         />
       )}
 

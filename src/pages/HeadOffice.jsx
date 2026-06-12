@@ -28,6 +28,7 @@ const
     driver_name: "",
     driver_no: "",
     vehicle_no: "",
+    fulfilled_by_name: "",
   }
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -114,10 +115,11 @@ export default function HeadOffice() {
   const handleFulfill = async (id) => {
     setFulfilling(id);
     try {
+      setFulfillForm({ ...fulfillForm, fulfilled_by_name: auth.username })
       await fulfillRequest(id, fulfillForm);
       showToast(fulfillMode === "refulfill"
-        ? "Re-dispatched — Main Store will verify the corrected delivery"
-        : "Request fulfilled — Main Store will verify delivery", "success");
+        ? "دوبارہ روانہ کر دیا گیا ہے — مین اسٹور درست شدہ ڈیلیوری کی تصدیق کرے گا"
+        : "درخواست پوری کر دی گئی ہے — مین اسٹور ڈیلیوری کی تصدیق کرے گا", "success");
       setFulfillModal(false)
       setFulfillForm({ ...EMPTY_FULFILL_FORM })
       load();
@@ -196,14 +198,14 @@ export default function HeadOffice() {
               dateKey="created_at"
               fileName={auth.username}
               columns={[
-                { key: "request_id", label: "درخواست نمبر" },
-                { key: "requested_by_name", label: "درخواست کنندہ" },
+                { key: "request_no", label: "درخواست نمبر", format: (v) => (v ? v : "—") },
+                { key: "requested_by_name", label: "درخواست کنندہ", format: (v) => (v ? v : "—") },
+                { key: "fulfilled_by_name", label: "مکمل کرنے والا", format: (v) => (v ? v : "—") },
                 {
                   key: "created_at",
                   label: "درخواست کی تاریخ",
                   format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                 },
-                { key: "status", label: "حالت" },
                 {
                   key: "approved_at",
                   label: "منظوری کی تاریخ",
@@ -214,7 +216,9 @@ export default function HeadOffice() {
                   label: "تکمیل کی تاریخ",
                   format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                 },
+                { key: "status", label: "حالت", format: (v) => (v ? v : "—") },
               ]}
+              pageLoading={loading}
             />
           </div>
         </div>
@@ -222,7 +226,7 @@ export default function HeadOffice() {
 
       {/* ── Table ── */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-        <table className="w-full text-sm">
+        <table className="w-full text-center text-sm">
           <thead>
             <TableHead
               pageType={pageType}

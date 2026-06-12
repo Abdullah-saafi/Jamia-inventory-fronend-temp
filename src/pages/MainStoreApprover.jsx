@@ -290,14 +290,13 @@ export default function MainStoreApprover() {
               dateKey="created_at"
               fileName={auth.username}
               columns={[
-                { key: "request_id", label: "درخواست نمبر" },
+                { key: "request_no", label: "درخواست نمبر" },
                 { key: "requested_by_name", label: "درخواست کنندہ" },
                 {
                   key: "created_at",
                   label: "درخواست کی تاریخ",
                   format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                 },
-                { key: "status", label: "حالت" },
                 {
                   key: "approved_at",
                   label: "منظوری کی تاریخ",
@@ -308,7 +307,9 @@ export default function MainStoreApprover() {
                   label: "تکمیل کی تاریخ",
                   format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                 },
+                { key: "status", label: "حالت" },
               ]}
+              pageLoading={loading}
             />
           </div>
         </div>

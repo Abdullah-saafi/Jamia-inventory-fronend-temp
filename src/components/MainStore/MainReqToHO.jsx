@@ -49,6 +49,8 @@ export default function MainReqToHO({ showToast }) {
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStore, setFilterStore] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
@@ -82,6 +84,7 @@ export default function MainReqToHO({ showToast }) {
         direction: ["MAIN_TO_HO", "MAIN_TO_PCASH"],
         page,
         limit: pageSize,
+        search: debouncedSearch,
       };
       if (filterStatus) params.status = filterStatus;
       if (auth.role !== "super admin") {
@@ -126,7 +129,13 @@ export default function MainReqToHO({ showToast }) {
     auth.store_id,
     page,
     pageSize,
+    debouncedSearch,
   ]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // ── Inline detail ──────────────────────────────────────────────────────────
   const openDetail = async (r) => {
@@ -321,22 +330,49 @@ export default function MainReqToHO({ showToast }) {
       </div>
 
       {/* ── Filters ── */}
-      <div className="flex flex-wrap gap-2 items-end h-full py-2 justify-between">
+      <div className="flex  py-2  items-end justify-between">
         <div>
-          <StoreFilters
-            filterStatus={filterStatus}
-            setFilterStatus={(v) => {
-              setFilterStatus(v);
-              setPage(1);
-            }}
-            pageType={pageType}
-          />
-
+          <div className="flex gap-2">
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+            />
+            <StoreFilters
+              filterStatus={filterStatus}
+              setFilterStatus={(v) => {
+                setFilterStatus(v);
+                setPage(1);
+              }}
+              pageType={pageType}
+            />
+            {(search || filterStatus) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilterStatus("");
+                  setPage(1);
+                  setDebouncedSearch("")
+                }}
+                className="text-gray-500 hover:text-gray-800 text-sm px-3 h-7.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
           <button
             onClick={() => {
-              setFilterStatus("");
-              setPage(1);
               load();
+              setFilterStatus("");
+              setSearch("");
+              setPage(1);
+              setDebouncedSearch("")
+
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >
@@ -352,14 +388,13 @@ export default function MainReqToHO({ showToast }) {
               dateKey="created_at"
               fileName={auth.username}
               columns={[
-                { key: "request_id", label: "درخواست نمبر" },
-                { key: "requested_by_name", label: "درخواست کنندہ" },
+                { key: "request_no", label: "درخواست نمبر", format: (v) => (v ? v : "—") },
+                { key: "requested_by_name", label: "درخواست کنندہ", format: (v) => (v ? v : "—") },
                 {
                   key: "created_at",
                   label: "درخواست کی تاریخ",
                   format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                 },
-                { key: "status", label: "حالت" },
                 {
                   key: "approved_at",
                   label: "منظوری کی تاریخ",
@@ -367,10 +402,12 @@ export default function MainReqToHO({ showToast }) {
                 },
                 {
                   key: "fulfilled_at",
-                  label: "تکمیل کی تاریخ",
+                  label: " تکمیل کی تاریخ",
                   format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                 },
+                { key: "status", label: "حالت", format: (v) => (v ? v : "—") },
               ]}
+              pageLoading={pageLoading}
             />
           </div>
         </div>

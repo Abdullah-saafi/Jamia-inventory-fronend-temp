@@ -10,6 +10,8 @@ import {
 import TableHead from "../TableHead";
 import { RETURN_STATUSES } from "../../services/constants";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import ExcelDownloaderWithDates from "../Exceldownloaderwithdates"
+import Pagination from "../Pagination";
 
 const STATUS_COLORS = {
   PENDING: "bg-yellow-100 text-yellow-700 border-yellow-200",
@@ -32,21 +34,51 @@ export default function MainStoreProcessReturns({ showToast }) {
   const [submitting, setSubmitting] = useState(false);
   const [itemActions, setItemActions] = useState({});
   const [showDropdown, setShowDropdown] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [pageLimit, setPageLimit] = useState(10);
+
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalItems: 0,
+    pageLimit: 10,
+    totalPages: 1,
+  });
 
 
   useEffect(() => {
     fetchReturns();
-  }, [filterStatus]);
+  }, [filterStatus, currentPage, pageLimit, debouncedSearch]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const fetchReturns = async () => {
     try {
       setLoading(true);
       setError(null);
+
       const res = await getReturnRequests({
         to_store_id: auth.store_id,
         ...(filterStatus ? { status: filterStatus } : {}),
+        page: currentPage,
+        limit: pageLimit,
+        search: debouncedSearch,
       });
+
       setReturns(res.data.data || []);
+
+      setPagination(
+        res.data.pagination || {
+          currentPage,
+          totalItems: 0,
+          pageLimit,
+          totalPages: 1,
+        }
+      );
     } catch (err) {
       const msg = handleError(err, "Failed to load return requests");
       setError(msg);
@@ -125,7 +157,7 @@ export default function MainStoreProcessReturns({ showToast }) {
   ).length;
 
   return (
-    <div className="p-4">
+    <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -136,75 +168,161 @@ export default function MainStoreProcessReturns({ showToast }) {
             واپس آئٹمز کو اسٹاک میں شامل کریں یا اسکریپ کریں
           </p>
         </div>
-        <button
-          onClick={fetchReturns}
-          className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm"
-        >
-          ↻ Refresh
-        </button>
       </div>
+      {/* Header finished */}
+
 
       {/* Filter */}
-      <div className="flex items-center gap-3 mb-4">
-        {showDropdown && (
-          <div className="absolute inset-0" onClick={() => setShowDropdown((prev) => !prev)} />
-        )}
-
-        <div className="relative min-w-50">
-          <button
-            type="button"
-            onClick={() => {
-              setShowDropdown((prev) => !prev)
-            }}
-            className=" w-full h-10 px-3 flex items-center justify-between bg-white border border-gray-300 rounded-lg shadow-sm hover:border-emerald-400 focus:border-emerald-500 transition-all text-sm text-gray-700">
-            <span>{RETURN_STATUSES.find((s) => s.value === filterStatus)?.label || "تمام اسٹیٹس"}</span>
-
-            {showDropdown ? (
-              <ChevronUp size={16} className="text-gray-400" />
-            ) : (
-              <ChevronDown size={16} className="text-gray-400" />
-            )}
-          </button>
-
+      <div className="flex items-end justify-between py-2">
+        <div>
           {showDropdown && (
             <div
-              className=" absolute max-h-48 z-50 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden overflow-y-auto">
-              <button
-                className=" w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-sm"
-                onClick={() => {
-                  setFilterStatus("");
-                  setShowDropdown(false);
-                }}
-              >
-                تمام اسٹیٹس
-              </button>
-              {RETURN_STATUSES.map((n) => (
-                <button
-                  key={n.value}
-                  onClick={() => {
-                    setFilterStatus(n.value);
-                    setShowDropdown(false);
-                  }}
-                  className={` w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${filterStatus === n.value
-                    ? "bg-emerald-100 text-emerald-700 font-semibold"
-                    : "text-gray-700"
-                    }
-          `}
-                >
-                  {n.label}
-                </button>
-              ))}
-            </div>
+              className="absolute inset-0"
+              onClick={() => setShowDropdown(false)}
+            />
           )}
-        </div>
-        {filterStatus && (
+
+          {/* Search + Filter + Clear */}
+          <div className="flex items-center gap-2">
+            {/* Search */}
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              className="bg-white border border-gray-300 rounded px-3 h-10 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+            />
+
+            {/* Filter */}
+            <div className="relative min-w-50">
+              <button
+                type="button"
+                onClick={() => setShowDropdown((prev) => !prev)}
+                className="w-full h-10 px-3 flex items-center justify-between bg-white border border-gray-300 rounded-lg shadow-sm hover:border-emerald-400 focus:border-emerald-500 transition-all text-sm text-gray-700"
+              >
+                <span>
+                  {RETURN_STATUSES.find((s) => s.value === filterStatus)?.label ||
+                    "تمام اسٹیٹس"}
+                </span>
+
+                {showDropdown ? (
+                  <ChevronUp size={16} className="text-gray-400" />
+                ) : (
+                  <ChevronDown size={16} className="text-gray-400" />
+                )}
+              </button>
+
+              {showDropdown && (
+                <div className="absolute z-50 mt-2 w-full max-h-48 bg-white border border-gray-200 rounded-xl shadow-xl overflow-y-auto">
+                  <button
+                    className="w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-sm"
+                    onClick={() => {
+                      setFilterStatus("");
+                      setCurrentPage(1);
+                      setShowDropdown(false);
+                    }}
+                  >
+                    تمام اسٹیٹس
+                  </button>
+
+                  {RETURN_STATUSES.map((n) => (
+                    <button
+                      key={n.value}
+                      onClick={() => {
+                        setCurrentPage(1);
+                        setFilterStatus(n.value);
+                        setShowDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${filterStatus === n.value
+                        ? "bg-emerald-100 text-emerald-700 font-semibold"
+                        : "text-gray-700"
+                        }`}
+                    >
+                      {n.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Clear */}
+            {(filterStatus || search) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilterStatus("");
+                  setCurrentPage(1);
+                  setDebouncedSearch("")
+                }}
+                className="h-10 px-3 text-gray-500 hover:text-gray-800 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Refresh stays below */}
           <button
-            onClick={() => setFilterStatus("")}
-            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+            onClick={() => {
+              fetchReturns()
+              setSearch("");
+              setFilterStatus("");
+              setCurrentPage(1);
+              setDebouncedSearch("")
+            }}
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >
-            Clear
+            ↻ Refresh
           </button>
-        )}
+        </div>
+
+        {/* Excel Export */}
+        <div className="Temp-downloader">
+          <div className="downloader">
+            <ExcelDownloaderWithDates
+              data={returns}
+              dateKey="created_at"
+              fileName={auth.username}
+              pageLoading={loading}
+              columns={[
+                {
+                  key: "return_no",
+                  label: "واپسی نمبر",
+                  format: (v) => (v ? v : "—"),
+                },
+                {
+                  key: "from_store_name",
+                  label: "بھیجنے والا اسٹور",
+                  format: (v) => (v ? v : "—"),
+                },
+                {
+                  key: "sent_by_name",
+                  label: "بھیجنے والا",
+                  format: (v) => (v ? v : "—"),
+                },
+                {
+                  key: "item_count",
+                  label: "آئٹمز",
+                  format: (v) => (v ? v : "—"),
+                },
+                {
+                  key: "created_at",
+                  label: "تاریخ",
+                  format: (v) =>
+                    v ? new Date(v).toLocaleDateString() : "—",
+                },
+                {
+                  key: "status",
+                  label: "اسٹیٹس",
+                  format: (v) => (v ? v : "—"),
+                },
+              ]}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Table */}
@@ -226,7 +344,7 @@ export default function MainStoreProcessReturns({ showToast }) {
               returns.map((r) => (
                 <tr
                   key={r.return_id}
-                  className="border-b border-zinc-200 hover:bg-gray-50 transition-colors"
+                  className="border-b border-zinc-200 hover:bg-gray-100 transition-colors"
                 >
                   <td className="px-4 py-3">
                     <span className="font-mono text-emerald-600 text-xs font-bold">
@@ -278,6 +396,19 @@ export default function MainStoreProcessReturns({ showToast }) {
             )}
           </tbody>
         </table>
+      </div>
+      <div className="mt-4">
+        <Pagination
+          currentPage={pagination.currentPage}
+          totalItems={pagination.totalItems}
+          pageSize={pagination.pageLimit}
+          onPageChange={setCurrentPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={(size) => {
+            setPageLimit(size);
+            setCurrentPage(1);
+          }}
+        />
       </div>
 
       {/* Process Modal */}
