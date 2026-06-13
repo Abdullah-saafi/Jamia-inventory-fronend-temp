@@ -356,7 +356,7 @@ export default function RequestRow({
                         {r.partial_request_no && (
                           <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
                             <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
-                              Partial request Number
+                              جزوی ریکویسٹ نمبر
                             </div>
                             <div className="text-gray-800 font-medium">
                               {r.partial_request_no || "-"}
@@ -367,20 +367,6 @@ export default function RequestRow({
                       </div>
                     </div>
                   )}
-                  {/* {(r.ref_no) && (
-                    <div className="bg-gray-100 border border-gray-200 rounded-xl p-4 mb-3 ">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                        <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
-                          <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
-                            پیٹی کیش ریفرنس نمبر
-                          </div>
-                          <div className="text-gray-800 font-medium">
-                            {r.ref_no || "-"}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )} */}
                   <ItemsTable
                     items={detail?.items || []}
                     isDisputed={isDisputed}
