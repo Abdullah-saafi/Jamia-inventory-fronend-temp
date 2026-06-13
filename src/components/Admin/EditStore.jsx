@@ -50,7 +50,7 @@ const EditStore = () => {
     try {
       setPageLoading(true);
       const response = await editStoreById(id, form);
-      showToast(response.data.message || "Store updated successfully", "success");
+      showToast(response.data.message || "اسٹور کامیابی سے اپڈیٹ ہو گیا ہے", "success");
       setTimeout(() => navigate("/admin/all-stores"), 2000);
     } catch (error) {
       const msg = handleError(error, "Failed to edit store");
@@ -69,8 +69,8 @@ const EditStore = () => {
     <div className="max-w-xl animate-in fade-in duration-500">
       {/* Updated Header to match EditUser */}
       <div className="mb-4">
-        <h1 className="text-xl font-black text-gray-900 uppercase tracking-tight">Edit Store Branch</h1>
-        <p className="text-xs text-gray-500">Update the location or identification details for this branch.</p>
+        <h1 className="text-xl font-black text-gray-900 uppercase tracking-tight">اسٹور برانچ کی ترمیم کریں</h1>
+        <p className="text-xs text-gray-500">اس برانچ کی لوکیشن یا شناختی تفصیلات اپڈیٹ کریں۔</p>
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
@@ -78,7 +78,7 @@ const EditStore = () => {
         {/* Store Identifiers */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelClass}>Store Code *</label>
+            <label className={labelClass}>اسٹور کوڈ *</label>
             <input
               name="store_code"
               value={form.store_code}
@@ -89,7 +89,7 @@ const EditStore = () => {
             />
           </div>
           <div>
-            <label className={labelClass}>Store Name *</label>
+            <label className={labelClass}>اسٹور کا نام *</label>
             <input
               name="store_name"
               value={form.store_name}
@@ -103,28 +103,12 @@ const EditStore = () => {
 
         {/* Location & Contact */}
         <div>
-          <label className={labelClass}>Physical Address</label>
+          <label className={labelClass}>پتہ *</label>
           <input
             name="address"
             value={form.address}
             onChange={handleChange}
             placeholder="e.g. Block 5, Karachi"
-            className={inputClass}
-          />
-        </div>
-
-        <div>
-          <label className={labelClass}>Contact Phone</label>
-          <input
-            name="phone"
-            inputMode="numeric"
-            maxLength={11}
-            value={form.phone}
-            onChange={(e) => {
-              const val = e.target.value.replace(/\D/g, "");
-              setForm(f => ({ ...f, phone: val }));
-            }}
-            placeholder="e.g. 03451234567"
             className={inputClass}
           />
         </div>
@@ -139,7 +123,7 @@ const EditStore = () => {
             {pageLoading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
-              "Save Branch Changes"
+              "برانچ کی تبدیلیاں محفوظ کریں"
             )}
           </button>
         </div>

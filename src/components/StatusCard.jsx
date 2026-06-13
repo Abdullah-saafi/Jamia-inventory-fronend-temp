@@ -9,7 +9,7 @@ const StatusCard = ({ title, count, onClick, colorClass, isActive }) => {
   return (
     <div 
       onClick={onClick}
-      className={`relative rounded-2xl p-4 border transition-all duration-300 cursor-pointer group min-w-50 flex-1 ${
+      className={`relative rounded-2xl p-4 ml-2 border transition-all duration-300 cursor-pointer group min-w-50 flex-1 ${
         isActive ? activeStyles : inactiveStyles
       }`}
     >

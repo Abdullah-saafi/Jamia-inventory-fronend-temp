@@ -29,12 +29,13 @@ export default function PettyCash() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [filter, setFilter] = useState("");
+    const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [detail, setDetail] = useState(null);
     const [detailLoad, setDL] = useState(false);
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-
-    // Fulfill modal state
+    const [isEmergency, setIsEmergency] = useState(false);
     const [fulfillModal, setFulfillModal] = useState(null);
     const [referenceNo, setReferenceNo] = useState("");
     const [requestNo, setRequestNo] = useState(null);
@@ -64,6 +65,8 @@ export default function PettyCash() {
                 direction: "MAIN_TO_PCASH",
                 page,
                 limit: pageSize,
+                search: debouncedSearch,
+                emergency: isEmergency || undefined,
             };
             if (filter) params.status = filter;
             const r = await getRequests(params);
@@ -86,7 +89,12 @@ export default function PettyCash() {
 
     useEffect(() => {
         load();
-    }, [filter, page, pageSize]);
+    }, [filter, page, pageSize, debouncedSearch, isEmergency]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(search), 500);
+        return () => clearTimeout(timer);
+    }, [search]);
 
     const openDetail = async (r) => {
         if (detail && detail.request_id === r.request_id) {
@@ -131,6 +139,7 @@ export default function PettyCash() {
 
     const pendingFulfill = requests.filter((r) => r.status === "APPROVED").length;
     const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
+    const emergencyRequest = requests.filter((r) => r.is_emergency === true).length
 
     if (auth.isBlocked) {
         return <BlockedUI message={auth.message} />;
@@ -156,25 +165,53 @@ export default function PettyCash() {
                 counts={{
                     pending: pendingFulfill,
                     returnBack: 0,
-                    emergency: 0,
+                    emergency: emergencyRequest,
                     disputed: disputedCount
                 }}
+                setIsEmergency={setIsEmergency}
+                isEmergency={isEmergency}
+                setPage={setPage}
             />
 
             {/* ── Filter ── */}
             <div className="flex h-full py-2 items-end justify-between">
                 <div>
-                    <StoreFilters
-                        filterStatus={filter}
-                        setFilterStatus={(v) => {
-                            setFilter(v)
-                            setPage(1)
-                        }}
-                        pageType={pageType}
-                    />
+                    <div className="flex gap-2">
+                        <input
+                            value={search}
+                            onChange={(e) => {
+                                setSearch(e.target.value);
+                                setPage(1);
+                            }}
+                            placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+                            title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+                            className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+                        />
+                        <StoreFilters
+                            filterStatus={filter}
+                            setFilterStatus={(v) => {
+                                setFilter(v)
+                                setPage(1)
+                            }}
+                            pageType={pageType}
+                        />
+                        {(search || filter) || isEmergency && (
+                            <button
+                                onClick={() => {
+                                    setSearch("");
+                                    setFilter("");
+                                    setPage(1);
+                                    setDebouncedSearch("")
+                                    setIsEmergency(false)
+                                }}
+                                className="text-gray-500 hover:text-gray-800 text-sm px-3 h-7.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                            >
+                                Clear
+                            </button>
+                        )}
+                    </div>
                     <button
                         onClick={() => {
-                            setFilter("");
                             setPage(1);
                             load();
                         }}
@@ -194,7 +231,7 @@ export default function PettyCash() {
                             columns={[
                                 { key: "request_no", label: "درخواست نمبر", format: (v) => (v ? v : "—") },
                                 { key: "requested_by_name", label: "درخواست کنندہ", format: (v) => (v ? v : "—") },
-                                { key: "fulfilled_by_name", label: "مکمل کرنے والا", format: (v) => (v ? v : "—")},
+                                { key: "fulfilled_by_name", label: "مکمل کرنے والا", format: (v) => (v ? v : "—") },
                                 {
                                     key: "created_at",
                                     label: "درخواست کی تاریخ",

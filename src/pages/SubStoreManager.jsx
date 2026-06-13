@@ -25,10 +25,11 @@ import ItemHistoryModal from "../components/ItemHistoryModal";
 
 export default function SubStoreManager() {
   const [requests, setRequests] = useState([]);
-  const [allRequests, setAllRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStore, setFilterStore] = useState("");
   const [subStores, setSubStores] = useState([]);
   const [currentStore, setCurrentStore] = useState(null);
@@ -70,6 +71,7 @@ export default function SubStoreManager() {
         direction: "SUB_TO_MAIN",
         page,
         limit: pageSize,
+        search: debouncedSearch,
       };
       if (filterStatus) params.status = filterStatus;
       if (auth.role !== "super admin" && auth.store_id)
@@ -77,9 +79,6 @@ export default function SubStoreManager() {
       if (auth.role === "super admin" && filterStore)
         params.store_id = filterStore;
       const r = await getRequests(params);
-      if (!filterStatus) {
-        setAllRequests(r.data.data)
-      }
       setRequests(r.data.data || []);
       setPagination(r.data.pagination);
     } catch (error) {
@@ -92,7 +91,12 @@ export default function SubStoreManager() {
 
   useEffect(() => {
     load();
-  }, [filterStatus, filterStore, auth.store_id, page, pageSize,]);
+  }, [filterStatus, filterStore, auth.store_id, page, pageSize, debouncedSearch]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
     const fetchStores = async () => {
@@ -190,7 +194,7 @@ export default function SubStoreManager() {
   };
 
   const rejectItem = async (id, rid) => {
-    try {      
+    try {
       setRejectSpecificItem(rid)
       await rejectItemById(id, rid)
       openApprove(id, approveModal.no)
@@ -248,12 +252,12 @@ export default function SubStoreManager() {
     } catch (e) {
       const msg = handleError(e, "Error fetching history");
       showToast(msg, "error");
-    } finally{
+    } finally {
       setHistoryLoading(null)
     }
   }
 
-  const pendingCount = allRequests.filter((r) => r.status === "PENDING").length;
+  const pendingCount = requests.filter((r) => r.status === "PENDING").length;
 
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message} />;
@@ -282,19 +286,45 @@ export default function SubStoreManager() {
           emergency: 0,
           disputed: 0
         }}
+        setPage={setPage}
       />
 
       <div className="flex h-full py-2  items-end justify-between">
         <div className="Filter">
-          <StoreFilters
-            filterStatus={filterStatus}
-            setFilterStatus={setFilterStatus}
-            pageType={pageType}
-            filterStore={filterStore}
-            setFilterStore={setFilterStore}
-            role={auth.role}
-            subStores={subStores}
-          />
+          <div className="flex gap-2">
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+            />
+            <StoreFilters
+              filterStatus={filterStatus}
+              setFilterStatus={setFilterStatus}
+              pageType={pageType}
+              filterStore={filterStore}
+              setFilterStore={setFilterStore}
+              role={auth.role}
+              subStores={subStores}
+            />
+            {(search || filterStatus) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilterStatus("");
+                  setPage(1);
+                  setDebouncedSearch("")
+                }}
+                className="text-gray-500 hover:text-gray-800 text-sm px-3 h-7.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
           <button
             onClick={load}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto hover:bg-gray-50 shadow-sm"
@@ -314,9 +344,9 @@ export default function SubStoreManager() {
                 { key: "request_no", label: "درخواست نمبر", format: (v) => (v ? v : "—") },
                 { key: "item_type", label: "نوع", format: (v) => (v ? v : "—") },
                 { key: "requested_by_name", label: "درخواست کنندہ", format: (v) => (v ? v : "—") },
-                { key: "created_at", label: "درخواست کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),},
-                { key: "approved_at", label: "منظوری کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),},
-                { key: "fulfilled_at", label: "تکمیل کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),},
+                { key: "created_at", label: "درخواست کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"), },
+                { key: "approved_at", label: "منظوری کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"), },
+                { key: "fulfilled_at", label: "تکمیل کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"), },
                 { key: "status", label: "حالت", format: (v) => (v ? v : "—") },
               ]}
               pageLoading={loading}

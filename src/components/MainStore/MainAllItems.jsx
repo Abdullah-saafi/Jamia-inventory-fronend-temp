@@ -11,7 +11,6 @@ import { ITEM_CONDITIONS } from "../../services/constants";
 
 export default function MainAllItems({
   allItems,
-  mainStores,
   onRefresh,
   showToast,
   loading,
@@ -206,12 +205,7 @@ export default function MainAllItems({
           <button
             onClick={() => {
               onRefresh();
-              setSearch("");
-              setFilterCategory("");
-              setFilterType("");
               setCurrentPage(1);
-              setDebouncedSearch("")
-
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >

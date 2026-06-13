@@ -49,6 +49,7 @@ export default function MainReqToHO({ showToast }) {
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [isEmergency, setIsEmergency] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStore, setFilterStore] = useState("");
@@ -85,6 +86,7 @@ export default function MainReqToHO({ showToast }) {
         page,
         limit: pageSize,
         search: debouncedSearch,
+        emergency: isEmergency || undefined,
       };
       if (filterStatus) params.status = filterStatus;
       if (auth.role !== "super admin") {
@@ -130,6 +132,7 @@ export default function MainReqToHO({ showToast }) {
     page,
     pageSize,
     debouncedSearch,
+    isEmergency,
   ]);
 
   useEffect(() => {
@@ -296,10 +299,11 @@ export default function MainReqToHO({ showToast }) {
     (r) => r.status === "FULFILLED" && !r.grn_at,
   ).length;
 
+  const emergencyRequest = requests.filter((r) => r.is_emergency === true).length
+
   return (
     <div>
       {/* ── Header ── */}
-
       <RequestDashboard
         pageType={pageType}
         setFilterStatus={setFilterStatus}
@@ -307,9 +311,12 @@ export default function MainReqToHO({ showToast }) {
         counts={{
           pending: pendingGRN,
           returnBack: 0,
-          emergency: 0,
+          emergency: emergencyRequest,
           disputed: 0,
         }}
+        setIsEmergency={setIsEmergency}
+        isEmergency={isEmergency}
+        setPage={setPage}
       />
 
       <div className="flex items-center justify-between mb-6">
@@ -351,13 +358,14 @@ export default function MainReqToHO({ showToast }) {
               }}
               pageType={pageType}
             />
-            {(search || filterStatus) && (
+            {(search || filterStatus || isEmergency) && (
               <button
                 onClick={() => {
                   setSearch("");
                   setFilterStatus("");
                   setPage(1);
                   setDebouncedSearch("")
+                  setIsEmergency(false)
                 }}
                 className="text-gray-500 hover:text-gray-800 text-sm px-3 h-7.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
               >
@@ -368,11 +376,7 @@ export default function MainReqToHO({ showToast }) {
           <button
             onClick={() => {
               load();
-              setFilterStatus("");
-              setSearch("");
               setPage(1);
-              setDebouncedSearch("")
-
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >

@@ -79,12 +79,12 @@ export default function AddUserTab() {
 
   return (
     <div className="max-w-xl">
-      {/* HACK: Fake hidden inputs to trick browser auto-fill */}
       <input type="text" style={{ display: "none" }} />
       <input type="password" style={{ display: "none" }} />
 
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
         <div className="grid grid-cols-2 gap-3">
+          {/* Role Filter */}
           {showStoreTypeDropdown && (
             <div className="absolute inset-0" onClick={() => setShowStoreTypeDropdown((prev) => !prev)} />
           )}
@@ -149,6 +149,9 @@ export default function AddUserTab() {
               </div>
             )}
           </div>
+          {/* Role Filter ends here */}
+
+          {/* Store Filter */}
           {showStoreDropdown && (
             <div className="absolute inset-0" onClick={() => setShowStoreDropdown((prev) => !prev)} />
           )}
@@ -209,6 +212,7 @@ export default function AddUserTab() {
               </div>
             )}
           </div>
+          {/* Store filter ends here */}
         </div>
 
         <div className="grid grid-cols-2 gap-3">

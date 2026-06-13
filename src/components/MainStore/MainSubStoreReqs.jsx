@@ -52,7 +52,6 @@ export default function MainSubStoreReqs({
   onFilterChange,
   loading,
   mainStoreError,
-  mainStores,
   toStore,
   setSearch,
   search,
@@ -238,6 +237,7 @@ export default function MainSubStoreReqs({
           disputed: disputedCount,
           returnBack: returnBack,
         }}
+        setPage={setCurrentPage}
       />
 
       <div className="flex py-2 items-end justify-between">
@@ -281,11 +281,6 @@ export default function MainSubStoreReqs({
             onClick={() => {
               onRefresh();
               setCurrentPage(1);
-              setSearch("");
-              setReqFilter("");
-              setCurrentPage(1);
-              setDebouncedSearch("")
-
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >

@@ -15,7 +15,6 @@ import BlockedUI from "../components/BlockedUI";
 import useErrorHandler from "../components/useErrorHandler";
 import Pagination from "../components/Pagination";
 import StatusBadge from "../components/StatusBadge"
-import DateTimeCell from "../components/DateTimeCell"
 import RequestDashboard from "../components/RequestDashboard";
 import StoreFilters from "../components/StoreFilters";
 import TableHead from "../components/TableHead";
@@ -30,6 +29,8 @@ export default function MainStoreApprover() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [approveModal, setApproveModal] = useState(null);
@@ -41,6 +42,7 @@ export default function MainStoreApprover() {
   const [currentStore, setCurrentStore] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [page, setPage] = useState(1);
+  const [isEmergency, setIsEmergency] = useState(false);
   const [pageSize, setPageSize] = useState(10);
   const [rejectSpecificItem, setRejectSpecificItem] = useState(null);
   const [historyLoading, setHistoryLoading] = useState(null);
@@ -56,7 +58,7 @@ export default function MainStoreApprover() {
   const load = async () => {
     setLoading(true);
     try {
-      const params = { direction: ["MAIN_TO_PCASH", "MAIN_TO_HO"] };
+      const params = { direction: ["MAIN_TO_PCASH", "MAIN_TO_HO"], search: debouncedSearch, emergency: isEmergency || undefined, };
       if (filter) params.status = filter;
       const r = await getRequests(params);
       setRequests(r.data.data);
@@ -70,7 +72,12 @@ export default function MainStoreApprover() {
 
   useEffect(() => {
     load();
-  }, [filter]);
+  }, [filter, debouncedSearch, isEmergency]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
     const fetchStores = async () => {
@@ -231,6 +238,7 @@ export default function MainStoreApprover() {
   }
 
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
+  const emergencyRequest = requests.filter((r) => r.is_emergency === true).length
 
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message} />;
@@ -256,23 +264,51 @@ export default function MainStoreApprover() {
         counts={{
           pending: pendingCount,
           returnBack: 0,
-          emergency: 0,
+          emergency: emergencyRequest,
           disputed: 0
         }}
+        setPage={setPage}
+        setIsEmergency={setIsEmergency}
+        isEmergency={isEmergency}
       />
 
       {/* ── Filter ── */}
       <div className="flex h-full py-2 items-end justify-between">
         <div>
-          <StoreFilters
-            filterStatus={filter}
-            setFilterStatus={setFilter}
-            pageType={pageType}
-          />
+          <div className="flex gap-2">
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+            />
+            <StoreFilters
+              filterStatus={filter}
+              setFilterStatus={setFilter}
+              pageType={pageType}
+            />
+            {(search || filter || isEmergency) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilter("");
+                  setPage(1);
+                  setDebouncedSearch("")
+                  setIsEmergency(false)
+                }}
+                className="text-gray-500 hover:text-gray-800 text-sm px-3 h-7.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
 
           <button
             onClick={() => {
-              setFilter("")
               setPage(1)
               load()
             }}

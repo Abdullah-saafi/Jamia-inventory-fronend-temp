@@ -6,6 +6,7 @@ import { useNavigate, useOutletContext } from "react-router-dom";
 import Pagination from "../Pagination";
 import Toast from "../Toast"
 import { ChevronDown, ChevronUp } from "lucide-react";
+import CheckLoadingAndError from "../CheckLoadingAndError";
 
 export default function AllUsersTab() {
   const [users, setUsers] = useState([]);
@@ -251,28 +252,12 @@ export default function AllUsersTab() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12">
-                  <div className="flex justify-center">
-                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                  </div>
-                </td>
-              </tr>
-            ) : error ? (
-              <tr>
-                <td colSpan={9} className="text-center py-12">
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
-                    {error}
-                  </div>
-                </td>
-              </tr>
-            ) : users.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-400">
-                  No users found.
-                </td>
-              </tr>
+            {(loading || error || users.length === 0) ? (
+              <CheckLoadingAndError
+                loading={loading}
+                error={error}
+                requests={users}
+              />
             ) : (
               users.map((u) => (
                 <tr

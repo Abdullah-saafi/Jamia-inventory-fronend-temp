@@ -6,6 +6,7 @@ import { useNavigate, useOutletContext } from "react-router-dom";
 import Pagination from "../Pagination";
 import { useAuth } from "../../context/authContext";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import CheckLoadingAndError from "../CheckLoadingAndError";
 
 export default function AllStoresTab() {
 
@@ -66,7 +67,7 @@ export default function AllStoresTab() {
       if (response.status === 200) {
         await loadStores();
         if (refreshAdminStores) refreshAdminStores();
-        showToast(`Store ${status ? "activated" : "deactivated"} successfully`, "success");
+        showToast(`اسٹور کامیابی سے ${status ? "بحال" : "غیر فعال"} کر دیا گیا ہے`, "success");
       }
     } catch (error) {
       const msg = handleError(error, "Failed to update store status");
@@ -166,7 +167,7 @@ export default function AllStoresTab() {
               {[
                 "اسٹور کوڈ",
                 "اسٹور کا نام",
-                "قسم",
+                "شعبہ",
                 "پتہ",
                 "حالت",
                 "عمل",
@@ -181,29 +182,13 @@ export default function AllStoresTab() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12">
-                  <div className="flex justify-center">
-                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                  </div>
-                </td>
-              </tr>
-            ) : error ? (
-              <tr>
-                <td colSpan={9} className="text-center py-12">
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
-                    {error}
-                  </div>
-                </td>
-              </tr>
-            ) : stores.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-400">
-                  No stores found.
-                </td>
-              </tr>
-            ) : (
+            {(loading || error || stores.length === 0) ? (
+              <CheckLoadingAndError
+                loading={loading}
+                error={error}
+                requests={stores}
+              />
+            ): (
               stores.map((s) => (
                 <tr
                   key={s.store_id}

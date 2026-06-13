@@ -55,6 +55,7 @@ export default function StoreFilters({
     { label: "مسترد شدہ", value: "REJECTED" },
     { label: "مکمل کیا گیا", value: "FULFILLED" },
     { label: "وصول ہو گیا", value: "RECEIVED" },
+    { label: "جزوی موصولی ", value: "PARTIALLY_RECEIVED" },
     { label: "متنازع", value: "DISPUTED" },
   ];
 

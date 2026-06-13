@@ -4,6 +4,8 @@ import { useAuth } from "../context/authContext";
 import DatePicker from "react-multi-date-picker";
 import moment from "moment-hijri";
 import { useState } from "react";
+import baitussalam from "../assets/baitussalam.svg";
+import logouticon from "../assets/logouticon.svg";
 
 const links = [
   { to: "/substore-staff", label: "اسٹور", roles: ["sub-store"] },
@@ -62,32 +64,55 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="  px-5 flex items-center justify-between h-15">
-        {/* Brand */}
-        <div className="flex items-center gap-2">
-          <span className=" font-bold text-green-500 tracking-wide text-xl">
-            Jamia Baitussalam
-          </span>
+    <nav className="sticky top-0 z-50 bg-[#2a7379c2] border-b border-emerald-500 shadow-lg">
+      <div className="px-6 h-16 flex items-center justify-between">
+
+        {/* Logo */}
+        <div className="flex items-center gap-4 min-w-fit">
+
+          <div className="w-15 h-15 flex items-center justify-center bg-transparent border-0 shadow-none">
+            <img
+              src={baitussalam}
+              alt="Baitussalam"
+              className="w-full h-full object-contain"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <h1 className="text-white font-bold text-lg tracking-wide leading-none">
+              Jamia Baitussalam
+            </h1>
+            <span className="text-emerald-100 text-[11px] font-bold tracking-wider uppercase">
+              جامعہ بیت السلام
+            </span>
+            <span className="text-emerald-100 text-[11px] tracking-wider uppercase">
+              Inventory Management System
+            </span>
+          </div>
         </div>
 
-        {/* Links */}
-        <div className="flex items-center gap-1">
+        {/* Navigation */}
+        <div className="hidden xl:flex items-center gap-1">
+
           {auth.accessToken &&
             links
               .filter(
                 (link) =>
-                  auth.role === "super admin" || link.roles.includes(auth.role),
+                  auth.role === "super admin" ||
+                  link.roles.includes(auth.role)
               )
               .map(({ to, label }) => (
                 <NavLink
                   key={to}
                   to={to}
                   className={({ isActive }) =>
-                    `px-3 py-1.5 rounded text-sm font-medium transition-colors ${isActive
-                      ? "bg-emerald-600 text-white"
-                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
-                    }`
+                    `
+                      relative px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200
+                      ${isActive
+                      ? "text-white bg-black/20"
+                      : "text-white/80 hover:text-white hover:bg-white/10"
+                    }
+                    `
                   }
                 >
                   {label}
@@ -95,52 +120,84 @@ export default function Navbar() {
               ))}
         </div>
 
-        <div className="flex items-center gap-1 cursor-pointer">
-          {auth.accessToken && (
-            <>
-              <button className="logout" onClick={logoutUser}>
-                <span className="text-sm text-red-500 font-bold cursor-pointer">
-                  {logoutLoading ? (
-                    <div className="w-6 h-6 border-2 border-gray-200 border-t-red-500 rounded-full animate-spin" />
-                  ) : (
-                    <span className="text-sm text-red-500 font-bold cursor-pointer">
-                      Logout
-                    </span>
-                  )}
+        {/* Right Side */}
+        <div className="flex items-center gap-3">
+
+          {/* Date */}
+          <div className="hidden lg:flex flex-col text-right">
+            <span className="text-[11px] text-emerald-100">
+              {date.toLocaleDateString("en-PK", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })}
+            </span>
+
+            <span className="text-[11px] text-white font-medium">
+              {hijriDate}
+            </span>
+          </div>
+
+          {/* Divider */}
+          <div className="hidden lg:block h-8 w-px bg-white/20" />
+
+          {/* User */}
+          {(auth.role && auth.username) && (
+            <div className="flex items-center gap-3 bg-white/10 px-3 py-2 rounded-xl">
+
+              <div className="relative">
+                <div className="w-9 h-9 rounded-full bg-white text-emerald-700 flex items-center justify-center font-bold">
+                  {auth.username?.charAt(0)?.toUpperCase()}
+                </div>
+
+
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-400 border-2 border-emerald-700" />
+              </div>
+
+              <div className="hidden md:flex flex-col">
+                <span className="text-white text-sm font-semibold">
+                  {auth.username}
                 </span>
-              </button>
 
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            </>
+                <span className="text-emerald-100 text-[10px] uppercase">
+                  {auth.role.replaceAll("-", " ").toUpperCase()}
+                </span>
+              </div>
+            </div>
           )}
-        </div>
-        {/* Badge */}
-        <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg">
-          <div className="relative">
-            {/* Online Indicator */}
-            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full animate-pulse" />
-          </div>
 
-          <div className="flex flex-col">
-            <span className="text-[10px] text-gray-500">
-              اسلام علیکم
-            </span>
-
-            <span
-              className="font-semibold text-sm text-gray-800 truncate max-w-[180px]"
-              title={auth.username}
+          {/* Logout */}
+          {auth.accessToken && (
+            <button
+              onClick={logoutUser}
+              disabled={logoutLoading}
+              className="
+            bg-red-500/80
+            hover:bg-red-600
+            text-white
+            text-sm
+            font-semibold
+            px-4
+            py-2
+            rounded-xl
+            transition-all
+            disabled:opacity-50
+          "
             >
-              {auth.username}
-            </span>
-
-            <span className="text-[10px] text-emerald-700 font-medium">
-              {auth.role}
-            </span>
-          </div>
-        </div>
-        <div className="date text-xs text-gray-500 font-mono flex flex-col items-center ">
-          <p>Gregorian: {date.toDateString()}</p>
-          <p>ہجری: {hijriDate}</p>
+              {logoutLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span>Logout</span>
+                  <img
+                    src={logouticon}
+                    alt="logout"
+                    className="w-4 h-4"
+                  />
+                </div>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </nav>

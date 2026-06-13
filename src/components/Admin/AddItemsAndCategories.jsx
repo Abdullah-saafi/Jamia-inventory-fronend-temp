@@ -683,7 +683,7 @@ const AddItemsAndCategories = () => {
                         description: e.target.value,
                       }))
                     }
-                    placeholder="Optional description…"
+                    placeholder="تفصیل (اختیاری)…"
                     rows={3}
                     className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none"
                   />

@@ -13,9 +13,7 @@ import useErrorHandler from "../components/useErrorHandler";
 import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Pagination from "../components/Pagination";
 import StatusBadge from "../components/StatusBadge";
-import DateTimeCell from "../components/DateTimeCell";
 import { useToast } from "../context/ToastContext";
-import DisputeResolutionPanel from "../components/DisputeResolutionPanel"
 import RequestDashboard from "../components/RequestDashboard";
 import StoreFilters from "../components/StoreFilters";
 import TableHead from "../components/TableHead";
@@ -23,13 +21,12 @@ import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import RequestRow from "../components/RequestRow";
 import FulfillModal from "../components/FulfillModal";
 
-const
-  EMPTY_FULFILL_FORM = {
-    driver_name: "",
-    driver_no: "",
-    vehicle_no: "",
-    fulfilled_by_name: "",
-  }
+const EMPTY_FULFILL_FORM = {
+  driver_name: "",
+  driver_no: "",
+  vehicle_no: "",
+  fulfilled_by_name: "",
+}
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function HeadOffice() {
@@ -37,13 +34,15 @@ export default function HeadOffice() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [page, setPage] = useState(1);
+  const [isEmergency, setIsEmergency] = useState(false);
   const [pageSize, setPageSize] = useState(10);
   const [fulfillModal, setFulfillModal] = useState(null);
   const [fulfillMode, setFulfillMode] = useState("fulfill");
-  const [fulfilledItems, setFulfilledItems] = useState([]);
   const [fulfillerName, setFulfillerName] = useState("");
   const [fulfillNotes, setFulfillNotes] = useState("");
   const [fulfilling, setFulfilling] = useState(false);
@@ -70,6 +69,8 @@ export default function HeadOffice() {
         direction: "MAIN_TO_HO",
         page,
         limit: pageSize,
+        search: debouncedSearch,
+        emergency: isEmergency || undefined,
       };
       if (filter) params.status = filter;
       const r = await getRequests(params);
@@ -92,7 +93,12 @@ export default function HeadOffice() {
 
   useEffect(() => {
     load();
-  }, [filter, page, pageSize]);
+  }, [filter, page, pageSize, debouncedSearch, isEmergency]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
@@ -138,6 +144,7 @@ export default function HeadOffice() {
 
   const pendingFulfill = requests.filter((r) => r.status === "APPROVED").length;
   const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
+  const emergencyRequest = requests.filter((r) => r.is_emergency === true).length
 
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message} />;
@@ -162,27 +169,55 @@ export default function HeadOffice() {
         counts={{
           pending: pendingFulfill,
           returnBack: 0,
-          emergency: 0,
+          emergency: emergencyRequest,
           disputed: disputedCount
         }}
+        setIsEmergency={setIsEmergency}
+        isEmergency={isEmergency}
+        setPage={setPage}
       />
 
       {/* ── Filter ── */}
-      <div className="flex h-full py-2 items-end justify-between">
+      <div className="flex py-2 items-end justify-between">
         <div>
-          <StoreFilters
-            filterStatus={filter}
-            setFilterStatus={(v) => {
-              setFilter(v);
-              setPage(1);
-            }}
-            pageType={pageType}
-          />
+          <div className="flex gap-2">
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+            />
+            <StoreFilters
+              filterStatus={filter}
+              setFilterStatus={(v) => {
+                setFilter(v);
+                setPage(1);
+              }}
+              pageType={pageType}
+            />
+            {(search || filter || isEmergency) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilter("");
+                  setPage(1);
+                  setDebouncedSearch("")
+                  setIsEmergency(false)
+                }}
+                className="text-gray-500 hover:text-gray-800 text-sm px-3 h-7.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
           <button
             onClick={() => {
-              setFilter("");
-              setPage(1);
               load();
+              setPage(1);
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >

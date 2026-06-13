@@ -19,7 +19,6 @@ import CreateRequestModal from "../components/CreateRequestModal";
 import RequestRow from "../components/RequestRow";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
-import ReturnItemsModal from "../components/ReturnItemsModal";
 import useErrorHandler from "../components/useErrorHandler";
 import RequestDashboard from "../components/RequestDashboard";
 import ToastContainer from "../components/ToastContainer";
@@ -72,8 +71,6 @@ export default function SubStore() {
   const [returnModalLoading, setReturnModalLoading] = useState(false);
   const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [username, setUsername] = useState("");
-  const [returnItemData, setReturnItemData] = useState([]);
   const [returnBackModal, setReturnBackModal] = useState(false);
   const [returnBackItems, setReturnBackItems] = useState([]);
   const [returnBackLoading, setReturnBackLoading] = useState(false);
@@ -276,15 +273,14 @@ export default function SubStore() {
     setGrnSubmitting(true);
     try {
       await submitGRN(grnRequest.request_id, payload);
-
       const label =
-        payload.grn_status === "RECEIVED"
-          ? "ڈیلیوری کی تصدیق ہو گئی ہے — موصول مارک کر دیا گیا ہے"
-          : payload.grn_status === "DISPUTED"
-            ? "مسائل کی اطلاع کر دی گئی ہے"
-            : payload.grn_status === "RETURN_BACK"
-              ? "Deliver Returned"
-              : "ڈیلیوری مسترد کر دی گئی ہے — مین اسٹور کو مطلع کر دیا گیا ہے";
+      payload.grn_status === "RECEIVED"
+      ? "ڈیلیوری کی تصدیق ہو گئی ہے — موصول مارک کر دیا گیا ہے"
+      : payload.grn_status === "DISPUTED"
+      ? "مسائل کی اطلاع کر دی گئی ہے"
+      : payload.grn_status === "RETURN"
+      ? "Deliver Returned"
+      : "ڈیلیوری مسترد کر دی گئی ہے — مین اسٹور کو مطلع کر دیا گیا ہے";
       showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn",);
       setGrnRequest(null);
       setDetail(null);
@@ -508,12 +504,13 @@ export default function SubStore() {
           emergency: 0,
           disputed: 0,
         }}
+        setPage={setPage}
+
       />
       {/* ── Filters ── */}
       <div className="flex py-2 items-end justify-between">
         <div className="Filter">
           <div className="flex gap-2">
-
             <input
               value={search}
               onChange={(e) => {
@@ -558,11 +555,7 @@ export default function SubStore() {
             onClick={() => {
               load();
               fetchStoreData();
-              setSearch("");
-              setFilterStatus("");
               setPage(1);
-              setDebouncedSearch("")
-
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto hover:bg-gray-50 shadow-sm"
           >
@@ -644,16 +637,6 @@ export default function SubStore() {
           submitting={grnSubmitting}
         />
       )}
-      {returnModal && (
-        <ReturnItemsModal
-          setReturnModal={setReturnModal}
-          handleReturn={handleReturn}
-          returnModalLoading={returnModalLoading}
-          returnForm={returnForm}
-          setReturnForm={setReturnForm}
-        />
-      )}
-
       {/* Create Modal */}
       {showCreate && (
         <CreateRequestModal

@@ -28,9 +28,7 @@ export default function MainStore() {
   // ── Data ──────────────────────────────────────────────────────────────────
   const [requests, setRequests] = useState([]);
   const [allItems, setAllItems] = useState([]);
-  const [mainStores, setMainStores] = useState([]);
   const [headOffices, setHeadOffices] = useState([]);
-  const [hoRequests, setHoRequests] = useState([]);
   const [pendingReturns, setPendingReturns] = useState(0);
   const [mainStoreError, setMainStoreError] = useState("");
   const [toStore, setToStore] = useState([]);
@@ -106,21 +104,18 @@ export default function MainStore() {
             category: filterCategory || undefined,
             item_type: filterType || undefined,
           }),
-          // getRequests({ direction: "MAIN_TO_HO" }),
           getReturnRequests({ to_store_id: auth.store_id, status: "PENDING" }),
           getItemCategories(auth.store_id),
         ]);
         setCategories(catRes.data.data);
         setRequests(rRes.data.data);
         setRequestsPagination(rRes.data.pagination);
-        // setHoRequests(hoReqRes.data.data);
         setAllItems(iRes.data.data);
         setItemsPagination(iRes.data.pagination);
         setPendingReturns(retRes.data.data?.length || 0);
 
         const allStores = sRes.data.data;
         setToStore(allStores.filter((s) => s.store_type === "PETTY_CASH" || s.store_type === "HEAD_OFFICE"))
-        setMainStores(allStores.filter((s) => s.store_type === "MAIN_STORE"));
         setHeadOffices(allStores.filter((s) => s.store_type === "HEAD_OFFICE"));
       } catch (error) {
         const msg = handleError(error, "Failed to load data");
@@ -228,7 +223,6 @@ export default function MainStore() {
       {tab === "items" && (
         <MainAllItems
           allItems={allItems}
-          mainStores={mainStores}
           onRefresh={refresh}
           showToast={showToast}
           loading={loading}
@@ -261,9 +255,7 @@ export default function MainStore() {
           showToast={showToast}
           loading={loading}
           mainStoreError={mainStoreError}
-          mainStores={mainStores}
           toStore={toStore}
-          debouncedSearch={requestDebouncedSearch}
           setDebouncedSearch={setRequestDebouncedSearch}
           setSearch={setRequestSearch}
           search={requestSearch}
@@ -271,7 +263,7 @@ export default function MainStore() {
       )}
 
       {tab === "returns" && (
-        <MainStoreProcessReturns showToast={showToast} onRefresh={refresh} />
+        <MainStoreProcessReturns showToast={showToast} />
       )}
 
       {tab === "ho-create" && (
