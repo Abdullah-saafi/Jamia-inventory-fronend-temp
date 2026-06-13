@@ -22,7 +22,6 @@ import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import RequestDashboard from "../components/RequestDashboard";
 import { useToast } from "../context/ToastContext";
-import ItemHistoryModal from "../components/ItemHistoryModal";
 
 export default function SubStoreManager() {
   const [requests, setRequests] = useState([]);
@@ -55,8 +54,6 @@ export default function SubStoreManager() {
     hasNextPage: false,
     hasPrevPage: false,
   });
-  const [historyModalOpen, setHistoryModalOpen] = useState(false);
-  const [itemHistory, setItemHistory] = useState({ itemNo: null, rows: [] });
 
   const { auth } = useAuth();
   const { showToast } = useToast()

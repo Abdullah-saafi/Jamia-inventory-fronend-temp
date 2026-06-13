@@ -37,7 +37,6 @@ export default function MainStoreApprover() {
   const [approverName, setApproverName] = useState("");
   const [editedItems, setEditedItems] = useState([]);
   const [actioning, setActioning] = useState(null);
-  const [rejectSpecificItem, setRejectSpecificItem] = useState(null);
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
   const [currentStore, setCurrentStore] = useState(null);
