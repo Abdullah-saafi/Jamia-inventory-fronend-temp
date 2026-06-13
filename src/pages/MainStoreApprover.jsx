@@ -238,10 +238,6 @@ export default function MainStoreApprover() {
         showToast(response.data.message || "Server Error", "error");
         return;
       }
-<<<<<<< HEAD
-=======
-
->>>>>>> caf13eecc86fa8dc8d8563330c4c73c92276832c
       const data = response.data.data || {};
       setItemHistory({ itemNo: item_no, rows: data.history || [] });
       setHistoryModalOpen(true);

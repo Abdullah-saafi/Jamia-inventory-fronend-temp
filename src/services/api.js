@@ -40,13 +40,10 @@ API.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-<<<<<<< HEAD
-=======
     const isAuthRoute =
       originalRequest.url.includes("/users/refresh") ||
       originalRequest.url.includes("/users/login");
 
->>>>>>> caf13eecc86fa8dc8d8563330c4c73c92276832c
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&

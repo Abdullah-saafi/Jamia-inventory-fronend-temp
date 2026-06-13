@@ -56,8 +56,6 @@ export const RETURN_STATUSES = [
   { value: "SCRAPPED", label: "اسکریپ کر دیا گیا" },
   { value: "SCRAPPED_AND_STOCKED", label: "اسکریپ شدہ اور اسٹاک میں محفوظ" }
 ];
-{/* <option value="USABLE">USABLE</option>
-              <option value="REUSABLE">REUSABLE</option> */}
 export const ITEM_CONDITIONS = [
   { value: "USABLE", label: "استعمال ہونے والی اشیاء" },
   { value: "REUSABLE", label: " دوبارہ استعمال ہونے والی اشیاء" },
