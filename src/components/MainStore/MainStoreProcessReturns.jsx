@@ -8,12 +8,16 @@ import {
   processReturnRequest,
 } from "../../services/api";
 import TableHead from "../TableHead";
+import { RETURN_STATUSES } from "../../services/constants";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import ExcelDownloaderWithDates from "../Exceldownloaderwithdates"
+import Pagination from "../Pagination";
 
 const STATUS_COLORS = {
   PENDING: "bg-yellow-100 text-yellow-700 border-yellow-200",
   ADDED_TO_STOCK: "bg-emerald-100 text-emerald-700 border-emerald-200",
   SCRAPPED: "bg-red-100 text-red-700 border-red-200",
-  PARTIALLY_SCRAPPED: "bg-orange-100 text-orange-700 border-orange-200",
+  SCRAPPED_AND_STOCKED: "bg-orange-100 text-orange-700 border-orange-200",
 };
 
 export default function MainStoreProcessReturns({ showToast }) {
@@ -29,20 +33,52 @@ export default function MainStoreProcessReturns({ showToast }) {
   const [modalLoading, setModalLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [itemActions, setItemActions] = useState({});
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [pageLimit, setPageLimit] = useState(10);
+
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalItems: 0,
+    pageLimit: 10,
+    totalPages: 1,
+  });
+
 
   useEffect(() => {
     fetchReturns();
-  }, [filterStatus]);
+  }, [filterStatus, currentPage, pageLimit, debouncedSearch]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const fetchReturns = async () => {
     try {
       setLoading(true);
       setError(null);
+
       const res = await getReturnRequests({
         to_store_id: auth.store_id,
         ...(filterStatus ? { status: filterStatus } : {}),
+        page: currentPage,
+        limit: pageLimit,
+        search: debouncedSearch,
       });
+
       setReturns(res.data.data || []);
+
+      setPagination(
+        res.data.pagination || {
+          currentPage,
+          totalItems: 0,
+          pageLimit,
+          totalPages: 1,
+        }
+      );
     } catch (err) {
       const msg = handleError(err, "Failed to load return requests");
       setError(msg);
@@ -65,7 +101,7 @@ export default function MainStoreProcessReturns({ showToast }) {
       setItemActions(defaults);
     } catch (err) {
       const msg = handleError(err, "Failed to load return details");
-      showToast( msg,"error");
+      showToast(msg, "error");
     } finally {
       setModalLoading(false);
     }
@@ -102,12 +138,12 @@ export default function MainStoreProcessReturns({ showToast }) {
         })),
       };
       await processReturnRequest(selected.return_id, payload);
-      showToast("Return request processed successfully","success",);
+      showToast("واپسی کی درخواست کامیابی سے مکمل ہو گئی ہے", "success",);
       closeModal();
       fetchReturns();
     } catch (err) {
       const msg = handleError(err, "Failed to process return");
-      showToast(msg,"error");
+      showToast(msg, "error");
     } finally {
       setSubmitting(false);
     }
@@ -121,7 +157,7 @@ export default function MainStoreProcessReturns({ showToast }) {
   ).length;
 
   return (
-    <div className="p-4">
+    <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -132,35 +168,158 @@ export default function MainStoreProcessReturns({ showToast }) {
             واپس آئٹمز کو اسٹاک میں شامل کریں یا اسکریپ کریں
           </p>
         </div>
-        <button
-          onClick={fetchReturns}
-          className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm"
-        >
-          ↻ Refresh
-        </button>
       </div>
+      {/* Header finished */}
+
 
       {/* Filter */}
-      <div className="flex items-center gap-3 mb-4">
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm"
-        >
-          <option value="">تمام اسٹیٹس</option>
-          <option value="PENDING">زیر التواء</option>
-          <option value="ADDED_TO_STOCK">اسٹاک میں شامل کر دیا گیا</option>
-          <option value="SCRAPPED">اسکریپ کر دیا گیا</option>
-          <option value="PARTIALLY_SCRAPPED">جزوی طور پر اسکریپ کیا گیا</option>
-        </select>
-        {filterStatus && (
+      <div className="flex items-end justify-between py-2">
+        <div>
+          {showDropdown && (
+            <div
+              className="absolute inset-0"
+              onClick={() => setShowDropdown(false)}
+            />
+          )}
+
+          {/* Search + Filter + Clear */}
+          <div className="flex items-center gap-2">
+            {/* Search */}
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              className="bg-white border border-gray-300 rounded px-3 h-10 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+            />
+
+            {/* Filter */}
+            <div className="relative min-w-50">
+              <button
+                type="button"
+                onClick={() => setShowDropdown((prev) => !prev)}
+                className="w-full h-10 px-3 flex items-center justify-between bg-white border border-gray-300 rounded-lg shadow-sm hover:border-emerald-400 focus:border-emerald-500 transition-all text-sm text-gray-700"
+              >
+                <span>
+                  {RETURN_STATUSES.find((s) => s.value === filterStatus)?.label ||
+                    "تمام اسٹیٹس"}
+                </span>
+
+                {showDropdown ? (
+                  <ChevronUp size={16} className="text-gray-400" />
+                ) : (
+                  <ChevronDown size={16} className="text-gray-400" />
+                )}
+              </button>
+
+              {showDropdown && (
+                <div className="absolute z-50 mt-2 w-full max-h-48 bg-white border border-gray-200 rounded-xl shadow-xl overflow-y-auto">
+                  <button
+                    className="w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-sm"
+                    onClick={() => {
+                      setFilterStatus("");
+                      setCurrentPage(1);
+                      setShowDropdown(false);
+                    }}
+                  >
+                    تمام اسٹیٹس
+                  </button>
+
+                  {RETURN_STATUSES.map((n) => (
+                    <button
+                      key={n.value}
+                      onClick={() => {
+                        setCurrentPage(1);
+                        setFilterStatus(n.value);
+                        setShowDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${filterStatus === n.value
+                        ? "bg-emerald-100 text-emerald-700 font-semibold"
+                        : "text-gray-700"
+                        }`}
+                    >
+                      {n.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Clear */}
+            {(filterStatus || search) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilterStatus("");
+                  setCurrentPage(1);
+                  setDebouncedSearch("")
+                }}
+                className="h-10 px-3 text-gray-500 hover:text-gray-800 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Refresh stays below */}
           <button
-            onClick={() => setFilterStatus("")}
-            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+            onClick={() => {
+              fetchReturns()
+              setCurrentPage(1);
+            }}
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >
-            Clear
+            ↻ Refresh
           </button>
-        )}
+        </div>
+
+        {/* Excel Export */}
+        <div className="Temp-downloader">
+          <div className="downloader">
+            <ExcelDownloaderWithDates
+              data={returns}
+              dateKey="created_at"
+              fileName={auth.username}
+              pageLoading={loading}
+              columns={[
+                {
+                  key: "return_no",
+                  label: "واپسی نمبر",
+                  format: (v) => (v ? v : "—"),
+                },
+                {
+                  key: "from_store_name",
+                  label: "بھیجنے والا اسٹور",
+                  format: (v) => (v ? v : "—"),
+                },
+                {
+                  key: "sent_by_name",
+                  label: "بھیجنے والا",
+                  format: (v) => (v ? v : "—"),
+                },
+                {
+                  key: "item_count",
+                  label: "آئٹمز",
+                  format: (v) => (v ? v : "—"),
+                },
+                {
+                  key: "created_at",
+                  label: "تاریخ",
+                  format: (v) =>
+                    v ? new Date(v).toLocaleDateString() : "—",
+                },
+                {
+                  key: "status",
+                  label: "اسٹیٹس",
+                  format: (v) => (v ? v : "—"),
+                },
+              ]}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Table */}
@@ -182,7 +341,7 @@ export default function MainStoreProcessReturns({ showToast }) {
               returns.map((r) => (
                 <tr
                   key={r.return_id}
-                  className="border-b border-zinc-200 hover:bg-gray-50 transition-colors"
+                  className="border-b border-zinc-200 hover:bg-gray-100 transition-colors"
                 >
                   <td className="px-4 py-3">
                     <span className="font-mono text-emerald-600 text-xs font-bold">
@@ -205,10 +364,9 @@ export default function MainStoreProcessReturns({ showToast }) {
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
-                        STATUS_COLORS[r.status] ||
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[r.status] ||
                         "bg-gray-100 text-gray-600 border-gray-200"
-                      }`}
+                        }`}
                     >
                       {r.status}
                     </span>
@@ -236,11 +394,26 @@ export default function MainStoreProcessReturns({ showToast }) {
           </tbody>
         </table>
       </div>
+      <div className="mt-4">
+        <Pagination
+          currentPage={pagination.currentPage}
+          totalItems={pagination.totalItems}
+          pageSize={pagination.pageLimit}
+          onPageChange={setCurrentPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={(size) => {
+            setPageLimit(size);
+            setCurrentPage(1);
+          }}
+        />
+      </div>
 
       {/* Process Modal */}
       {(selected || modalLoading) && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={closeModal}>
+          {/* <div className="absolute inset-0 z-40 bg-black/30" onClick={closeModal} /> */}
+          <div onClick={(e) => { e.stopPropagation() }}
+            className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
               <div>
@@ -282,11 +455,10 @@ export default function MainStoreProcessReturns({ showToast }) {
                       return (
                         <div
                           key={item.return_item_id}
-                          className={`border rounded-lg p-4 transition-colors ${
-                            isScrap
-                              ? "border-red-200 bg-red-50"
-                              : "border-emerald-200 bg-emerald-50"
-                          }`}
+                          className={`border rounded-lg p-4 transition-colors ${isScrap
+                            ? "border-red-200 bg-red-50"
+                            : "border-emerald-200 bg-emerald-50"
+                            }`}
                         >
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">
@@ -304,6 +476,9 @@ export default function MainStoreProcessReturns({ showToast }) {
                                   مقدار: {item.return_qty} {item.item_uom}
                                 </span>
                               </div>
+                              <span className="font-mono font-bold text-sm text-gray-700">
+                                کارروائی کی قسم: {item.action_type}
+                              </span>
                             </div>
 
                             {/* Only show action buttons if PENDING */}
@@ -316,11 +491,10 @@ export default function MainStoreProcessReturns({ showToast }) {
                                       "ADD_TO_STOCK",
                                     )
                                   }
-                                  className={`text-xs font-semibold px-3 py-1.5 rounded border transition-colors ${
-                                    action === "ADD_TO_STOCK"
-                                      ? "bg-emerald-600 text-white border-emerald-600"
-                                      : "bg-white text-emerald-600 border-emerald-300 hover:bg-emerald-50"
-                                  }`}
+                                  className={`text-xs font-semibold px-3 py-1.5 rounded border transition-colors ${action === "ADD_TO_STOCK"
+                                    ? "bg-emerald-600 text-white border-emerald-600"
+                                    : "bg-white text-emerald-600 border-emerald-300 hover:bg-emerald-50"
+                                    }`}
                                 >
                                   ✓ اسٹاک میں
                                 </button>
@@ -328,11 +502,10 @@ export default function MainStoreProcessReturns({ showToast }) {
                                   onClick={() =>
                                     setAction(item.return_item_id, "SCRAP")
                                   }
-                                  className={`text-xs font-semibold px-3 py-1.5 rounded border transition-colors ${
-                                    action === "SCRAP"
-                                      ? "bg-red-600 text-white border-red-600"
-                                      : "bg-white text-red-500 border-red-300 hover:bg-red-50"
-                                  }`}
+                                  className={`text-xs font-semibold px-3 py-1.5 rounded border transition-colors ${action === "SCRAP"
+                                    ? "bg-red-600 text-white border-red-600"
+                                    : "bg-white text-red-500 border-red-300 hover:bg-red-50"
+                                    }`}
                                 >
                                   ✕ اسکریپ
                                 </button>

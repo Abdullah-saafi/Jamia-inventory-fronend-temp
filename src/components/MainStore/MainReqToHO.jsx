@@ -6,6 +6,7 @@ import {
   getRequests,
   getRequestById,
   submitGRN,
+  uploadImg,
 } from "../../services/api";
 import { useAuth } from "../../context/authContext";
 import useErrorHandler from "../useErrorHandler";
@@ -48,6 +49,9 @@ export default function MainReqToHO({ showToast }) {
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [isEmergency, setIsEmergency] = useState(false);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStore, setFilterStore] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
@@ -81,6 +85,8 @@ export default function MainReqToHO({ showToast }) {
         direction: ["MAIN_TO_HO", "MAIN_TO_PCASH"],
         page,
         limit: pageSize,
+        search: debouncedSearch,
+        emergency: isEmergency || undefined,
       };
       if (filterStatus) params.status = filterStatus;
       if (auth.role !== "super admin") {
@@ -125,7 +131,14 @@ export default function MainReqToHO({ showToast }) {
     auth.store_id,
     page,
     pageSize,
+    debouncedSearch,
+    isEmergency,
   ]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // ── Inline detail ──────────────────────────────────────────────────────────
   const openDetail = async (r) => {
@@ -166,10 +179,12 @@ export default function MainReqToHO({ showToast }) {
       await submitGRN(grnRequest.request_id, payload);
       const label =
         payload.grn_status === "RECEIVED"
-          ? "Delivery confirmed — marked as RECEIVED"
+          ? "ڈیلیوری کی تصدیق ہو گئی ہے — موصول مارک کر دیا گیا ہے"
           : payload.grn_status === "DISPUTED"
-            ? "Issues reported — request marked DISPUTED"
-            : "Delivery rejected — main store notified";
+            ? "مسائل کی اطلاع کر دی گئی ہے"
+            : payload.grn_status === "RETURN_BACK"
+              ? "Deliver Returned"
+              : "ڈیلیوری مسترد کر دی گئی ہے — مین اسٹور کو مطلع کر دیا گیا ہے";
       showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn");
       setGrnRequest(null);
       setDetail(null);
@@ -215,14 +230,21 @@ export default function MainReqToHO({ showToast }) {
   const handleCreate = async (e) => {
     e.preventDefault();
     const { from_store_id, to_store_id, requested_by_name, items } = form;
+    const itemLines = items.filter((i) => i.item_no);
+    const hasItems = itemLines.length > 0;
+
     const invalid = items.some(
       (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
     );
-    console.log("form", form);
-
+    const isUOMMissing = itemLines.some(
+      (i) => i.item_type === "USABLE" && !i.item_uom,
+    );
     if (!from_store_id || !to_store_id || !requested_by_name || invalid)
       return showToast("براہ کرم تمام لازمی خانے پُر کریں۔", "error");
-
+    if (
+      itemLines.some((i) => !i.item_name || isUOMMissing || i.requested_qty < 1)
+    )
+      return showToast("Check item details", "error");
     setCreating(true);
     try {
       const selectedStore = toStore.find(
@@ -234,15 +256,25 @@ export default function MainReqToHO({ showToast }) {
           ? "MAIN_TO_PCASH"
           : "MAIN_TO_HO";
 
+      const itemsWithImageUrls = [];
+      for (const item of itemLines) {
+        const { selected_item_no, item_search, _showDropdown, images, ...rest } = item;
+        const payloadItem = { ...rest };
+
+        if (images && images.length > 0) {
+          const formData = new FormData();
+          formData.append("image", images[0]);
+          const uploadRes = await uploadImg(formData)
+          payloadItem.image_url = uploadRes.data.image_url;
+        }
+
+        itemsWithImageUrls.push(payloadItem);
+      }
       const payload = {
         ...form,
         direction,
-        items: items.map(
-          ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
-        ),
+        items: itemsWithImageUrls,
       };
-      console.log("payload", payload);
-
       await createRequest(payload);
       showToast("درخواست جمع کر دی گئی ہے", "success");
       setShowCreate(false);
@@ -267,10 +299,11 @@ export default function MainReqToHO({ showToast }) {
     (r) => r.status === "FULFILLED" && !r.grn_at,
   ).length;
 
+  const emergencyRequest = requests.filter((r) => r.is_emergency === true).length
+
   return (
     <div>
       {/* ── Header ── */}
-
       <RequestDashboard
         pageType={pageType}
         setFilterStatus={setFilterStatus}
@@ -278,9 +311,12 @@ export default function MainReqToHO({ showToast }) {
         counts={{
           pending: pendingGRN,
           returnBack: 0,
-          emergency: 0,
+          emergency: emergencyRequest,
           disputed: 0,
         }}
+        setIsEmergency={setIsEmergency}
+        isEmergency={isEmergency}
+        setPage={setPage}
       />
 
       <div className="flex items-center justify-between mb-6">
@@ -301,22 +337,46 @@ export default function MainReqToHO({ showToast }) {
       </div>
 
       {/* ── Filters ── */}
-      <div className="flex flex-wrap gap-2 items-end h-full py-2 justify-between">
+      <div className="flex  py-2  items-end justify-between">
         <div>
-          <StoreFilters
-            filterStatus={filterStatus}
-            setFilterStatus={(v) => {
-              setFilterStatus(v);
-              setPage(1);
-            }}
-            pageType={pageType}
-          />
-
+          <div className="flex gap-2">
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+            />
+            <StoreFilters
+              filterStatus={filterStatus}
+              setFilterStatus={(v) => {
+                setFilterStatus(v);
+                setPage(1);
+              }}
+              pageType={pageType}
+            />
+            {(search || filterStatus || isEmergency) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilterStatus("");
+                  setPage(1);
+                  setDebouncedSearch("")
+                  setIsEmergency(false)
+                }}
+                className="text-gray-500 hover:text-gray-800 text-sm px-3 h-7.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
           <button
             onClick={() => {
-              setFilterStatus("");
-              setPage(1);
               load();
+              setPage(1);
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >
@@ -332,14 +392,13 @@ export default function MainReqToHO({ showToast }) {
               dateKey="created_at"
               fileName={auth.username}
               columns={[
-                { key: "request_id", label: "درخواست نمبر" },
-                { key: "requested_by_name", label: "درخواست کنندہ" },
+                { key: "request_no", label: "درخواست نمبر", format: (v) => (v ? v : "—") },
+                { key: "requested_by_name", label: "درخواست کنندہ", format: (v) => (v ? v : "—") },
                 {
                   key: "created_at",
                   label: "درخواست کی تاریخ",
                   format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                 },
-                { key: "status", label: "حالت" },
                 {
                   key: "approved_at",
                   label: "منظوری کی تاریخ",
@@ -347,10 +406,12 @@ export default function MainReqToHO({ showToast }) {
                 },
                 {
                   key: "fulfilled_at",
-                  label: "تکمیل کی تاریخ",
+                  label: " تکمیل کی تاریخ",
                   format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                 },
+                { key: "status", label: "حالت", format: (v) => (v ? v : "—") },
               ]}
+              pageLoading={pageLoading}
             />
           </div>
         </div>

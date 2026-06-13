@@ -67,7 +67,7 @@ export default function CreateRequestModal({
                   <input value={mainStores[0].store_name} readOnly className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none" />
                 ) : (
                   <select value={itemForm.to_store_id} onChange={(e) => setItemForm((f) => ({ ...f, to_store_id: e.target.value }))} className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500">
-                    <option value="">Select Main Store</option>
+                    <option value="">مرکزی اسٹور منتخب کریں</option>
                     {mainStores.map((s) => <option key={s.store_id} value={s.store_id}>{s.store_name}</option>)}
                   </select>
                 )}
@@ -75,9 +75,17 @@ export default function CreateRequestModal({
             )}
             {pageType === "mainReqToHO" && (
               <div>
-                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">کے لیے ( پٹی کیش / ہیڈ آفس)</label>
-                <select value={itemForm.to_store_id} onChange={(e) => setItemForm((f) => ({ ...f, to_store_id: e.target.value }))} className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500">
-                  <option value="">Select Main Store</option>
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+                  کے لیے ( پٹی کیش / ہیڈ آفس)
+                </label>
+                <select
+                  value={itemForm.to_store_id}
+                  onChange={(e) =>
+                    setItemForm((f) => ({ ...f, to_store_id: Number(e.target.value) }))
+                  }
+                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="">مرکزی اسٹور منتخب کریں</option>
                   {toStore.map((s) => <option key={s.store_id} value={s.store_id}>{s.store_name}</option>)}
                 </select>
               </div>
@@ -528,7 +536,7 @@ export default function CreateRequestModal({
                           />
                         </div>
                         <div className="col-span-2">
-                          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block text-emerald-600">
+                          <label className="text-[10px] uppercase font-bold mb-1 block text-emerald-600">
                             مقدار
                           </label>
                           <input

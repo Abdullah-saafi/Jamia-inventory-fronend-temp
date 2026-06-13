@@ -28,9 +28,7 @@ export default function MainStore() {
   // ── Data ──────────────────────────────────────────────────────────────────
   const [requests, setRequests] = useState([]);
   const [allItems, setAllItems] = useState([]);
-  const [mainStores, setMainStores] = useState([]);
   const [headOffices, setHeadOffices] = useState([]);
-  const [hoRequests, setHoRequests] = useState([]);
   const [pendingReturns, setPendingReturns] = useState(0);
   const [mainStoreError, setMainStoreError] = useState("");
   const [toStore, setToStore] = useState([]);
@@ -42,7 +40,9 @@ export default function MainStore() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageLimit, setPageLimit] = useState(10);
   const [search, setSearch] = useState("");
+  const [requestSearch, setRequestSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [requestDebouncedSearch, setRequestDebouncedSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [filterType, setFilterType] = useState("");
 
@@ -77,17 +77,23 @@ export default function MainStore() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setRequestDebouncedSearch(requestSearch), 500);
+    return () => clearTimeout(timer);
+  }, [requestSearch]);
+
   // ── Fetch data ────────────────────────────────────────────────────────────
   const fetchData = useCallback(
     async (silent = false) => {
       if (!silent) setLoading(true);
       try {
-        const [rRes, sRes, iRes, hoReqRes, retRes, catRes] = await Promise.all([
+        const [rRes, sRes, iRes, retRes, catRes] = await Promise.all([
           getRequests({
             direction: "SUB_TO_MAIN",
             page: currentPage,
             limit: pageLimit,
             status: requestStatusFilter || undefined,
+            search: requestDebouncedSearch
           }),
           getStores({ all: true }),
           getItems({
@@ -98,26 +104,19 @@ export default function MainStore() {
             category: filterCategory || undefined,
             item_type: filterType || undefined,
           }),
-          getRequests({ direction: "MAIN_TO_HO" }),
           getReturnRequests({ to_store_id: auth.store_id, status: "PENDING" }),
           getItemCategories(auth.store_id),
         ]);
         setCategories(catRes.data.data);
         setRequests(rRes.data.data);
         setRequestsPagination(rRes.data.pagination);
-        setHoRequests(hoReqRes.data.data);
         setAllItems(iRes.data.data);
         setItemsPagination(iRes.data.pagination);
         setPendingReturns(retRes.data.data?.length || 0);
 
         const allStores = sRes.data.data;
-        setToStore(allStores.filter((s) => {
-          const t = (s.store_type || "").toUpperCase();
-          const name = (s.store_name || "").toLowerCase();
-          return t === "PETTYCASH" || t === "HEAD_OFFICE" || name.includes("petty") || name.includes("پٹی");
-        }))
-        setMainStores(allStores.filter((s) => (s.store_type || "").toUpperCase() === "MAIN_STORE"));
-        setHeadOffices(allStores.filter((s) => (s.store_type || "").toUpperCase() === "HEAD_OFFICE"));
+        setToStore(allStores.filter((s) => s.store_type === "PETTY_CASH" || s.store_type === "HEAD_OFFICE"))
+        setHeadOffices(allStores.filter((s) => s.store_type === "HEAD_OFFICE"));
       } catch (error) {
         const msg = handleError(error, "Failed to load data");
         setMainStoreError(msg);
@@ -130,6 +129,7 @@ export default function MainStore() {
       pageLimit,
       requestStatusFilter,
       debouncedSearch,
+      requestDebouncedSearch,
       filterCategory,
       filterType,
       auth.store_id,
@@ -146,7 +146,7 @@ export default function MainStore() {
   const pendingApproved = requests.filter(
     (r) => r.status === "APPROVED",
   ).length;
-  const pendingHo = hoRequests.filter((r) => r.status === "PENDING").length;
+  const pendingHo = requests.filter((r) => r.status === "PENDING").length;
 
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message} />;
@@ -188,7 +188,7 @@ export default function MainStore() {
                 {t.label}
                 {badge && (
                   <span
-                    className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none
+                    className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-4.5 text-center leading-none
                       ${tab === t.id
                         ? "bg-white/20 text-white"
                         : "bg-emerald-600 text-white"
@@ -223,7 +223,6 @@ export default function MainStore() {
       {tab === "items" && (
         <MainAllItems
           allItems={allItems}
-          mainStores={mainStores}
           onRefresh={refresh}
           showToast={showToast}
           loading={loading}
@@ -240,6 +239,7 @@ export default function MainStore() {
           filterType={filterType}
           categories={categories}
           setFilterType={setFilterType}
+          setDebouncedSearch={setDebouncedSearch}
         />
       )}
 
@@ -255,13 +255,15 @@ export default function MainStore() {
           showToast={showToast}
           loading={loading}
           mainStoreError={mainStoreError}
-          mainStores={mainStores}
           toStore={toStore}
+          setDebouncedSearch={setRequestDebouncedSearch}
+          setSearch={setRequestSearch}
+          search={requestSearch}
         />
       )}
 
       {tab === "returns" && (
-        <MainStoreProcessReturns showToast={showToast} onRefresh={refresh} />
+        <MainStoreProcessReturns showToast={showToast} />
       )}
 
       {tab === "ho-create" && (

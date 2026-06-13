@@ -5,8 +5,8 @@ import {
   approveRequest,
   rejectRequest,
   rejectItemById,
-  getItemHistory,
   getStores,
+  getItemHistory,
 } from "../services/api";
 import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import { useAuth } from "../context/authContext";
@@ -15,7 +15,6 @@ import BlockedUI from "../components/BlockedUI";
 import useErrorHandler from "../components/useErrorHandler";
 import Pagination from "../components/Pagination";
 import StatusBadge from "../components/StatusBadge"
-import DateTimeCell from "../components/DateTimeCell"
 import RequestDashboard from "../components/RequestDashboard";
 import StoreFilters from "../components/StoreFilters";
 import TableHead from "../components/TableHead";
@@ -30,6 +29,8 @@ export default function MainStoreApprover() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [approveModal, setApproveModal] = useState(null);
@@ -39,12 +40,15 @@ export default function MainStoreApprover() {
   const [rejectSpecificItem, setRejectSpecificItem] = useState(null);
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
+  const [currentStore, setCurrentStore] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [page, setPage] = useState(1);
+  const [isEmergency, setIsEmergency] = useState(false);
   const [pageSize, setPageSize] = useState(10);
-  const [currentStore, setCurrentStore] = useState(null);
-  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [rejectSpecificItem, setRejectSpecificItem] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(null);
   const [itemHistory, setItemHistory] = useState({ itemNo: null, rows: [] });
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
 
   const { auth } = useAuth();
   const { showToast } = useToast()
@@ -55,7 +59,7 @@ export default function MainStoreApprover() {
   const load = async () => {
     setLoading(true);
     try {
-      const params = { direction: ["MAIN_TO_PCASH", "MAIN_TO_HO"] };
+      const params = { direction: ["MAIN_TO_PCASH", "MAIN_TO_HO"], search: debouncedSearch, emergency: isEmergency || undefined, };
       if (filter) params.status = filter;
       const r = await getRequests(params);
       setRequests(r.data.data);
@@ -69,7 +73,26 @@ export default function MainStoreApprover() {
 
   useEffect(() => {
     load();
-  }, [filter]);
+  }, [filter, debouncedSearch, isEmergency]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const response = await getStores()
+        setCurrentStore(response.data.data.filter((s) => s.store_name === auth.storeName))
+      } catch (e) {
+        const msg = handleError(e, "Failed to get stores")
+        showToast(msg, "error")
+      }
+    };
+
+    fetchStores();
+  }, []);
 
   useEffect(() => {
     const fetchStores = async () => {
@@ -166,16 +189,16 @@ export default function MainStoreApprover() {
 
   const rejectItem = async (id, rid) => {
     try {
-      setRejectSpecificItem(rid);
-      await rejectItemById(id, rid);
-      openApprove(id);
+      setRejectSpecificItem(rid)
+      await rejectItemById(id, rid)
+      openApprove(id, approveModal.no)
     } catch (error) {
       const msg = handleError(error, "Error approving");
       showToast(msg, "error");
     } finally {
-      setRejectSpecificItem(null);
+      setRejectSpecificItem(null)
     }
-  };
+  }
 
   const handleReject = async () => {
     if (!rejecterName.trim() || !rejectReason.trim()) return;
@@ -200,6 +223,7 @@ export default function MainStoreApprover() {
 
   const openHistory = async (item_no) => {
     try {
+      setHistoryLoading(item_no)
       const storeId = (currentStore && currentStore[0] && currentStore[0].store_id) ? currentStore[0].store_id : auth.store_id;
       if (!storeId) {
         showToast("Store information unavailable", "error");
@@ -214,16 +238,23 @@ export default function MainStoreApprover() {
         showToast(response.data.message || "Server Error", "error");
         return;
       }
+<<<<<<< HEAD
+=======
+
+>>>>>>> caf13eecc86fa8dc8d8563330c4c73c92276832c
       const data = response.data.data || {};
       setItemHistory({ itemNo: item_no, rows: data.history || [] });
       setHistoryModalOpen(true);
     } catch (e) {
       const msg = handleError(e, "Error fetching history");
       showToast(msg, "error");
+    } finally {
+      setHistoryLoading(null)
     }
-  };
+  }
 
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
+  const emergencyRequest = requests.filter((r) => r.is_emergency === true).length
 
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message} />;
@@ -237,7 +268,7 @@ export default function MainStoreApprover() {
           <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
           <span className="text-gray-500 text-xs mt-0.5 bg-gray-200 rounded p-1">{auth.storeName || "loading..."}</span>
           <p className="text-gray-500 text-sm mt-0.5">
-            اسٹاف کی آئٹم درخواستوں کا جائزہ لیں اور انہیں منظور یا مسترد کریں
+            مین اسٹور کی طرف سے ہیڈ آفس یا پیٹی کیش کو بھیجی گئی درخواستوں کو منظور یا مسترد کریں
           </p>
         </div>
       </div>
@@ -250,23 +281,51 @@ export default function MainStoreApprover() {
         counts={{
           pending: pendingCount,
           returnBack: 0,
-          emergency: 0,
+          emergency: emergencyRequest,
           disputed: 0
         }}
+        setPage={setPage}
+        setIsEmergency={setIsEmergency}
+        isEmergency={isEmergency}
       />
 
       {/* ── Filter ── */}
       <div className="flex h-full py-2 items-end justify-between">
         <div>
-          <StoreFilters
-            filterStatus={filter}
-            setFilterStatus={setFilter}
-            pageType={pageType}
-          />
+          <div className="flex gap-2">
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+            />
+            <StoreFilters
+              filterStatus={filter}
+              setFilterStatus={setFilter}
+              pageType={pageType}
+            />
+            {(search || filter || isEmergency) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilter("");
+                  setPage(1);
+                  setDebouncedSearch("")
+                  setIsEmergency(false)
+                }}
+                className="text-gray-500 hover:text-gray-800 text-sm px-3 h-7.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
 
           <button
             onClick={() => {
-              setFilter("")
               setPage(1)
               load()
             }}
@@ -284,14 +343,13 @@ export default function MainStoreApprover() {
               dateKey="created_at"
               fileName={auth.username}
               columns={[
-                { key: "request_id", label: "درخواست نمبر" },
+                { key: "request_no", label: "درخواست نمبر" },
                 { key: "requested_by_name", label: "درخواست کنندہ" },
                 {
                   key: "created_at",
                   label: "درخواست کی تاریخ",
                   format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                 },
-                { key: "status", label: "حالت" },
                 {
                   key: "approved_at",
                   label: "منظوری کی تاریخ",
@@ -302,7 +360,9 @@ export default function MainStoreApprover() {
                   label: "تکمیل کی تاریخ",
                   format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                 },
+                { key: "status", label: "حالت" },
               ]}
+              pageLoading={loading}
             />
           </div>
         </div>
@@ -372,6 +432,7 @@ export default function MainStoreApprover() {
           rejectSpecificItem={rejectSpecificItem}
           action={"Approve"}
           openHistory={openHistory}
+          historyLoading={historyLoading}
         />
       )}
 

@@ -40,6 +40,13 @@ API.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+<<<<<<< HEAD
+=======
+    const isAuthRoute =
+      originalRequest.url.includes("/users/refresh") ||
+      originalRequest.url.includes("/users/login");
+
+>>>>>>> caf13eecc86fa8dc8d8563330c4c73c92276832c
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
@@ -95,12 +102,12 @@ export const getItemById = (id) => API.get(`/items/${id}`);
 export const createItem = (data) => API.post("/items", data);
 export const updateItem = (id, data) => API.patch(`/items/${id}`, data);
 export const deleteItem = (id) => API.delete(`/items/${id}`);
-export const rejectItemById = (id,rid) => API.delete(`/requests/${id}/item/${rid}`);
+export const rejectItemById = (id, rid) => API.delete(`/requests/${id}/item/${rid}`);
 export const getItemHistory = (store_id, item_no) => API.get(`/items/store/${store_id}/item/${item_no}`);
-export const getItemCategories = (store_id) =>
-  API.get("/categories/availableItemCategory", {
-    params: { store_id },
-  });
+export const getItemCategories = (store_id) => API.get("/categories/availableItemCategory", { params: { store_id }, });
+export const uploadImg = (data) => API.post("/upload", data, {
+  headers: { "Content-Type": "multipart/form-data" }
+})
 
 // ── Requests ─────────────────────────────────────────────────
 export const getRequests = (params) => API.get("/requests", { params });
@@ -117,7 +124,7 @@ export const approveRequest = (id, data) =>
   API.patch(`/requests/${id}/approve`, data);
 export const rejectRequest = (id, data) =>
   API.patch(`/requests/${id}/reject`, data);
-export const fulfillRequest = (id,data) => API.patch(`/requests/${id}/fulfill`, data);
+export const fulfillRequest = (id, data) => API.patch(`/requests/${id}/fulfill`, data);
 export const sendReturnToMain = (id, data) =>
   API.patch(`/requests/${id}/send-back`, data);
 export const acceptReturnFromSub = (id, accepted_by_name) =>

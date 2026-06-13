@@ -58,7 +58,7 @@ export default function RequestRow({
       >
         {/* Request No */}
         <td className="px-4 py-3">
-          <div className="flex items-center gap-2">
+          <div className="flex  items-center gap-2">
             <span className="font-mono text-emerald-600 text-xs font-bold">
               {r.request_no}
             </span>
@@ -82,7 +82,7 @@ export default function RequestRow({
 
         {(pageType === "subStore" || pageType === "subStoreManager") && (
           <>
-            <td className="px-4 py-3">
+            <td className="px-2 py-3">
               <TypeBadge hasItems={hasItems} itemType={r.item_type} />
             </td>
           </>
@@ -105,10 +105,12 @@ export default function RequestRow({
             <td className="px-4 py-3 text-gray-700">
               {r.approved_by_name || "—"}
             </td>
-            <td className="px-4 py-3 text-gray-700">
-              {r.fulfilled_by_name || "—"}
-            </td>
           </>
+        )}
+        {(pageType === "headOffice" || pageType === "mainSubStoreReqs" || pageType === "pettyCash") && (
+          <td className="px-4 py-3 text-gray-700">
+            {r.fulfilled_by_name || "—"}
+          </td>
         )}
         <td className="px-4 py-3">
           <DateTimeCell ts={r.requested_at || r.created_at} />
@@ -120,9 +122,6 @@ export default function RequestRow({
             </td>
           </>
         )}
-        <td className="px-4 py-3">
-          <StatusBadge status={r.status} />
-        </td>
         {(pageType === "subStore" || pageType === "subStoreManager" || pageType === "headOffice" || pageType === "mainStoreApprover" || pageType === "mainReqToHO" || pageType === "pettyCash") && (
           <>
             <td className="px-4 py-3 ">
@@ -133,6 +132,9 @@ export default function RequestRow({
             </td>
           </>
         )}
+        <td className="px-4 py-3">
+          <StatusBadge status={r.status} />
+        </td>
         <td className="px-4 py-3 text-right">
           <div className="flex items-center justify-end gap-2">
             {(needsGRN && (pageType === "subStore" || pageType === "mainReqToHO")) && (
@@ -144,18 +146,6 @@ export default function RequestRow({
                 {grnLoading ? "…" : "ڈلیوری کی تصدیق"}
               </button>
             )}
-            {/* {isReturnable && pageType === "subStore" && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  returnItem(r.request_id,)
-                }}
-                disabled={returnModalLoading}
-                className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
-              >
-                {returnModalLoading ? "…" : "Return Items"}
-              </button>
-            )} */}
             {((pageType === "subStoreManager" || pageType === "mainStoreApprover") && r.status === "PENDING") && (
               <>
                 <button
@@ -315,51 +305,65 @@ export default function RequestRow({
                   </div>
 
                   {/* Driver Info */}
-                  {(r.driver_name || r.driver_no || r.vehicle_no) && (
+                  {(r.driver_name || r.driver_no || r.vehicle_no || r.ref_no || r.partial_request_no) && (
                     <div className="bg-gray-100 border border-gray-200 rounded-xl p-4 mb-3 ">
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
 
-                        <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
-                          <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
-                            ڈرائیور کا نام
+                        {r.driver_name && (
+                          <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                            <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
+                              ڈرائیور کا نام
+                            </div>
+                            <div className="text-gray-800 font-medium">
+                              {r.driver_name || "-"}
+                            </div>
                           </div>
-                          <div className="text-gray-800 font-medium">
-                            {r.driver_name || "-"}
-                          </div>
-                        </div>
+                        )}
 
-                        <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
-                          <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
-                            ڈرائیور کا نمبر
+                        {r.driver_no && (
+                          <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                            <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
+                              ڈرائیور کا نمبر
+                            </div>
+                            <div className="text-gray-800 font-medium">
+                              {r.driver_no || "-"}
+                            </div>
                           </div>
-                          <div className="text-gray-800 font-medium">
-                            {r.driver_no || "-"}
-                          </div>
-                        </div>
+                        )}
 
-                        <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
-                          <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
-                            گاڑی کا نمبر
+                        {r.vehicle_no && (
+                          <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                            <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
+                              گاڑی کا نمبر
+                            </div>
+                            <div className="text-gray-800 font-medium">
+                              {r.vehicle_no || "-"}
+                            </div>
                           </div>
-                          <div className="text-gray-800 font-medium">
-                            {r.vehicle_no || "-"}
-                          </div>
-                        </div>
+                        )}
 
-                      </div>
-                    </div>
-                  )}
-                  {(r.ref_no) && (
-                    <div className="bg-gray-100 border border-gray-200 rounded-xl p-4 mb-3 ">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                        <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
-                          <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
-                            پیٹی کیش ریفرنس نمبر
+                        {r.ref_no && (
+                          <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                            <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
+                              پیٹی کیش ریفرنس نمبر
+                            </div>
+                            <div className="text-gray-800 font-medium">
+                              {r.ref_no || "-"}
+                            </div>
                           </div>
-                          <div className="text-gray-800 font-medium">
-                            {r.ref_no || "-"}
+                        )}
+
+                        {r.partial_request_no && (
+                          <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                            <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
+                              جزوی ریکویسٹ نمبر
+                            </div>
+                            <div className="text-gray-800 font-medium">
+                              {r.partial_request_no || "-"}
+                            </div>
                           </div>
-                        </div>
+                        )}
+
                       </div>
                     </div>
                   )}

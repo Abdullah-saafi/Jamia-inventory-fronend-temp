@@ -40,13 +40,9 @@ const DisputeResolutionPanel = ({
           action,
         })),
       };
-
-      console.log("payload", payload);
       await resolveDispute(request.request_id, payload);
-
-
+      showToast("تنازع کامیابی سے حل کر دیا گیا ہے", "success");
       onResolved();
-
     } catch (error) {
       const msg = handleError(error, "Failed to perform action");
       showToast(msg, "error");
@@ -54,14 +50,13 @@ const DisputeResolutionPanel = ({
       setProcessing(false);
     }
   };
-
-
+  
   return (
     <div className="border border-amber-200 rounded-xl overflow-hidden">
       <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 flex items-center gap-2">
         <span className="w-2 h-2 rounded-full bg-amber-400" />
         <span className="text-amber-700 text-sm font-bold">
-          Dispute Resolution Required
+          تنازع کا حل درکار ہے
         </span>
       </div>
 
@@ -69,7 +64,7 @@ const DisputeResolutionPanel = ({
         {/* {request.grn_note && (
           <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2.5">
             <div className="text-amber-500 text-xs font-bold uppercase tracking-wider mb-1">
-              Sub Store Says
+              سب اسٹور کا مؤقف
             </div>
             <div className="text-amber-800 text-sm">{request.grn_note}</div>
             {request.grn_at && (
@@ -84,10 +79,10 @@ const DisputeResolutionPanel = ({
           <div>
             <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2 flex">
               <p>
-                Affected Items
+                متاثرہ اشیاء
               </p>
               <p className="ml-auto mr-6">
-                Action
+                کارروائی
               </p>
             </div>
             <div className="space-y-1.5">
@@ -141,7 +136,7 @@ const DisputeResolutionPanel = ({
                             });
                           }}
                         />
-                        Accept Return
+                        واپسی قبول کریں
                       </label>
 
                       {/* Resend */}
@@ -171,7 +166,7 @@ const DisputeResolutionPanel = ({
                               });
                             }}
                           />
-                          Resend
+                          دوبارہ بھیجیں
                         </label>
                       )}
                     </div>
@@ -185,7 +180,7 @@ const DisputeResolutionPanel = ({
 
         <div>
           <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1.5">
-            Resolved By
+            حل کنندہ
           </label>
           <div className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none">
             {managerName || "—"}
@@ -198,7 +193,7 @@ const DisputeResolutionPanel = ({
             disabled={processing || Object.keys(itemActions).length !== disputedItems.length}
             className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {processing ? "Processing..." : "Confirm & Close"}
+            {processing ? "پروسیسنگ ہو رہی ہے..." : "تصدیق اور بند کریں"}
           </button>
         </div>
       </div>

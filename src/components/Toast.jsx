@@ -22,7 +22,7 @@ export default function Toast({ toast, onClose }) {
       className={`
         transform transition-all duration-300 ease-in-out
         px-4 py-3 rounded-lg border shadow-xl text-sm font-medium
-        flex items-center gap-3 min-w-[300px]
+        flex items-center gap-3 min-w-75
 
         ${
           visible

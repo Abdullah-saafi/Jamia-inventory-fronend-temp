@@ -4,12 +4,16 @@ const RequestDashboard = ({
   setFilterStatus,
   filterStatus,
   pageType,
-  data
+  data,
+  isEmergency,
+  setIsEmergency,
+  setPage,
 }) => {
 
   const isEmergent = data?.filter((r) => r.is_emergency).length;
   const handleFilter = (status) => {
-    setFilterStatus(status);
+    setPage(1)
+    setFilterStatus((prev) => prev === status ? "" : status);
   };
 
   return (
@@ -28,7 +32,7 @@ const RequestDashboard = ({
 
       {/* Pending Card */}
       {(pageType === "subStoreManager" || pageType === "mainStoreApprover") && (
-        <StatusCard 
+        <StatusCard
           title="منظوری کی منتظر"
           count={counts.pending}
           colorClass="bg-blue-500"
@@ -38,15 +42,18 @@ const RequestDashboard = ({
       )}
 
       {/* Emergency Card */}
-      {/* {(pageType === "headOffice" || pageType === "pettyCash") && (
+      {(pageType === "mainReqToHO" || pageType === "headOffice" || pageType === "pettyCash" || pageType === "mainStoreApprover") && (
         <StatusCard
           title="ہنگامی درخواستیں"
           count={counts.emergency}
-          colorClass="bg-red-500"
-          isActive={filterStatus === "APPROVED" || isEmergent > 0}
-          onClick={() => handleFilter("APPROVED")}
+          colorClass="bg-blue-600"
+          isActive={isEmergency}
+          onClick={() => {
+            setPage(1);
+            setIsEmergency((prev) => !prev);
+          }}
         />
-      )} */}
+      )}
 
       {/* Approved Card */}
 
@@ -70,16 +77,6 @@ const RequestDashboard = ({
           onClick={() => handleFilter("DISPUTED")}
         />
       )}
-
-      {/* Return Card */}
-      {pageType === "subStore" && (
-        <StatusCard
-          title="واپسی کی منتظر"
-          count={counts.returnBack}
-          colorClass="bg-amber-500"
-          isActive={filterStatus === (pageType === "mainSubStoreReqs" ? "RETURN_BACK" : "RECEIVED")}
-          onClick={() => handleFilter(pageType === "mainSubStoreReqs" ? "RETURN_BACK" : "RECEIVED")}
-        />)}
     </div>
   );
 };

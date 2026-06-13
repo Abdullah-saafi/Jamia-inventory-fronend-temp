@@ -1,5 +1,6 @@
 import { useState } from "react";
 import * as XLSX from "xlsx";
+import { useToast } from "../context/ToastContext";
 
 /**
  * ExcelDownloaderWithDates
@@ -23,11 +24,14 @@ export default function c({
   columns,
   buttonLabel = "Export Excel",
   onFetch,
+  pageLoading
 }) {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const {showToast} = useToast()
 
   const handleExport = async () => {
     setError("");
@@ -106,7 +110,7 @@ export default function c({
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
       XLSX.writeFile(wb, `${fileName}_${fromDate}_to_${toDate}.xlsx`);
     } catch (err) {
-      console.error(err);
+      showToast(err, "error");
       setError("Export failed. Please try again.");
     } finally {
       setLoading(false);
@@ -114,7 +118,7 @@ export default function c({
   };
 
   return (
-    <div className="flex flex-wrap items-end gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+    <div className="flex flex-wrap items-end gap-3 p-3 ml-1 bg-gray-50 border border-gray-200 rounded-xl">
       {/* From Date */}
       <div className="flex flex-col gap-1">
         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -178,7 +182,7 @@ export default function c({
       {/* Export button */}
       <button
         onClick={handleExport}
-        disabled={loading}
+        disabled={loading || pageLoading}
         className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold
                    rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white
                    transition-colors disabled:opacity-60 disabled:cursor-not-allowed self-end"
@@ -195,8 +199,10 @@ export default function c({
 
       {/* Error message */}
       {error && (
-        <p className="w-full text-xs text-red-500 font-medium mt-1">{error}</p>
-      )}
+  <p className="basis-full text-xs text-red-500 font-medium mt-1">
+    {error}
+  </p>
+)}
     </div>
   );
 }
