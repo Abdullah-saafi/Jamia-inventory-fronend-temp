@@ -41,19 +41,6 @@ const RequestDashboard = ({
         />
       )}
 
-      {/* Emergency Card */}
-      {(pageType === "mainReqToHO" || pageType === "headOffice" || pageType === "pettyCash" || pageType === "mainStoreApprover") && (
-        <StatusCard
-          title="ہنگامی درخواستیں"
-          count={counts.emergency}
-          colorClass="bg-blue-600"
-          isActive={isEmergency}
-          onClick={() => {
-            setPage(1);
-            setIsEmergency((prev) => !prev);
-          }}
-        />
-      )}
 
       {/* Approved Card */}
 
@@ -61,7 +48,7 @@ const RequestDashboard = ({
         <StatusCard
           title="منظور شدہ"
           count={counts.pending}
-          colorClass="bg-red-500"
+          colorClass="bg-blue-500"
           isActive={filterStatus === "APPROVED"}
           onClick={() => handleFilter("APPROVED")}
         />
@@ -75,6 +62,19 @@ const RequestDashboard = ({
           colorClass="bg-orange-500"
           isActive={filterStatus === "DISPUTED"}
           onClick={() => handleFilter("DISPUTED")}
+        />
+      )}
+      {/* Emergency Card */}
+      {(pageType === "mainReqToHO" || pageType === "headOffice" || pageType === "pettyCash" || pageType === "mainStoreApprover") && (
+        <StatusCard
+          title="ہنگامی درخواستیں"
+          count={counts.emergency}
+          colorClass="bg-red-500"
+          isActive={isEmergency}
+          onClick={() => {
+            setPage(1);
+            setIsEmergency((prev) => !prev);
+          }}
         />
       )}
     </div>

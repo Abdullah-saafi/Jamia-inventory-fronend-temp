@@ -195,7 +195,7 @@ export default function PettyCash() {
                             }}
                             pageType={pageType}
                         />
-                        {(search || filter) || isEmergency && (
+                        {(search || filter || isEmergency) && (
                             <button
                                 onClick={() => {
                                     setSearch("");
