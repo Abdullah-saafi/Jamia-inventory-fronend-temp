@@ -443,7 +443,8 @@ export default function MainStoreProcessReturns({ showToast }) {
                   {/* Note */}
                   {selected?.note && (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2 mb-4 text-xs text-yellow-700">
-                      نوٹ: {selected.note}
+                      <span>نوٹ: </span>
+                      <bdi>{selected.note}</bdi>
                     </div>
                   )}
 

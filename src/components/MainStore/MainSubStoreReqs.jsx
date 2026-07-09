@@ -200,7 +200,7 @@ export default function MainSubStoreReqs({
       };
 
       await createRequest(payload);
-      showToast("Request submitted successfully", "success");
+      showToast("درخواست کامیابی سے جمع کر دی گئی۔", "success");
       setShowInstantRequestModal(false)
       setItemForm({ ...EMPTY_FORM });
       onRefresh();

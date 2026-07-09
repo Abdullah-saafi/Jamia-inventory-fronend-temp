@@ -125,18 +125,6 @@ export default function SubStore() {
     }
     try {
       setReturnBackSubmitting(true);
-      console.log("FROM STORE:", auth.store_id);
-      console.log("TO STORE:", mainStore.store_id);
-      console.log("USER:", auth.username);
-      console.log("NOTE:", returnBackNote);
-
-      console.log(
-        "ITEMS:",
-        selected.map((i) => ({
-          item_id: i.item_id,
-          return_qty: Number(i.return_qty),
-        })),
-      );
       await createReturnRequest({
         from_store_id: auth.store_id,
         to_store_id: mainStore.store_id,

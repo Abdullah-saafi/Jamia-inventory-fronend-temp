@@ -310,11 +310,16 @@ export default function MainAllItems({
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`font-mono text-xs font-bold ${i.main_qty - i.sub_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
+                        className={`font-mono bg-red-400 text-xs font-bold ${i.main_qty - i.sub_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
                       >
-                        {Number(
-                          i.item_quantity - i.sub_qty - i.transit_qty,
-                        ).toFixed(0)}
+                        {
+                          (
+                            Number(i.item_quantity) -
+                            Number(i.sub_qty) -
+                            Number(i.transit_qty) +
+                            Number(i.returned_qty)
+                          ).toFixed(0)
+                        }
                       </span>
                     </td>
                     <td className="px-4 py-3 font-mono text-gray-400 text-xs">

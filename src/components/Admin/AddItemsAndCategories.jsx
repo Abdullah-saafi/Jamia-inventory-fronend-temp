@@ -16,7 +16,6 @@ import { ITEM_CONDITIONS } from "../../services/constants";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 const EMPTY_NEW_ITEM = {
-  item_no: "",
   item_name: "",
   item_name_urdu: "",
   item_uom: "",
@@ -56,7 +55,6 @@ const AddItemsAndCategories = () => {
   const [showUOMDropDown, setShowUOMDropDown] = useState(false);
   const [showInputs, setShowInputs] = useState(false);
   const [showItemTypeDropdown, setShowItemTypeDropdown] = useState(false);
-  const [randomNumberLoading, setRandomNumberLoading] = useState(false);
   const [showStoreDropdown, setShowStoreDropdown] = useState(false);
 
   const { showToast } = useOutletContext();
@@ -82,26 +80,6 @@ const AddItemsAndCategories = () => {
   };
 
   let latestRequest = useRef(0);
-  const generateRandomItemNo = async (type) => {
-    try {
-      setRandomNumberLoading(true);
-      const reqId = ++latestRequest.current;
-      const response = await generateRandomNumber({ type });
-      if (reqId !== latestRequest.current) return;
-      return response.data.data;
-    } catch (e) {
-      const msg = handleError(e, "Failed to generate item number");
-      showToast(msg, "error");
-    } finally {
-      setRandomNumberLoading(false);
-    }
-  };
-
-  const regenerateItemNo = async () => {
-    const itemNo = await generateRandomItemNo(newItem.item_type);
-    if (!itemNo) return;
-    setNewItem((f) => ({ ...f, item_no: itemNo }));
-  };
 
   useEffect(() => {
     fetchData();
@@ -123,7 +101,6 @@ const AddItemsAndCategories = () => {
   const handleSaveItem = async () => {
     const { item_uom, item_type } = newItem;
     const missingFields =
-      !newItem.item_no ||
       !newItem.item_name ||
       !newItem.item_name_urdu ||
       !newItem.store_id ||
@@ -135,7 +112,6 @@ const AddItemsAndCategories = () => {
 
     if (missingFields || isUOMMissing) {
       const errs = {};
-      if (!newItem.item_no) errs.item_no = "آئٹم نمبر لازمی ہے۔";
       if (!newItem.item_name) errs.item_name = "انگریزی میں آئٹم کا نام لازمی ہے۔";
       if (!newItem.item_name_urdu) errs.item_name_urdu = "اردو میں آئٹم کا نام لازمی ہے۔";
       if (!newItem.item_type) errs.item_type = "آئٹم کی قسم لازمی ہے۔";
@@ -152,13 +128,8 @@ const AddItemsAndCategories = () => {
     setSubmitLoading(true);
     try {
       await createItem(newItem);
+      setNewItem(EMPTY_NEW_ITEM);
       showToast("آئٹم شامل کر دیا گیا ہے", "success");
-      const itemNo = await generateRandomItemNo(item_type);
-      if (!itemNo) return;
-      setNewItem({
-        ...EMPTY_NEW_ITEM,
-        item_no: itemNo,
-      });
       fetchData();
     } catch (e) {
       const msg = handleError(e, "Failed to add item");
@@ -250,36 +221,6 @@ const AddItemsAndCategories = () => {
                 </div>
               ) : (
                 <>
-                  <div>
-                    <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
-                      اشیاء نمبر{" "}
-                    </label>
-                    <div className="relative">
-                      <input
-                        value={newItem.item_no}
-                        readOnly
-                        placeholder="خودکارتیارکردہ،آئٹم کی قسم منتخب کریں"
-                        onChange={(e) => {
-                          setNewItem((f) => ({
-                            ...f,
-                            item_no: e.target.value,
-                          }));
-                          setItemErrors((f) => ({ ...f, item_no: undefined }));
-                        }}
-                        className={`w-full bg-white border rounded px-3 py-2 pr-10 text-emerald-600 font-mono font-bold text-sm focus:outline-none focus:border-emerald-500 ${itemErrors.item_no
-                          ? "border-red-400"
-                          : "border-gray-300"
-                          }`}
-                      />
-                      {randomNumberLoading && (
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                        </div>
-                      )}
-                    </div>
-                    {fieldError("item_no")}
-                  </div>
-
                   <div className="item-english-urdu-container grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
@@ -367,7 +308,6 @@ const AddItemsAndCategories = () => {
                               setNewItem((f) => ({
                                 ...f,
                                 item_type: "",
-                                item_no: "",
                               }));
                             }}
                           >
@@ -380,14 +320,11 @@ const AddItemsAndCategories = () => {
                               onClick={async () => {
                                 setShowItemTypeDropdown(false);
                                 const selectedType = r.value
-                                const newItemNo = await generateRandomItemNo(selectedType);
-                                if (!newItemNo) return;
                                 setNewItem((f) => ({
                                   ...f,
                                   item_type: selectedType,
                                   item_uom:
                                     selectedType === "REUSABLE" ? "" : f.item_uom,
-                                  item_no: newItemNo,
                                 }));
                                 setItemErrors((f) => ({ ...f, item_type: undefined }));
                               }}
