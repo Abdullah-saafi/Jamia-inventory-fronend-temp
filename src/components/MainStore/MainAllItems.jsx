@@ -262,7 +262,12 @@ export default function MainAllItems({
               />
             ) : (
               allItems.map((i) => {
-                const isLow = i.main_qty <= parseFloat(i.min_quantity || 0);
+                const isLow = (
+                            Number(i.item_quantity) -
+                            Number(i.sub_qty) -
+                            Number(i.transit_qty) +
+                            Number(i.returned_qty)
+                          ).toFixed(0) <= parseFloat(i.min_quantity || 0);
                 return (
                   <tr
                     key={i.item_id}
@@ -296,7 +301,11 @@ export default function MainAllItems({
                       </span>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">
-                      {Number(i.sub_qty - i.returned_qty - i.scrapped_qty).toFixed(0)}
+                      {(
+                        Number(i.sub_qty) - 
+                        Number(i.returned_qty) -
+                        Number(i.scrapped_qty)
+                      ).toFixed(0)}
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-bold text-gray-700">
@@ -310,7 +319,7 @@ export default function MainAllItems({
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`font-mono bg-red-400 text-xs font-bold ${i.main_qty - i.sub_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
+                        className={`font-mono text-xs font-bold ${i.main_qty - i.sub_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
                       >
                         {
                           (
