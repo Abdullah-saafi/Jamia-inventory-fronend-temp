@@ -3,8 +3,8 @@ export const ROLE_STORE_MAP = {
   "sub-store-manager": "SUB_STORE",
   "main-store": "MAIN_STORE",
   "main-store-manager": "MAIN_STORE",
-  headoffice: "HEAD_OFFICE",
-  pettycash: "pettycash"
+  "headoffice": "HEAD_OFFICE",
+  "pettycash": "PETTY_CASH"
 }
 
 export const ROLES = [
@@ -14,7 +14,7 @@ export const ROLES = [
   { value: "main-store-manager", label: "مرکزی اسٹور نگران" },
   { value: "headoffice", label: "مرکزی دفتر" },
   { value: "pettycash", label: "پٹی کیش" },
-  { value: "admin", label: "انتظامی دفتر" },
+  // { value: "admin", label: "انتظامی دفتر" },
 ]
 
 export const ROLE_LABELS = {
