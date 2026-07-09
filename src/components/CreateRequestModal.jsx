@@ -329,8 +329,8 @@ export default function CreateRequestModal({
 
                               const total = currentImages.length + newFiles.length;
 
-                              if (total > 3) {
-                                showToast("Maximum 3 images allowed per item", "warn");
+                              if (total > 1) {
+                                showToast("ہر آئٹم کے لیے صرف ایک تصویر کی اجازت ہے۔", "warn");
                                 e.target.value = null;
                                 return;
                               }
@@ -598,8 +598,8 @@ export default function CreateRequestModal({
                               );
 
                               const total = currentImages.length + newFiles.length;
-                              if (total > 3) {
-                                showToast("Maximum 3 images allowed per item", "warn");
+                              if (total > 1) {
+                                showToast("ہر آئٹم کے لیے صرف ایک تصویر کی اجازت ہے۔", "warn");
                                 e.target.value = null;
                                 return;
                               }

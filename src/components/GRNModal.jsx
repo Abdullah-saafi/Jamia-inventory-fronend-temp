@@ -35,6 +35,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
       (i) =>
         i.item_condition === "DAMAGED" ||
         i.item_condition === "MISSING" ||
+        i.item_condition === "RETURN" ||
         Number(i.received_qty) < Number(i.fulfilled_qty)
     );
     if (hasDispute) return "DISPUTED";
