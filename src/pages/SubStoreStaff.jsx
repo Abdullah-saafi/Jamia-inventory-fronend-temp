@@ -7,12 +7,10 @@ import {
   getRequests,
   getRequestById,
   submitGRN,
-  sendReturnToMain,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import GRNModal from "../components/GRNModal";
 import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
-import Toast from "../components/Toast";
 import StoreFilters from "../components/StoreFilters";
 import Pagination from "../components/Pagination";
 import CreateRequestModal from "../components/CreateRequestModal";
@@ -21,7 +19,6 @@ import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import useErrorHandler from "../components/useErrorHandler";
 import RequestDashboard from "../components/RequestDashboard";
-import ToastContainer from "../components/ToastContainer";
 import { useToast } from "../context/ToastContext";
 import ReturnModal from "../components/ReturnModal";
 
@@ -67,7 +64,6 @@ export default function SubStore() {
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
-  const [returnModal, setReturnModal] = useState(false);
   const [returnModalLoading, setReturnModalLoading] = useState(false);
   const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -76,11 +72,6 @@ export default function SubStore() {
   const [returnBackLoading, setReturnBackLoading] = useState(false);
   const [returnBackSubmitting, setReturnBackSubmitting] = useState(false);
   const [returnBackNote, setReturnBackNote] = useState("");
-  const [returnForm, setReturnForm] = useState({
-    sendByName: "",
-    returnData: [],
-    note: "",
-  });
   const [pagination, setPagination] = useState({
     currentPage: 1,
     pageLimit: 10,
@@ -273,16 +264,39 @@ export default function SubStore() {
   const handleGRNSubmit = async (payload) => {
     setGrnSubmitting(true);
     try {
-      await submitGRN(grnRequest.request_id, payload);
+      const itemsWithImageUrls = [];
+      for (const item of payload.received_items) {
+        const { images, ...rest } = item;
+        const payloadItem = { ...rest };
+
+        if (images && images.length > 0) {
+          const formData = new FormData();
+          formData.append("image", images[0]);
+          const uploadRes = await uploadImg(formData);
+          payloadItem.image_url = uploadRes.data.image_url;
+        }
+
+        itemsWithImageUrls.push(payloadItem);
+      }
+
+      const finalPayload = {
+        grn_status: payload.grn_status,
+        grn_note: payload.grn_note,
+        received_items: itemsWithImageUrls,
+      };
+
+      await submitGRN(grnRequest.request_id, finalPayload);
+
       const label =
-      payload.grn_status === "RECEIVED"
-      ? "ڈیلیوری کی تصدیق ہو گئی ہے — موصول مارک کر دیا گیا ہے"
-      : payload.grn_status === "DISPUTED"
-      ? "مسائل کی اطلاع کر دی گئی ہے"
-      : payload.grn_status === "RETURN"
-      ? "Deliver Returned"
-      : "ڈیلیوری مسترد کر دی گئی ہے — مین اسٹور کو مطلع کر دیا گیا ہے";
-      showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn",);
+        payload.grn_status === "RECEIVED"
+          ? "ڈیلیوری کی تصدیق ہو گئی ہے — موصول مارک کر دیا گیا ہے"
+          : payload.grn_status === "DISPUTED"
+            ? "مسائل کی اطلاع کر دی گئی ہے"
+            : payload.grn_status === "RETURN"
+              ? "Deliver Returned"
+              : "ڈیلیوری مسترد کر دی گئی ہے — مین اسٹور کو مطلع کر دیا گیا ہے";
+
+      showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn");
       setGrnRequest(null);
       setDetail(null);
       load();
@@ -322,58 +336,6 @@ export default function SubStore() {
       }
       return { ...f, items };
     });
-  };
-
-  const returnItem = async (id) => {
-    try {
-      setReturnModalLoading(true);
-      const response = await getRequestById(id);
-      setReturnForm((f) => ({
-        ...f,
-        returnData: response.data.data,
-        sendByName: auth.username,
-      }));
-      setReturnModal(true);
-    } catch (error) {
-      const msg = handleError(error, "Failed to open return modal");
-      showToast(msg, "error");
-    } finally {
-      setReturnModalLoading(false);
-    }
-  };
-
-  const handleReturn = async (id) => {
-    try {
-      setReturnModalLoading(true);
-
-      const payload = {
-        resolved_by_name: auth.username,
-        note: returnForm.note,
-        returned_items: returnForm.returnData.items
-          .map((i) => ({
-            request_item_id: i.request_item_id,
-            returned_qty: Number(i.return_qty_input || i.received_qty),
-          }))
-          .filter((i) => i.returned_qty > 0),
-      };
-
-      await sendReturnToMain(id, payload);
-      setReturnForm(() => ({
-        sendByName: "",
-        returnData: [],
-        note: "",
-      }));
-
-      setReturnModal(false);
-      showToast("Items returned successfully", "success");
-
-      load();
-    } catch (error) {
-      const msg = handleError(error, "Failed to return");
-      showToast(msg, "error");
-    } finally {
-      setReturnModalLoading(false);
-    }
   };
 
   // ─── Submit ───────────────────────────────────────────────────────────────
@@ -443,10 +405,6 @@ export default function SubStore() {
   // ─── Computed ─────────────────────────────────────────────────────────────
   const pendingGRN = allRequests.filter(
     (r) => r.status === "FULFILLED" && !r.grn_at,
-  ).length;
-
-  const pendingReturn = allRequests.filter(
-    (r) => r.status === "RECEIVED" && r.item_type === "REUSABLE",
   ).length;
 
   if (auth.isBlocked) {
@@ -605,7 +563,6 @@ export default function SubStore() {
                   openGRN={openGRN}
                   grnLoading={grnLoading}
                   pageType={pageType}
-                  returnItem={returnItem}
                   returnModalLoading={returnModalLoading}
                 />
               ))
@@ -632,6 +589,7 @@ export default function SubStore() {
           onClose={() => setGrnRequest(null)}
           onSubmit={handleGRNSubmit}
           submitting={grnSubmitting}
+          showToast={showToast}
         />
       )}
       {/* Create Modal */}
