@@ -67,6 +67,7 @@ export default function MainStoreProcessReturns({ showToast }) {
         page: currentPage,
         limit: pageLimit,
         search: debouncedSearch,
+        priority_status: "PENDING",
       });
 
       setReturns(res.data.data || []);
@@ -93,7 +94,6 @@ export default function MainStoreProcessReturns({ showToast }) {
       const res = await getReturnRequestById(returnId);
       const data = res.data.data;
       setSelected(data);
-      // Default all items to ADD_TO_STOCK
       const defaults = {};
       data.items.forEach((i) => {
         defaults[i.return_item_id] = { action: "ADD_TO_STOCK", note: "" };

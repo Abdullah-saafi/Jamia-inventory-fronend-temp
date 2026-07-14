@@ -7,6 +7,11 @@ const pages = {
     store: true,
   },
 
+  returnRequestList:{
+    page: "returnRequestList",
+    store: true,
+  },
+
   subStoreManager: {
     page: "subStoreManager",
     store: true,
