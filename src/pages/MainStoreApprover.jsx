@@ -58,7 +58,7 @@ export default function MainStoreApprover() {
   const load = async () => {
     setLoading(true);
     try {
-      const params = { direction: ["MAIN_TO_PCASH", "MAIN_TO_HO"], search: debouncedSearch, emergency: isEmergency || undefined, };
+      const params = { direction: ["MAIN_TO_PCASH", "MAIN_TO_HO"], search: debouncedSearch, emergency: isEmergency || undefined, priority_status: "PENDING" };
       if (filter) params.status = filter;
       const r = await getRequests(params);
       setRequests(r.data.data);

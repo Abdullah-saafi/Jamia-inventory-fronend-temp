@@ -20,7 +20,7 @@ export default function AddUserTab() {
     name: "",
     email: "",
     role: "",
-    phone: "",
+    phone_no: "",
     store_id: "",
     password: "",
     confirmPassword: "",
@@ -55,6 +55,9 @@ export default function AddUserTab() {
       return showToast("پاس ورڈ میچ نہیں کر رہے", "error");
     if (password.length < 6)
       return showToast("پاس ورڈ کم از کم 6 حروف پر مشتمل ہونا چاہیے", "warn");
+    if(form.phone_no.length < 10){
+      return showToast("فون نمبر درست نہیں ہے۔","error")
+    }
 
     setLoading(true);
     try {
@@ -64,7 +67,7 @@ export default function AddUserTab() {
         name: "",
         email: "",
         role: "",
-        phone: "",
+        phone_no: "",
         store_id: "",
         password: "",
         confirmPassword: "",
@@ -242,21 +245,31 @@ export default function AddUserTab() {
         </div>
 
         <div>
-          {/* Phone Field with Numeric Enforcement */}
           <div>
             <label className={labelClass}>فون</label>
-            <input
-              name="phone"
-              inputMode="numeric"
-              maxLength={11}
-              value={form.phone}
-              onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, "");
-                setForm((f) => ({ ...f, phone: val }));
-              }}
-              placeholder="03451234567"
-              className={inputClass}
-            />
+            <div className="relative flex items-center w-full">
+              <span
+                className="absolute left-3 flex items-center gap-1 text-emerald-500 font-semibold text-sm select-none pointer-events-none"
+              >
+                <span>+</span>
+                <span className="text-gray-400">92</span>
+                <span className="h-4 w-px bg-gray-700 ml-1.5 inline-block"></span>
+              </span>
+
+              {/* Input Field */}
+              <input
+                name="phone_no"
+                inputMode="numeric"
+                maxLength={10}
+                value={form.phone_no}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  setForm((f) => ({ ...f, phone_no: val }));
+                }}
+                placeholder="3001234567"
+                className={`${inputClass} pl-14 w-full`}
+              />
+            </div>
           </div>
         </div>
 

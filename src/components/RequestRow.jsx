@@ -15,8 +15,6 @@ export default function RequestRow({
   actioning,
   openApprove,
   openReject,
-  returnItem,
-  returnModalLoading,
   handleFulfill,
   fulfilling,
   handleAcceptReturn,
@@ -24,8 +22,6 @@ export default function RequestRow({
   handleResolved,
   showToast,
   username,
-  setItemForm,
-  EMPTY_LINE,
   setFulfillModal,
   setRequestNo,
 }) {
@@ -34,13 +30,10 @@ export default function RequestRow({
   const isDisputed = r.status === "DISPUTED";
   const isReturned = r.status === "RETURN_BACK" || r.status === "RETURN_ACCEPTED"
   const isReceived = r.status === "RECEIVED" || r.status === "PARTIALLY_RECEIVED";
-  const isREUSABLE = r.item
   const hasItems = (r.item_count ?? 0) > 0;
-  const isReturnable = r.item_type === "REUSABLE" && r.has_returnable_items && (r.status === "RECEIVED" || r.status === "PARTIALLY_RECEIVED");
   const isEmergency = r.is_emergency;
   const isClosed = r.status === "CLOSED";
   const canFulfill = r.status === "APPROVED";
-  const hasGRN = isDisputed || isReceived || isClosed;
 
   const { auth } = useAuth()
 

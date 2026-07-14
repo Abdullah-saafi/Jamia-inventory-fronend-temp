@@ -62,7 +62,7 @@ export const ITEM_CONDITIONS = [
 ]              
 
 export const inputClass =
-  "w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400";
+  "w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400 shadow-sm";
 
 export const labelClass =
   "text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1";

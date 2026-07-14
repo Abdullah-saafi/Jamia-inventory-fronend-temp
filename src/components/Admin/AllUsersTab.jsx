@@ -229,8 +229,8 @@ export default function AllUsersTab() {
       </div>
 
       {/* Table Container */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm ">
-        <table className="w-full text-sm text-left">
+      <div className="overflow-x-auto text-center rounded-lg border border-gray-200 shadow-sm ">
+        <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
@@ -238,6 +238,7 @@ export default function AllUsersTab() {
                 "ای میل",
                 "کردار",
                 "اسٹور",
+                "فون",
                 "حالت",
                 "تخلیق شدہ",
                 "عمل",
@@ -264,7 +265,7 @@ export default function AllUsersTab() {
                   key={u.id}
                   className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${!u.is_active ? "opacity-60" : ""}`}
                 >
-                  <td className="px-4 py-3 text-gray-800 font-semibold">
+                  <td className="px-4 py-3 text-left text-gray-800 font-semibold">
                     {u.name}
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{u.email}</td>
@@ -276,6 +277,9 @@ export default function AllUsersTab() {
                   <td className="px-4 py-3 text-gray-700 text-xs">
                     {u.store_name || "—"}
                   </td>
+                  <td className="px-4 py-3 text-gray-700 text-xs">
+                    {u.phone_no ? `+92-${u.phone_no}` : "—"}
+                  </td>
                   <td className="px-4 py-3">
                     <span
                       className={`text-xs font-bold ${u.is_active ? "text-emerald-600" : "text-red-600"}`}
@@ -283,7 +287,7 @@ export default function AllUsersTab() {
                       {u.is_active ? "فعال" : "غیر فعال"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-400 text-[10px]">
+                  <td className="px-4 py-3 text-gray-700 text-[10px]">
                     {new Date(u.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">

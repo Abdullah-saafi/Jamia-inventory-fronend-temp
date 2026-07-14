@@ -1,20 +1,15 @@
-import { useEffect, useState } from "react";
-import API, { resendItems } from "../services/api";
+import { useState } from "react";
 import { useAuth } from "../context/authContext";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-
 export default function CreateRequestModal({
-  itemForm, setItemForm, mainStores, storeItems, reusableItems,
+  itemForm, setItemForm, mainStores, reusableItems,
   onClose, onSubmit, addLine, removeLine, updateLine,
-  creating, setCreating, EMPTY_FORM, usableItems, pageType, toStore, showToast,
+  creating, EMPTY_FORM, usableItems, pageType, toStore, showToast,
 }) {
   const [activeTab, setActiveTab] = useState("items");
   const { auth } = useAuth();
-
-  const selectedStore = toStore?.find((s) => s.store_id === itemForm.to_store_id)
-  const isHeadOffice = selectedStore?.store_name === "Head Office"
-
+  console.log(reusableItems)
+  console.log(usableItems)
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30" onClick={() => {
@@ -91,10 +86,6 @@ export default function CreateRequestModal({
               </div>
             )}
           </div>
-          <div>
-            <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">ہدایت یا نوٹس</label>
-            <textarea value={itemForm.notes} onChange={(e) => setItemForm((f) => ({ ...f, notes: e.target.value }))} rows={2} placeholder="اختیاری وجہ یا نوٹ" className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none" />
-          </div>
           <div className="flex rounded-lg border border-gray-200 overflow-hidden">
             <button
               type="button"
@@ -114,7 +105,7 @@ export default function CreateRequestModal({
             </button>
             <button type="button" onClick={() => { setActiveTab("assets"); setItemForm((prev) => ({ ...EMPTY_FORM, to_store_id: prev.to_store_id, requested_by_name: auth.username || "", from_store_id: auth.store_id || "" })); }}
               className={`flex-1 py-2 text-sm font-semibold transition-colors border-l border-gray-200 ${activeTab === "assets" ? "bg-blue-600 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}>
-              مستقل استعمال کی اشیاء
+              واپس بھیجنے والی اشیاء
             </button>
           </div>
           {activeTab === "items" && (
@@ -178,8 +169,13 @@ export default function CreateRequestModal({
                               )
                             }
                             placeholder="...آئٹم کے نام یا نمبر سے تلاش کریں"
-                            className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                            className={`w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${usableItems.length === 0? "pl-6" : ""}`}
                           />
+                          {usableItems.length === 0 && (
+                            <div className="flex justify-center absolute top-1/3 left-1">
+                              <div className="w-4 h-4 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                            </div>
+                          )}
                           {item._showDropdown && (
                             <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                               {usableItems
@@ -304,7 +300,7 @@ export default function CreateRequestModal({
                               تصویر منتخب کرنے کے لیے یہاں کلک کریں
                             </p>
                             <p className="text-[10px] text-gray-400 mt-0.5">
-                              PNG, JPG (زیادہ سے زیادہ 3 تصاویر)
+                              (زیادہ سے زیادہ 1 تصاویر)
                             </p>
                           </div>
 
@@ -390,6 +386,10 @@ export default function CreateRequestModal({
                       </div>
                     </div>
                   ))}
+                  <div>
+                    <label className="text-gray-400 text-xs mt-3 font-semibold uppercase tracking-wider block mb-1">ہدایت یا نوٹس</label>
+                    <textarea value={itemForm.notes} onChange={(e) => setItemForm((f) => ({ ...f, notes: e.target.value }))} rows={2} placeholder="اختیاری وجہ یا نوٹ" className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none" />
+                  </div>
                 </div>
               )}
             </div>
@@ -458,8 +458,13 @@ export default function CreateRequestModal({
                               )
                             }
                             placeholder="...آئٹم کے نام یا نمبر سے تلاش کریں"
-                            className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                            className={`w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${reusableItems.length === 0? "pl-6" : ""}`}
                           />
+                          {reusableItems.length === 0 && (
+                            <div className="flex justify-center absolute top-1/3 left-1">
+                              <div className="w-4 h-4 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                            </div>
+                          )}
                           {item._showDropdown && (
                             <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                               {reusableItems
@@ -574,7 +579,7 @@ export default function CreateRequestModal({
                               تصویر منتخب کرنے کے لیے یہاں کلک کریں
                             </p>
                             <p className="text-[10px] text-gray-400 mt-0.5">
-                              PNG, JPG (زیادہ سے زیادہ 3 تصاویر)
+                              (زیادہ سے زیادہ 1 تصاویر)
                             </p>
                           </div>
 
@@ -659,6 +664,10 @@ export default function CreateRequestModal({
                       </div>
                     </div>
                   ))}
+                  <div>
+                    <label className="text-gray-400 text-xs mt-3 font-semibold uppercase tracking-wider block mb-1">ہدایت یا نوٹس</label>
+                    <textarea value={itemForm.notes} onChange={(e) => setItemForm((f) => ({ ...f, notes: e.target.value }))} rows={2} placeholder="اختیاری وجہ یا نوٹ" className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none" />
+                  </div>
                 </div>
               )}
             </div>
