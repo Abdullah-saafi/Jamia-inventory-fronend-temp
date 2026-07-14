@@ -21,7 +21,6 @@ import EditStore from "./components/Admin/EditStore";
 import AddItemsAndCategories from "./components/Admin/AddItemsAndCategories";
 import { useEffect } from "react";
 import { ToastProvider } from "./context/ToastContext";
-import LocomotiveScroll from "locomotive-scroll";
 
 export default function App() {
   return (

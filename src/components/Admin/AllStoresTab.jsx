@@ -4,7 +4,6 @@ import useErrorHandler from "../useErrorHandler";
 import { getStores, storeStatus } from "../../services/api";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import Pagination from "../Pagination";
-import { useAuth } from "../../context/authContext";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import CheckLoadingAndError from "../CheckLoadingAndError";
 
@@ -18,13 +17,11 @@ export default function AllStoresTab() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [emergency, setEmergency] = useState(false);
   const [pageSize, setPageSize] = useState(10);
   const [showStoreDropdown, setShowStoreDropdown] = useState(false);
   const [totalItems, setTotalItems] = useState(0);
 
   const handleError = useErrorHandler();
-  const { auth, setAuth } = useAuth()
   const navigate = useNavigate();
 
   const loadStores = async () => {
@@ -160,15 +157,15 @@ export default function AllStoresTab() {
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-        <table className="w-full text-sm text-left">
+      <div className="overflow-x-auto text-center rounded-lg border border-gray-200 shadow-sm">
+        <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-                "اسٹور کوڈ",
                 "اسٹور کا نام",
                 "شعبہ",
                 "پتہ",
+                "زمرہ",
                 "حالت",
                 "عمل",
               ].map((h) => (
@@ -194,12 +191,7 @@ export default function AllStoresTab() {
                   key={s.store_id}
                   className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${!s.is_active ? "opacity-60" : ""}`}
                 >
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-emerald-600 font-bold text-xs">
-                      {s.store_code}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-800 font-semibold text-xs">
+                  <td className="px-4 py-3 text-left text-gray-800 font-semibold text-xs">
                     {s.store_name}
                   </td>
                   <td className="px-4 py-3">
@@ -217,6 +209,9 @@ export default function AllStoresTab() {
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">
                     {s.address || "—"}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">
+                    {s.category || "—"}
                   </td>
                   <td className="px-4 py-3">
                     <span

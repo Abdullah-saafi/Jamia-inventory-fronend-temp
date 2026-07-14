@@ -117,7 +117,7 @@ const InstantRestockModal = ({
 
                         {!itemForm.to_store_id ? (
                             <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">
-                                دستیاب اشیاء دیکھنے کے لیے پہلے سورس کا انتخاب کریں
+                                 اشیاء دیکھنے کے لیے پہلے سورس کا انتخاب کریں
                             </div>
                         ) : (
                             <div className="space-y-3">

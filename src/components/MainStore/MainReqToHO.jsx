@@ -13,8 +13,6 @@ import useErrorHandler from "../useErrorHandler";
 import GRNModal from "../GRNModal";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
-import StatusBadge from "../StatusBadge";
-import DateTimeCell from "../DateTimeCell";
 import StoreFilters from "../StoreFilters";
 import RequestDashboard from "../RequestDashboard";
 import TableHead from "../TableHead";
@@ -87,6 +85,7 @@ export default function MainReqToHO({ showToast }) {
         limit: pageSize,
         search: debouncedSearch,
         emergency: isEmergency || undefined,
+        priority_status: "FULFILLED"
       };
       if (filterStatus) params.status = filterStatus;
       if (auth.role !== "super admin") {

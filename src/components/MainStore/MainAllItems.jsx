@@ -2,9 +2,7 @@ import { useState } from "react";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
 import { useAuth } from "../../context/authContext";
-import useErrorHandler from "../useErrorHandler";
 import CheckLoadingAndError from "../CheckLoadingAndError";
-import AddItemModal from "../AddItemModal";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import TableHead from "../TableHead";
 import { ITEM_CONDITIONS } from "../../services/constants";
@@ -12,13 +10,10 @@ import { ITEM_CONDITIONS } from "../../services/constants";
 export default function MainAllItems({
   allItems,
   onRefresh,
-  showToast,
   loading,
   mainStoreError,
   pagination = { currentPage: 1, totalItems: 0, pageLimit: 10 },
-  currentPage,
   setCurrentPage,
-  pageLimit,
   setPageLimit,
   search,
   setSearch,
@@ -29,12 +24,10 @@ export default function MainAllItems({
   categories,
   setDebouncedSearch,
 }) {
-  const [showAddItem, setShowAddItem] = useState(false);
   const [showCategory, setShowCategory] = useState(false);
   const [showItemTypeDropdown, setShowItemTypeDropdown] = useState(false);
 
   const { auth } = useAuth();
-  const handleError = useErrorHandler();
 
   const pageType = "mainAllItems"
 
@@ -72,7 +65,7 @@ export default function MainAllItems({
                 readOnly
                 value={
                   filterCategory
-                    ? filterCategory
+                    ? categories.find((c) => c.category_id === filterCategory).category_name
                     : "تمام زمرے"
                 }
                 onClick={() => setShowCategory((prev) => !prev)}
@@ -107,15 +100,15 @@ export default function MainAllItems({
                   {/* Category list */}
                   {categories.map((c) => (
                     <button
-                      key={c.category}
+                      key={c.category_id}
                       type="button"
                       onClick={() => {
-                        setFilterCategory(c.category);
+                        setFilterCategory(c.category_id);
                         setShowCategory(false);
                       }}
                       className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
                     >
-                      {c.category}
+                      {c.category_name}
                     </button>
                   ))}
                 </div>
@@ -271,7 +264,7 @@ export default function MainAllItems({
                 return (
                   <tr
                     key={i.item_id}
-                    className={`border-b border-gray-100 hover:bg-gray-100 transition-colors ${isLow ? "bg-red-200/50 hover:bg-red-200" : ""}`}
+                    className={`border-b border-gray-100 hover:bg-gray-100 transition-colors whitespace-nowrap ${isLow ? "bg-red-200/50 hover:bg-red-200" : ""}`}
                   >
                     <td className="px-4 py-3">
                       <span className="font-mono text-emerald-600 text-xs">

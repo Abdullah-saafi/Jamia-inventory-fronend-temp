@@ -89,7 +89,7 @@ export default function SubStore() {
   const openReturnBack = async () => {
     try {
       setReturnBackLoading(true);
-      const res = await getItems({ store_id: auth.store_id });
+      const res = await getItems({ to_store_id: auth.store_id });
       const items = (res.data.data || []).filter(
         (i) => Number(i.item_quantity) > 0,
       );
@@ -148,6 +148,7 @@ export default function SubStore() {
         page,
         limit: pageSize,
         search: debouncedSearch,
+        priority_status: "FULFILLED"
       };
 
       if (filterStatus) params.status = filterStatus;
@@ -184,7 +185,7 @@ export default function SubStore() {
       return;
     }
     try {
-      const response = await getItems({ store_id: itemForm.to_store_id });
+      const response = await getItems({ to_store_id: itemForm.to_store_id, store_id: auth.store_id });
       if (response.data?.success) {
         const items = response.data.data || [];
         setStoreItems(items);

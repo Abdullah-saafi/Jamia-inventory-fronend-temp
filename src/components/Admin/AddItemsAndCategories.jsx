@@ -5,12 +5,8 @@ import {
   createCategory,
   getCategories,
   deleteCategory,
-  generateRandomNumber,
-  getUOM,
-  addUOM,
 } from "../../services/api";
 import useErrorHandler from "../useErrorHandler";
-import Toast from "../Toast";
 import { useOutletContext } from "react-router-dom";
 import { ITEM_CONDITIONS } from "../../services/constants";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -48,12 +44,8 @@ const AddItemsAndCategories = () => {
   const [categorySubmitLoading, setCategorySubmitLoading] = useState(false);
   const [categoryServerError, setCategoryServerError] = useState(null);
   const [categories, setCategories] = useState([]);
-  const [uom, setUOM] = useState([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [categorySearch, setCategorySearch] = useState("");
   const [deletingId, setDeletingId] = useState(null);
-  const [showUOMDropDown, setShowUOMDropDown] = useState(false);
-  const [showInputs, setShowInputs] = useState(false);
   const [showItemTypeDropdown, setShowItemTypeDropdown] = useState(false);
   const [showStoreDropdown, setShowStoreDropdown] = useState(false);
 
@@ -89,9 +81,6 @@ const AddItemsAndCategories = () => {
     const handler = (e) => {
       if (!e.target.closest("#category-dropdown-wrapper")) {
         setShowCategoryDropdown(false);
-      }
-      if (!e.target.closest("#uom-dropdown-wrapper")) {
-        setShowUOMDropDown(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -362,7 +351,6 @@ const AddItemsAndCategories = () => {
                         placeholder="Type UOM"
                         className={`w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 disabled:bg-gray-100 ${itemErrors.item_uom ? "border-red-400" : "border-gray-300"
                           }`}
-                        onFocus={() => setShowUOMDropDown(true)}
                       />
                       {fieldError("item_uom")}
                     </div>
@@ -372,7 +360,11 @@ const AddItemsAndCategories = () => {
                         زمرہ
                       </label>
                       <input
-                        value={newItem.category}
+                        value={
+                          categories.find((c) => c.category_id === newItem.category)?.category_name ||
+                          newItem.category ||
+                          ""
+                        }
                         onChange={(e) =>
                           setNewItem((f) => ({
                             ...f,
@@ -388,11 +380,14 @@ const AddItemsAndCategories = () => {
                       {showCategoryDropdown && categories.length > 0 && (
                         <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                           {categories
-                            .filter((c) =>
-                              c.category_name
+                            .filter((c) => {
+                              const isSelectedId = categories.some((cat) => cat.category_id === newItem.category);
+                              if (isSelectedId) return true;
+
+                              return c.category_name
                                 .toLowerCase()
-                                .includes(newItem.category.toLowerCase()),
-                            )
+                                .includes((newItem.category || "").toLowerCase());
+                            })
                             .map((cat) => (
                               <button
                                 key={cat.category_id}
@@ -400,7 +395,7 @@ const AddItemsAndCategories = () => {
                                 onMouseDown={() => {
                                   setNewItem((f) => ({
                                     ...f,
-                                    category: cat.category_name,
+                                    category: cat.category_id,
                                   }));
                                   setShowCategoryDropdown(false);
                                 }}
@@ -409,11 +404,14 @@ const AddItemsAndCategories = () => {
                                 {cat.category_name}
                               </button>
                             ))}
-                          {categories.filter((c) =>
-                            c.category_name
+                          {categories.filter((c) => {
+                            const isSelectedId = categories.some((cat) => cat.category_id === newItem.category);
+                            if (isSelectedId) return true;
+
+                            return c.category_name
                               .toLowerCase()
-                              .includes(newItem.category.toLowerCase()),
-                          ).length === 0 && (
+                              .includes((newItem.category || "").toLowerCase());
+                          }).length === 0 && (
                               <p className="px-3 py-2 text-sm text-gray-400 italic">
                                 No matching categories
                               </p>
@@ -536,8 +534,8 @@ const AddItemsAndCategories = () => {
                                   }));
                                 }}
                                 className={`w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${newItem.store_id === s.store_id
-                                    ? "bg-emerald-100 text-emerald-700 font-semibold"
-                                    : "text-gray-700"
+                                  ? "bg-emerald-100 text-emerald-700 font-semibold"
+                                  : "text-gray-700"
                                   }`}
                               >
                                 {s.store_name}
@@ -648,11 +646,7 @@ const AddItemsAndCategories = () => {
                   />
                 </div>
                 <div className="Delete_List border border-gray-200 rounded-lg overflow-hidden">
-                  {categoriesLoading ? (
-                    <div className="flex justify-center py-4">
-                      <div className="w-5 h-5 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                    </div>
-                  ) : filteredCategories.length === 0 ? (
+                  {filteredCategories.length === 0 ? (
                     <p className="text-gray-400 text-sm italic px-4 py-3">
                       {categorySearch
                         ? "No matching categories"

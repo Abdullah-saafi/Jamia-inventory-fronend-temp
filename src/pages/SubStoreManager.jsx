@@ -72,6 +72,7 @@ export default function SubStoreManager() {
         page,
         limit: pageSize,
         search: debouncedSearch,
+        priority_status: "PENDING"
       };
       if (filterStatus) params.status = filterStatus;
       if (auth.role !== "super admin" && auth.store_id)

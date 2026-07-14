@@ -19,6 +19,7 @@ const EditUser = () => {
     username: "",
     email: "",
     role: "",
+    phone_no: "",
     store_id: "",
     password: "",
     confirmPassword: "",
@@ -47,6 +48,7 @@ const EditUser = () => {
         email: user.email || "",
         role: user.role || "",
         store_id: user.store_id || "",
+        phone_no: user.phone_no || "",
         password: "",
         confirmPassword: "",
       });
@@ -66,6 +68,9 @@ const EditUser = () => {
     e.preventDefault();
     if (form.password && form.password !== form.confirmPassword) {
       return showToast("پاس ورڈ میچ نہیں کر رہے", "error");
+    }
+    if(form.phone_no.length < 10){
+      return showToast("فون نمبر درست نہیں ہے۔","error")
     }
 
     try {
@@ -172,15 +177,6 @@ const EditUser = () => {
               </div>
             )}
           </div>
-          {/* <div>
-            <label className={labelClass}>رول *</label>
-            <select name="role" value={form.role} onChange={handleChange} className={inputClass}>
-              <option value="">رول منتخب کریں</option>
-              {ROLES.map((r) => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
-          </div> */}
           {/* Role filter ends here */}
 
           {/* Store filter */}
@@ -243,21 +239,6 @@ const EditUser = () => {
               </div>
             )}
           </div>
-          {/* <div>
-            <label className={labelClass}>اسٹور *</label>
-            <select
-              name="store_id"
-              value={form.store_id}
-              onChange={handleChange}
-              disabled={!form.role}
-              className={inputClass + (!form.role ? " opacity-50 cursor-not-allowed" : "")}
-            >
-              <option value="">{form.role ? "Select Store" : "Select role first"}</option>
-              {filteredStores.map((s) => (
-                <option key={s.store_id} value={s.store_id}>{s.store_name}</option>
-              ))}
-            </select>
-          </div> */}
           {/* Store Fitler ends here */}
         </div>
 
@@ -283,6 +264,35 @@ const EditUser = () => {
               placeholder="e.g. ahmed@company.com"
               className={inputClass}
             />
+          </div>
+        </div>
+        <div>
+          {/* Phone Number */}
+          <div>
+            <label className={labelClass}>فون</label>
+            <div className="relative flex items-center w-full">
+              <span
+                className="absolute left-3 flex items-center gap-1 text-emerald-500 font-semibold text-sm select-none pointer-events-none"
+              >
+                <span>+</span>
+                <span className="text-gray-400">92</span>
+                <span className="h-4 w-px bg-gray-700 ml-1.5 inline-block"></span>
+              </span>
+
+              {/* Input Field */}
+              <input
+                name="phone"
+                inputMode="numeric"
+                maxLength={10}
+                value={form.phone_no}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  setForm((f) => ({ ...f, phone_no: val }));
+                }}
+                placeholder="3001234567"
+                className={`${inputClass} pl-14 w-full`}
+              />
+            </div>
           </div>
         </div>
 

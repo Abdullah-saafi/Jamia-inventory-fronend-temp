@@ -20,7 +20,7 @@ export default function AddUserTab() {
     name: "",
     email: "",
     role: "",
-    phone: "",
+    phone_no: "",
     store_id: "",
     password: "",
     confirmPassword: "",
@@ -55,6 +55,9 @@ export default function AddUserTab() {
       return showToast("پاس ورڈ میچ نہیں کر رہے", "error");
     if (password.length < 6)
       return showToast("پاس ورڈ کم از کم 6 حروف پر مشتمل ہونا چاہیے", "warn");
+    if(form.phone_no.length < 10){
+      return showToast("فون نمبر درست نہیں ہے۔","error")
+    }
 
     setLoading(true);
     try {
@@ -64,7 +67,7 @@ export default function AddUserTab() {
         name: "",
         email: "",
         role: "",
-        phone: "",
+        phone_no: "",
         store_id: "",
         password: "",
         confirmPassword: "",
@@ -244,33 +247,26 @@ export default function AddUserTab() {
         <div>
           <div>
             <label className={labelClass}>فون</label>
-
-            {/* Parent container must be 'relative' to anchor the absolute span inside it */}
             <div className="relative flex items-center w-full">
-
-              {/* Absolute Span: You can color, style, change fonts, and add the '+' safely here */}
               <span
                 className="absolute left-3 flex items-center gap-1 text-emerald-500 font-semibold text-sm select-none pointer-events-none"
               >
                 <span>+</span>
                 <span className="text-gray-400">92</span>
-                {/* Decorative divider line to create a sleek border layout inside the input */}
                 <span className="h-4 w-px bg-gray-700 ml-1.5 inline-block"></span>
               </span>
 
               {/* Input Field */}
               <input
-                name="phone"
+                name="phone_no"
                 inputMode="numeric"
-                maxLength={10} // Keeps your standard 10-digit limit clean
-                value={form.phone}
+                maxLength={10}
+                value={form.phone_no}
                 onChange={(e) => {
-                  // Your original digits-only validation remains completely untouched!
                   const val = e.target.value.replace(/\D/g, "").slice(0, 10);
-                  setForm((f) => ({ ...f, phone: val }));
+                  setForm((f) => ({ ...f, phone_no: val }));
                 }}
                 placeholder="3001234567"
-                // CRITICAL: Added 'pl-14' (padding-left) so typed text starts cleanly AFTER the absolute span label
                 className={`${inputClass} pl-14 w-full`}
               />
             </div>

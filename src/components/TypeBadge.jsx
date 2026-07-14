@@ -8,7 +8,7 @@ const TypeBadge = ({ hasItems, itemType }) => {
   if (hasItems && itemType === "REUSABLE")
     return (
         <span className="inline-flex items-center bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold rounded px-1.5 py-0.5">
-          واپس ہونے والی اشیاء
+          واپس بھیجنے والی اشیاء
         </span>
     );
   return (

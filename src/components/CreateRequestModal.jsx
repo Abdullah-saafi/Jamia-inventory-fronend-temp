@@ -2,15 +2,14 @@ import { useState } from "react";
 import { useAuth } from "../context/authContext";
 
 export default function CreateRequestModal({
-  itemForm, setItemForm, mainStores, storeItems, reusableItems,
+  itemForm, setItemForm, mainStores, reusableItems,
   onClose, onSubmit, addLine, removeLine, updateLine,
-  creating, setCreating, EMPTY_FORM, usableItems, pageType, toStore, showToast,
+  creating, EMPTY_FORM, usableItems, pageType, toStore, showToast,
 }) {
   const [activeTab, setActiveTab] = useState("items");
   const { auth } = useAuth();
-
-  const selectedStore = toStore?.find((s) => s.store_id === itemForm.to_store_id)
-
+  console.log(reusableItems)
+  console.log(usableItems)
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30" onClick={() => {
@@ -106,7 +105,7 @@ export default function CreateRequestModal({
             </button>
             <button type="button" onClick={() => { setActiveTab("assets"); setItemForm((prev) => ({ ...EMPTY_FORM, to_store_id: prev.to_store_id, requested_by_name: auth.username || "", from_store_id: auth.store_id || "" })); }}
               className={`flex-1 py-2 text-sm font-semibold transition-colors border-l border-gray-200 ${activeTab === "assets" ? "bg-blue-600 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}>
-              مستقل استعمال کی اشیاء
+              واپس بھیجنے والی اشیاء
             </button>
           </div>
           {activeTab === "items" && (
@@ -170,8 +169,13 @@ export default function CreateRequestModal({
                               )
                             }
                             placeholder="...آئٹم کے نام یا نمبر سے تلاش کریں"
-                            className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                            className={`w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${usableItems.length === 0? "pl-6" : ""}`}
                           />
+                          {usableItems.length === 0 && (
+                            <div className="flex justify-center absolute top-1/3 left-1">
+                              <div className="w-4 h-4 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                            </div>
+                          )}
                           {item._showDropdown && (
                             <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                               {usableItems
@@ -454,8 +458,13 @@ export default function CreateRequestModal({
                               )
                             }
                             placeholder="...آئٹم کے نام یا نمبر سے تلاش کریں"
-                            className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                            className={`w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${reusableItems.length === 0? "pl-6" : ""}`}
                           />
+                          {reusableItems.length === 0 && (
+                            <div className="flex justify-center absolute top-1/3 left-1">
+                              <div className="w-4 h-4 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                            </div>
+                          )}
                           {item._showDropdown && (
                             <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                               {reusableItems
