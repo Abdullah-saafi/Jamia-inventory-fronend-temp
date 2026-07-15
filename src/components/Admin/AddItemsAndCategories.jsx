@@ -220,14 +220,18 @@ const AddItemsAndCategories = () => {
                         onChange={(e) => {
                           const value = e.target.value;
 
-                          if (!/^[A-Za-z\s]*$/.test(value)) return;
+                          // English + Numbers + Spaces
+                          if (!/^[A-Za-z0-9\s]*$/.test(value)) return;
 
                           setNewItem((f) => ({
                             ...f,
                             item_name: value,
                           }));
 
-                          setItemErrors((f) => ({ ...f, item_name: undefined }));
+                          setItemErrors((f) => ({
+                            ...f,
+                            item_name: undefined,
+                          }));
                         }}
                         placeholder="English"
                         className={inputCls("item_name")}
@@ -244,14 +248,17 @@ const AddItemsAndCategories = () => {
                         onChange={(e) => {
                           const value = e.target.value;
 
-                          if (!/^[\u0600-\u06FF\s]*$/.test(value)) return;
+                          if (!/^[\u0600-\u06FFA-Za-z0-9\s]*$/.test(value)) return;
 
                           setNewItem((f) => ({
                             ...f,
                             item_name_urdu: value,
                           }));
 
-                          setItemErrors((f) => ({ ...f, item_name_urdu: undefined }));
+                          setItemErrors((f) => ({
+                            ...f,
+                            item_name_urdu: undefined,
+                          }));
                         }}
                         placeholder="اردو"
                         className={inputCls("item_name_urdu")}
