@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { addStore, getItemCategories } from "../../services/api";
-import { inputClass, labelClass } from "../../services/constants";
-import useErrorHandler from "../useErrorHandler";
-import { useToast } from "../../context/ToastContext";
+import { addStore, getItemCategories } from "../../../services/api";
+import { inputClass, labelClass } from "../../../services/constants";
+import useErrorHandler from "../../useErrorHandler";
+import { useToast } from "../../../context/ToastContext";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useAuth } from "../../context/authContext";
+import { useAuth } from "../../../context/authContext";
 
 export default function AddStoreTab() {
 

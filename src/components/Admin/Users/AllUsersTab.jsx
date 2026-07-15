@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
-import { getUsers, userStatus } from "../../services/api";
-import { ROLES, ROLE_LABELS } from "../../services/constants";
-import useErrorHandler from "../useErrorHandler";
+import { getUsers, userStatus } from "../../../services/api";
+import { ROLES, ROLE_LABELS } from "../../../services/constants";
+import useErrorHandler from "../../useErrorHandler";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import Pagination from "../Pagination";
-import Toast from "../Toast"
+import Pagination from "../../Pagination";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import CheckLoadingAndError from "../CheckLoadingAndError";
+import CheckLoadingAndError from "../../CheckLoadingAndError";
 
 export default function AllUsersTab() {
   const [users, setUsers] = useState([]);

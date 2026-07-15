@@ -1,4 +1,4 @@
-const TableHead = ({ pageType }) => {
+const TableHead = ({ pageType, pageTypeProp }) => {
   const headerMap = {
     subStore: [
       "درخواست نمبر",
@@ -56,6 +56,7 @@ const TableHead = ({ pageType }) => {
       "اسٹاک میں واپس کر دیا گیا",
       "اسکریپ",
       "حالت",
+      ...(pageTypeProp === "AddItemsAndCategories" ? ["عمل"] : [])
     ],
     mainStoreProcessReturns: [
       "واپسی نمبر",

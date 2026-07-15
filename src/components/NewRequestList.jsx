@@ -59,6 +59,7 @@ export default function NewRequestList() {
   const [pageSize, setPageSize] = useState(10);
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
+  const [itemsLoading, setItemsLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
   const [returnModalLoading, setReturnModalLoading] = useState(false);
   const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
@@ -112,6 +113,7 @@ export default function NewRequestList() {
       setUsableItems([]);
       return;
     }
+    setItemsLoading(true)
     try {
       const response = await getItems({ to_store_id: itemForm.to_store_id, store_id: auth.store_id });
       if (response.data?.success) {
@@ -130,6 +132,8 @@ export default function NewRequestList() {
       setReusableItems([]);
       const msg = handleError(error, "Failed to fetch items");
       showToast(msg, "error");
+    } finally{
+      setItemsLoading(false)
     }
   };
 
@@ -498,6 +502,7 @@ export default function NewRequestList() {
           EMPTY_FORM={EMPTY_FORM}
           pageType={pageType}
           showToast={showToast}
+          itemsLoading={itemsLoading}
         />
       )}
     </div>

@@ -6,6 +6,7 @@ import CheckLoadingAndError from "../CheckLoadingAndError";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import TableHead from "../TableHead";
 import { ITEM_CONDITIONS } from "../../services/constants";
+import { useNavigate } from "react-router-dom";
 
 export default function MainAllItems({
   allItems,
@@ -23,11 +24,13 @@ export default function MainAllItems({
   setFilterType,
   categories,
   setDebouncedSearch,
+  pageTypeProp
 }) {
   const [showCategory, setShowCategory] = useState(false);
   const [showItemTypeDropdown, setShowItemTypeDropdown] = useState(false);
 
   const { auth } = useAuth();
+  const navigate = useNavigate();
 
   const pageType = "mainAllItems"
 
@@ -244,6 +247,7 @@ export default function MainAllItems({
           <thead>
             <TableHead
               pageType={pageType}
+              pageTypeProp={pageTypeProp}
             />
           </thead>
           <tbody>
@@ -252,15 +256,11 @@ export default function MainAllItems({
                 loading={loading}
                 error={mainStoreError}
                 requests={allItems}
+                pageType={pageType}
               />
             ) : (
               allItems.map((i) => {
-                const isLow = (
-                  Number(i.item_quantity) -
-                  Number(i.sub_qty) -
-                  Number(i.transit_qty) +
-                  Number(i.returned_qty)
-                ).toFixed(0) <= parseFloat(i.min_quantity || 0);
+                const isLow = i.is_low_stock
                 return (
                   <tr
                     key={i.item_id}
@@ -313,12 +313,7 @@ export default function MainAllItems({
                         className={`font-mono text-xs font-bold ${isLow ? "text-red-500" : "text-gray-700"}`}
                       >
                         {
-                          (
-                            Number(i.item_quantity) -
-                            Number(i.sub_qty) -
-                            Number(i.transit_qty) +
-                            Number(i.returned_qty)
-                          ).toFixed(0)
+                          Number(i.available_qty).toFixed(0)
                         }
                       </span>
                     </td>
@@ -337,11 +332,23 @@ export default function MainAllItems({
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`text-xs font-semibold ${isLow ? "text-red-500" : "text-emerald-600"}`}
+                        className={`text-xs ${isLow ? "text-red-500 font-extrabold" : "text-emerald-600 font-semibold"}`}
                       >
                         {isLow ? "Low" : "OK"}
                       </span>
                     </td>
+                    {pageTypeProp && (
+                      <td className="px-4 py-3">
+                        <button
+                          className="text-[10px] uppercase font-bold text-gray-600 border border-gray-300 bg-gray-200 rounded px-3 py-1 hover:bg-gray-300"
+                          onClick={() => {
+                            navigate(`/admin/item/${i.item_id}`);
+                          }}
+                        >
+                          ترمیم کریں
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 );
               })

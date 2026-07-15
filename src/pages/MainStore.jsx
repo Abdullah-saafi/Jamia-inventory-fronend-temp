@@ -97,7 +97,7 @@ export default function MainStore() {
           }),
           getStores({ all: true }),
           getItems({
-            to_store_id: auth.store_id, // ← add this
+            to_store_id: auth.store_id,
             page: currentPage,
             limit: pageLimit,
             search: debouncedSearch,

@@ -1,4 +1,4 @@
-const CheckLoadingAndError = ({ loading, error, requests }) => {
+const CheckLoadingAndError = ({ loading, error, requests, pageType }) => {
 
     if (loading) {
         return (
@@ -30,7 +30,7 @@ const CheckLoadingAndError = ({ loading, error, requests }) => {
         return (
             <tr>
                 <td colSpan={15} className="text-center py-12 text-gray-400">
-                    No requests found. Click New Request to place one.
+                    {pageType === "mainAllItems" ? "No items found" : "No requests found. Click New Request to place one."}
                 </td>
             </tr>
         )

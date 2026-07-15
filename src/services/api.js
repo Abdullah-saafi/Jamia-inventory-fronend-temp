@@ -94,8 +94,9 @@ export const editStoreById = (id, data) =>
   API.put(`/stores/editStoreById/${id}`, data);
 
 // ── Items ────────────────────────────────────────────────────
-export const getItems = (params) => API.get("/items", { params });
+export const getItems = (params) => API.get("/items/", { params });
 export const getItemById = (id) => API.get(`/items/${id}`);
+export const editItemById = (id, data) => API.put(`/items/${id}`, data)
 export const createItem = (data) => API.post("/items", data);
 export const updateItem = (id, data) => API.patch(`/items/${id}`, data);
 export const deleteItem = (id) => API.delete(`/items/${id}`);

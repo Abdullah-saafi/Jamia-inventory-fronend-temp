@@ -134,7 +134,7 @@ export default function RequestRow({
               <button
                 onClick={(e) => openGRN(e, r)}
                 disabled={grnLoading}
-                className="text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
+                className="text-xs bg-blue-600 hover:bg-blue-500 text-white rounded px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
               >
                 {grnLoading ? "…" : "ڈلیوری کی تصدیق"}
               </button>
@@ -193,7 +193,7 @@ export default function RequestRow({
                   e.stopPropagation();
                   handleAcceptReturn(r.request_id);
                 }}
-                className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
+                className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
                 disabled={returnLoading}
               >
                 {fulfilling === r.request_id

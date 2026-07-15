@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { editUserById, getStores, getUserById } from "../../services/api";
-import { EyeOpen, EyeClosed } from "../EyeIcons"; // Using your icon components
-import { ROLES, ROLE_STORE_MAP, inputClass, labelClass } from "../../services/constants";
-import useErrorHandler from "../useErrorHandler";
-import { useAuth } from "../../context/authContext";
-import { useToast } from "../../context/ToastContext";
+import { editUserById, getStores, getUserById } from "../../../services/api";
+import { EyeOpen, EyeClosed } from "../../EyeIcons"; // Using your icon components
+import { ROLES, ROLE_STORE_MAP, inputClass, labelClass } from "../../../services/constants";
+import useErrorHandler from "../../useErrorHandler";
+import { useAuth } from "../../../context/authContext";
+import { useToast } from "../../../context/ToastContext";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 const EditUser = () => {
@@ -98,7 +98,6 @@ const EditUser = () => {
   const filteredStores = stores.filter(
     (s) => s.store_type === ROLE_STORE_MAP[form.role] && s.is_active
   );
-
 
   return (
     <div className="max-w-xl animate-in fade-in duration-500">

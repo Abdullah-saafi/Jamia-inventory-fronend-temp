@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { STORE_TYPE_LABELS, STORES } from "../../services/constants";
-import useErrorHandler from "../useErrorHandler";
-import { getStores, storeStatus } from "../../services/api";
+import { STORE_TYPE_LABELS, STORES } from "../../../services/constants";
+import useErrorHandler from "../../useErrorHandler";
+import { getStores, storeStatus } from "../../../services/api";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import Pagination from "../Pagination";
+import Pagination from "../../Pagination";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import CheckLoadingAndError from "../CheckLoadingAndError";
+import CheckLoadingAndError from "../../CheckLoadingAndError";
 
 export default function AllStoresTab() {
 
