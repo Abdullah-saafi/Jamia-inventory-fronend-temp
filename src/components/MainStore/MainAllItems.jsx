@@ -288,7 +288,7 @@ export default function MainAllItems({
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`font-mono font-bold ${isLow ? "text-red-500" : "text-emerald-600"}`}
+                        className="font-mono font-bold text-emerald-600"
                       >
                         {Number(i.item_quantity) || "―"}
                       </span>
@@ -310,7 +310,7 @@ export default function MainAllItems({
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`font-mono text-xs font-bold ${i.main_qty - i.sub_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
+                        className={`font-mono text-xs font-bold ${isLow ? "text-red-500" : "text-gray-700"}`}
                       >
                         {
                           (

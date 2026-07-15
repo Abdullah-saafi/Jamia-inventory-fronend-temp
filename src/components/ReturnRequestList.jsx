@@ -67,6 +67,7 @@ export default function ReturnRequestList() {
         limit: pageSize,
         search: debouncedSearch,
         priority_status: PRIORITY_STATUS,
+        from_store_id: auth.store_id
       };
 
       if (filterStatus) params.status = filterStatus;

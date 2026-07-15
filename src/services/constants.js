@@ -33,14 +33,14 @@ export const TABS = [
   { id: "store", label: "اسٹورز شامل کریں" },
   { id: "all-users", label: "تمام نمائندے" },
   { id: "all-stores", label: "تمام اسٹورز" },
-  { id: "items-and-categories", label: " آئٹم اور کیٹیگری شامل کریں" }
+  { id: "items-and-categories", label: " آئٹم اور زمرہ شامل کریں" }
 ]
 
 export const STORE_TYPE_LABELS = {
   MAIN_STORE: "مرکزی اسٹور",
   SUB_STORE: "اسٹور",
   HEAD_OFFICE: "مرکزی دفتر",
-  pettycash: "پٹی کیش",
+  PETTY_CASH: "پٹی کیش",
 }
 
 export const STORES = [
