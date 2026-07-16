@@ -12,7 +12,7 @@ const TableHead = ({ pageType, pageTypeProp }) => {
     ],
     returnRequestList: [
       "واپسی نمبر",
-      "بھیجنے والا اسٹور",
+      "بھیجے جانے والا اسٹور",
       "بھیجنے والا",
       "آئٹمز",
       "تاریخ",
