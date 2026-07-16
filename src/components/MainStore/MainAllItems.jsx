@@ -322,7 +322,7 @@ export default function MainAllItems({
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-bold text-orange-500">
-                        {Number(i.returned_qty) || "0"}
+                        {Number(i.returned_stock) || "0"}
                       </span>
                     </td>
                     <td className="px-4 py-3">

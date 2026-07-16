@@ -30,7 +30,7 @@ const CheckLoadingAndError = ({ loading, error, requests, pageType }) => {
         return (
             <tr>
                 <td colSpan={15} className="text-center py-12 text-gray-400">
-                    {pageType === "mainAllItems" ? "No items found" : "No requests found. Click New Request to place one."}
+                    {pageType === ("mainAllItems" || "returnModal") ? "کوئی آئٹم دستیاب نہیں" : "No requests found. Click New Request to place one."}
                 </td>
             </tr>
         )

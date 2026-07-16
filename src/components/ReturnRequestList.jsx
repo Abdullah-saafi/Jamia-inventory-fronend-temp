@@ -35,7 +35,6 @@ export default function ReturnRequestList() {
 
   const [returns, setReturns] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
-  const [error, setError] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -44,19 +43,38 @@ export default function ReturnRequestList() {
   const [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState(10);
   const [debouncedSearch, setDebouncedSearch] = useState("");
-
+  const [returnItemsPageSize, setReturnItemsPageSize] = useState(10);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     pageLimit: 10,
     totalItems: 0,
     totalPages: 1,
   });
-
   const [returnBackModal, setReturnBackModal] = useState(false);
-  const [returnBackItems, setReturnBackItems] = useState([]);
   const [returnBackLoading, setReturnBackLoading] = useState(false);
+  const [itemLoading, setItemLoading] = useState(false);
   const [returnBackSubmitting, setReturnBackSubmitting] = useState(false);
   const [returnBackNote, setReturnBackNote] = useState("");
+  const [allItems, setAllItems] = useState([]);
+  const [pageLimit, setPageLimit] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPagination, setItemsPagination] = useState({
+    currentPage: 1,
+    pageLimit: 10,
+    totalItems: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+  const [itemSearch, setItemSearch] = useState("");
+  const [itemDebouncedSearch, setItemDebouncedSearch] = useState("");
+
+  // ── Debounce search ───────────────────────────────────────────────────────
+  useEffect(() => {
+    const timer = setTimeout(() => setItemDebouncedSearch(itemSearch), 500);
+    return () => clearTimeout(timer);
+  }, [itemSearch]);
+
 
   // ─── Load ─────────────────────────────────────────────────────────────────
   const load = async () => {
@@ -80,10 +98,9 @@ export default function ReturnRequestList() {
       const res = await getReturnRequests(params);
       setReturns(res.data.data || []);
       setPagination(res.data.pagination);
-      setError("");
     } catch (error) {
       const msg = handleError(error, "Failed to load return requests");
-      setError(msg);
+      showToast(msg, "error");
     } finally {
       setPageLoading(false);
     }
@@ -117,23 +134,48 @@ export default function ReturnRequestList() {
   const closeModal = () => setSelected(null);
 
   // ─── Return back (create) ──────────────────────────────────────────────────
+
+  const getStoreItems = async () => {
+    try {
+      setItemLoading(true)
+      const res = await getItems({
+        to_store_id: auth.store_id,
+        page: currentPage,
+        limit: pageLimit,
+        search: itemDebouncedSearch,
+      });
+      setItemsPagination(res.data.pagination);
+      const items = (res.data.data || []).filter(
+        (i) => Number(i.item_quantity) > 0
+      );
+      setAllItems(items.map((i) => ({
+        ...i,
+        return_qty: 0,
+      })));
+    } catch (error) {
+      const msg = handleError(error, "Failed to load return details");
+      showToast(msg, "error");
+    } finally{
+      setItemLoading(false)
+    }
+  }
+
   const openReturnBack = async () => {
     try {
       setReturnBackLoading(true);
-      const res = await getItems({ to_store_id: auth.store_id });
-      const items = (res.data.data || []).filter((i) => Number(i.item_quantity) > 0);
-      setReturnBackItems(items.map((i) => ({ ...i, return_qty: 0 })));
+      await getStoreItems()
       setReturnBackModal(true);
-    } catch (err) {
-      const msg = handleError(err, "Failed to load items");
-      showToast(msg, "error");
     } finally {
       setReturnBackLoading(false);
     }
   };
 
+  useEffect(() => {
+    getStoreItems()
+  }, [currentPage, pageLimit, itemDebouncedSearch])
+
   const handleReturnBack = async () => {
-    const selectedItems = returnBackItems.filter((i) => Number(i.return_qty) > 0);
+    const selectedItems = allItems.filter((i) => Number(i.return_qty) > 0);
     if (selectedItems.length === 0) {
       showToast("کم از کم ایک آئٹم منتخب کریں", "error");
       return;
@@ -157,7 +199,7 @@ export default function ReturnRequestList() {
       });
       showToast("آئٹمز واپس بھیج دیے گئے", "success");
       setReturnBackModal(false);
-      setReturnBackItems([]);
+      setAllItems([]);
       setReturnBackNote("");
       load();
     } catch (err) {
@@ -182,11 +224,11 @@ export default function ReturnRequestList() {
 
       {/* ── Filters ── */}
       {showDropdown && (
-            <div
-              className="absolute inset-0"
-              onClick={() => setShowDropdown(false)}
-            />
-          )}
+        <div
+          className="absolute inset-0"
+          onClick={() => setShowDropdown(false)}
+        />
+      )}
       <div className="flex py-2 items-end justify-between">
         <div className="Filter">
           <div className="flex gap-2">
@@ -303,8 +345,8 @@ export default function ReturnRequestList() {
             <TableHead pageType={pageType} />
           </thead>
           <tbody>
-            {pageLoading || error || returns.length === 0 ? (
-              <CheckLoadingAndError loading={pageLoading} error={error} requests={returns} />
+            {pageLoading || returns.length === 0 ? (
+              <CheckLoadingAndError loading={pageLoading} requests={returns} />
             ) : (
               returns.map((r) => (
                 <tr
@@ -332,9 +374,8 @@ export default function ReturnRequestList() {
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
-                        STATUS_COLORS[r.status] || "bg-gray-100 text-gray-600 border-gray-200"
-                      }`}
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[r.status] || "bg-gray-100 text-gray-600 border-gray-200"
+                        }`}
                     >
                       {r.status}
                     </span>
@@ -407,9 +448,8 @@ export default function ReturnRequestList() {
 
                   <div className="flex items-center gap-2 mb-4">
                     <span
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
-                        STATUS_COLORS[selected?.status] || "bg-gray-100 text-gray-600 border-gray-200"
-                      }`}
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[selected?.status] || "bg-gray-100 text-gray-600 border-gray-200"
+                        }`}
                     >
                       {selected?.status}
                     </span>
@@ -430,10 +470,9 @@ export default function ReturnRequestList() {
                           </span>
                           {item.action_type && (
                             <span
-                              className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
-                                STATUS_COLORS[item.action_type] ||
+                              className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[item.action_type] ||
                                 "bg-gray-100 text-gray-600 border-gray-200"
-                              }`}
+                                }`}
                             >
                               {item.action_type}
                             </span>
@@ -457,12 +496,20 @@ export default function ReturnRequestList() {
       {returnBackModal && (
         <ReturnModal
           setReturnBackModal={setReturnBackModal}
-          setReturnBackItems={setReturnBackItems}
-          returnBackItems={returnBackItems}
           returnBackNote={returnBackNote}
           setReturnBackNote={setReturnBackNote}
           handleReturnBack={handleReturnBack}
           returnBackSubmitting={returnBackSubmitting}
+          itemLoading={itemLoading}
+          currentPage={currentPage}
+          pageSize={returnItemsPageSize}
+          setCurrentPage={setCurrentPage}
+          setPageSize={setReturnItemsPageSize}
+          allItems={allItems}
+          pagination={itemsPagination}
+          setPageLimit={setPageLimit}
+          setItemSearch={setItemSearch}
+          setAllItems={setAllItems}
         />
       )}
     </div>

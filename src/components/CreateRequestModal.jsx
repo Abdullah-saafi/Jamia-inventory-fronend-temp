@@ -168,7 +168,7 @@ export default function CreateRequestModal({
                               )
                             }
                             placeholder="...آئٹم کے نام یا نمبر سے تلاش کریں"
-                            className={`w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${itemsLoading? "pl-6" : ""}`}
+                            className={`w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${itemsLoading ? "pl-6" : ""}`}
                           />
                           {itemsLoading && (
                             <div className="flex justify-center absolute top-1/3 left-1">
@@ -200,19 +200,28 @@ export default function CreateRequestModal({
                                       updateLine(
                                         idx,
                                         "item_search",
-                                        `${si.item_no} — ${si.item_name}`,
+                                        `${si.item_no} — ${si.item_name} ( ${si.item_name_urdu} )`,
                                       );
                                       updateLine(idx, "_showDropdown", false);
                                     }}
                                     className={`px-3 py-2 cursor-pointer hover:bg-emerald-50 border-t border-gray-100 flex items-center justify-between ${item.selected_item_no === si.item_no ? "bg-emerald-50" : ""}`}
                                   >
-                                    <div>
-                                      <span className="font-mono text-emerald-600 text-xs font-bold">
-                                        {si.item_no}
-                                      </span>
-                                      <span className="text-gray-700 text-xs ml-2">
-                                        {si.item_name}
-                                      </span>
+                                    <div className="flex items-center">
+                                      <div>
+                                        <span className="font-mono text-emerald-600 text-xs font-bold">
+                                          {si.item_no}
+                                        </span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-700 text-xs ml-2">
+                                          {si.item_name}
+                                        </span>
+                                        <span className="text-gray-700 text-xs ml-2">{"("}</span>
+                                        <span className="text-gray-700 text-xs ml-2">
+                                          {si.item_name_urdu}
+                                        </span>
+                                        <span className="text-gray-700 text-xs ml-2">{")"}</span>
+                                      </div>
                                     </div>
                                   </div>
                                 ))}
@@ -240,12 +249,12 @@ export default function CreateRequestModal({
                             className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none"
                           />
                         </div>
-                        <div className="col-span-5">
+                        <div className="col-span-5 relative">
                           <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
                             نام
                           </label>
                           <input
-                            value={item.item_name}
+                            value={item.item_name && `${item.item_name} ( ${item.item_name_urdu ?? ""} )`}
                             readOnly
                             className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none"
                           />
@@ -457,7 +466,7 @@ export default function CreateRequestModal({
                               )
                             }
                             placeholder="...آئٹم کے نام یا نمبر سے تلاش کریں"
-                            className={`w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${itemsLoading? "pl-6" : ""}`}
+                            className={`w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${itemsLoading ? "pl-6" : ""}`}
                           />
                           {itemsLoading && (
                             <div className="flex justify-center absolute top-1/3 left-1">
