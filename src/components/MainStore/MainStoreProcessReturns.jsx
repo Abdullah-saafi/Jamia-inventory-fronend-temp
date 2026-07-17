@@ -223,7 +223,6 @@ export default function MainStoreProcessReturns({ showToast }) {
           note: v.note || null,
         })),
       };
-      console.log("payload", payload)
       await processReturnRequest(selected.return_id, payload);
       showToast("واپسی کی درخواست کامیابی سے مکمل ہو گئی ہے", "success",);
       closeModal();
@@ -596,10 +595,10 @@ export default function MainStoreProcessReturns({ showToast }) {
                                     {item.action_type}
                                   </span>
                                   <span className="text-xs text-emerald-700 font-semibold">
-                                    اسٹاک: {stockQty}
+                                    اسٹاک: {item.added_to_stock_qty}
                                   </span>
                                   <span className="text-xs text-red-600 font-semibold">
-                                    اسکریپ: {scrapQty}
+                                    اسکریپ: {item.scrap_qty}
                                   </span>
                                 </div>
                               )}

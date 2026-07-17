@@ -110,6 +110,7 @@ export const uploadImg = (data) => API.post("/upload", data, {
 // ── Requests ─────────────────────────────────────────────────
 export const getRequests = (params) => API.get("/requests", { params });
 export const getRequestById = (id) => API.get(`/requests/${id}`);
+export const getRequestByRequestItemId = (id) => API.get(`/requests/getRequestByRequestItemId/${id}`);
 export const getItemSummary = (params) =>
   API.get("/requests/item-summary", { params });
 export const createRequest = (data) => API.post("/requests", data,);

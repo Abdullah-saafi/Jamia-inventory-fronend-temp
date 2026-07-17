@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react"
-import { useLocation, useNavigate } from "react-router"
+import { useState } from "react"
+import { useNavigate } from "react-router"
 import { useAuth } from "../context/authContext.jsx"
 import { login } from "../services/api.js"
 import useErrorHandler from "../components/useErrorHandler.jsx"
@@ -7,7 +7,6 @@ import useErrorHandler from "../components/useErrorHandler.jsx"
 const Login = () => {
     const navigate = useNavigate()
     const { auth, setAuth } = useAuth()
-    const location = useLocation()
     const handleError = useErrorHandler()
 
     const [form, setForm] = useState({ email: "", password: "" });

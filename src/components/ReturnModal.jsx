@@ -80,7 +80,7 @@ const ReturnModal = ({
                                         </td>
                                         <td className="px-4 py-3">
                                             <div className="font-semibold text-gray-800 whitespace-nowrap">{item.item_name}</div>
-                                            <div className="font-semibold text-xs text-gray-800 dir-rtl" dir="rtl">
+                                            <div className="font-semibold text-xs text-gray-800 dir-rtl whitespace-nowrap" dir="rtl">
                                                 ( {item.item_name_urdu} )
                                             </div>
                                         </td>

@@ -4,14 +4,12 @@ import {
   fulfillRequest,
   acceptReturnFromSub,
   createRequest,
+  getRequestByRequestItemId,
 } from "../../services/api";
-import StatusBadge from "../StatusBadge";
 import { useAuth } from "../../context/authContext";
 import useErrorHandler from "../useErrorHandler";
-import React from "react";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
-import DateTimeCell from "../DateTimeCell";
 import StoreFilters from "../StoreFilters";
 import CheckLoadingAndError from "../CheckLoadingAndError";
 import RequestDashboard from "../RequestDashboard";
@@ -93,7 +91,7 @@ export default function MainSubStoreReqs({
 
   const getDetail = async (requestId) => {
     try {
-      const res = await getRequestById(requestId);
+      const res = await getRequestByRequestItemId(requestId);
       setItemForm((prev) => ({
         ...prev,
         items: res.data.data.items.map(item => ({
@@ -124,7 +122,7 @@ export default function MainSubStoreReqs({
     } catch (e) {
       const msg = handleError(e, "Failed to fulfill");
       if (msg.includes("Cannot fulfill: stock is low for item")) {
-        setLowStockRequest(requestId);
+        setLowStockRequest(e.response?.data?.request_item_id);
         setShowInstantRequestPopup(true)
         return
       }

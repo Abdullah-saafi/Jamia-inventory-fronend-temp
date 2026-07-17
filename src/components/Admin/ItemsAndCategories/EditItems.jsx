@@ -280,6 +280,10 @@ const EditItems = () => {
                                 {fieldError("item_uom")}
                             </div>
 
+                            {showCategoryDropdown && (
+                                <div className="absolute inset-0" onClick={() => setShowCategoryDropdown((prev) => !prev)} />
+                            )}
+
                             <div id="category-dropdown-wrapper" className="relative">
                                 <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                                     زمرہ
