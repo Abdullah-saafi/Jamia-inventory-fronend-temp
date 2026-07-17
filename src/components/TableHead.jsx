@@ -58,6 +58,15 @@ const TableHead = ({ pageType, pageTypeProp }) => {
       "حالت",
       ...(pageTypeProp === "AddItemsAndCategories" ? ["عمل"] : [])
     ],
+    returnModal: [
+      "آئٹم نمبر",
+      "نام",
+      "قسم",
+      "اکائی",
+      "دستیاب مقدار",
+      "واپس بھیجی جانے والی مقدار",
+      "واپسی مقدار",
+    ],
     mainStoreProcessReturns: [
       "واپسی نمبر",
       "بھیجنے والا اسٹور",

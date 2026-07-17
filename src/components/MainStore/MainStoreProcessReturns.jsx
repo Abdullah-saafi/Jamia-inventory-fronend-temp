@@ -223,7 +223,7 @@ export default function MainStoreProcessReturns({ showToast }) {
           note: v.note || null,
         })),
       };
-      console.log("payload",payload)
+      console.log("payload", payload)
       await processReturnRequest(selected.return_id, payload);
       showToast("واپسی کی درخواست کامیابی سے مکمل ہو گئی ہے", "success",);
       closeModal();
@@ -551,7 +551,7 @@ export default function MainStoreProcessReturns({ showToast }) {
                       const action = itemActions[item.return_item_id];
                       const stockQty = isPending
                         ? Number(action?.stock_qty ?? returnQty)
-                        : Number(item.stock_qty ?? 0);
+                        : Number(item.stock_qty ?? 67);
                       const scrapQty = isPending
                         ? Number(action?.scrap_qty ?? 0)
                         : Number(item.scrap_qty ?? 0);
@@ -564,9 +564,14 @@ export default function MainStoreProcessReturns({ showToast }) {
                         >
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-gray-800 text-sm">
-                                {item.item_name}
-                              </p>
+                              <div className="flex">
+                                <p className="font-semibold text-gray-800 text-sm">
+                                  {item.item_name}
+                                </p>
+                                <p className="font-semibold text-gray-800 text-sm ml-1">
+                                  ( {item.item_name_urdu} )
+                                </p>
+                              </div>
                               <div className="flex items-center gap-3 mt-1 flex-wrap">
                                 <span className="font-mono text-xs text-gray-400">
                                   {item.item_no}
@@ -575,7 +580,10 @@ export default function MainStoreProcessReturns({ showToast }) {
                                   {item.item_type}
                                 </span>
                                 <span className="font-mono font-bold text-sm text-gray-700">
-                                  کل مقدار: {returnQty} {item.item_uom}
+                                  کل مقدار: <bdi className="text-emerald-600">{returnQty}</bdi> 
+                                </span>
+                                <span className="font-mono font-bold text-sm text-gray-700">
+                                اکائی: <span className="text-emerald-600">{item.item_uom}</span>
                                 </span>
                               </div>
                               {!isPending && item.action_type && (

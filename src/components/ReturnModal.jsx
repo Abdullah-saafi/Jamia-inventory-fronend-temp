@@ -1,5 +1,6 @@
 import CheckLoadingAndError from "./CheckLoadingAndError";
 import Pagination from "./Pagination";
+import TableHead from "./TableHead";
 
 const ReturnModal = ({
     setReturnBackModal,
@@ -57,24 +58,7 @@ const ReturnModal = ({
                 <div className="flex-1 overflow-y-auto text-center">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="bg-gray-50 border-b border-gray-200">
-                                {[
-                                    "آئٹم نمبر",
-                                    "نام",
-                                    "قسم",
-                                    "UOM",
-                                    "دستیاب مقدار",
-                                    "واپس بھیجی جانے والی مقدار",
-                                    "واپسی مقدار",
-                                ].map((h) => (
-                                    <th
-                                        key={h}
-                                        className="px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
-                                    >
-                                        {h}
-                                    </th>
-                                ))}
-                            </tr>
+                            <TableHead pageType={pageType} />
                         </thead>
                         <tbody>
                             {itemLoading || allItems.length === 0 ? (
@@ -97,7 +81,7 @@ const ReturnModal = ({
                                         <td className="px-4 py-3">
                                             <div className="font-semibold text-gray-800 whitespace-nowrap">{item.item_name}</div>
                                             <div className="font-semibold text-xs text-gray-800 dir-rtl" dir="rtl">
-                                                {item.item_name_urdu}
+                                                ( {item.item_name_urdu} )
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 text-xs text-gray-500">
@@ -126,39 +110,46 @@ const ReturnModal = ({
                                                                         ...i,
                                                                         return_qty: Math.max(
                                                                             0,
-                                                                            Number(i.return_qty) - 1,
+                                                                            Number(i.return_qty) - 1
                                                                         ),
                                                                     }
-                                                                    : i,
-                                                            ),
+                                                                    : i
+                                                            )
                                                         )
                                                     }
                                                     className="w-7 h-7 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 font-bold flex items-center justify-center"
                                                 >
                                                     −
                                                 </button>
+
                                                 <input
                                                     type="number"
                                                     min={0}
                                                     max={item.item_quantity}
                                                     value={item.return_qty}
                                                     onChange={(e) => {
-                                                        const q = e.target.value.toLowerCase();
-
-                                                        setCurrentPage(1);
+                                                        const value = e.target.value;
 
                                                         setAllItems((prev) =>
-                                                            prev.map((i) => ({
-                                                                ...i,
-                                                                _hidden:
-                                                                    q &&
-                                                                    !i.item_name.toLowerCase().includes(q) &&
-                                                                    !i.item_no.toLowerCase().includes(q),
-                                                            })),
+                                                            prev.map((i) =>
+                                                                i.item_id === item.item_id
+                                                                    ? {
+                                                                        ...i,
+                                                                        return_qty:
+                                                                            value === ""
+                                                                                ? ""
+                                                                                : Math.min(
+                                                                                    Number(item.item_quantity),
+                                                                                    Math.max(0, Number(value))
+                                                                                ),
+                                                                    }
+                                                                    : i
+                                                            )
                                                         );
                                                     }}
                                                     className="w-16 border border-gray-300 rounded px-2 py-1 text-center font-mono text-sm focus:outline-none focus:border-emerald-500"
                                                 />
+
                                                 <button
                                                     onClick={() =>
                                                         setAllItems((prev) =>
@@ -168,11 +159,11 @@ const ReturnModal = ({
                                                                         ...i,
                                                                         return_qty: Math.min(
                                                                             Number(item.item_quantity),
-                                                                            Number(i.return_qty) + 1,
+                                                                            Number(i.return_qty) + 1
                                                                         ),
                                                                     }
-                                                                    : i,
-                                                            ),
+                                                                    : i
+                                                            )
                                                         )
                                                     }
                                                     className="w-7 h-7 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 font-bold flex items-center justify-center"

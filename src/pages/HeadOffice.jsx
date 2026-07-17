@@ -5,6 +5,7 @@ import {
   acceptReturn,
   resendItems,
   fulfillRequest,
+  fulfillRequesForHOAndPCash,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
@@ -42,9 +43,6 @@ export default function HeadOffice() {
   const [isEmergency, setIsEmergency] = useState(false);
   const [pageSize, setPageSize] = useState(10);
   const [fulfillModal, setFulfillModal] = useState(null);
-  const [fulfillMode, setFulfillMode] = useState("fulfill");
-  const [fulfillerName, setFulfillerName] = useState("");
-  const [fulfillNotes, setFulfillNotes] = useState("");
   const [fulfilling, setFulfilling] = useState(false);
   const [requestNo, setRequestNo] = useState(null);
   const [fulfillForm, setFulfillForm] = useState({ ...EMPTY_FULFILL_FORM })
@@ -121,11 +119,12 @@ export default function HeadOffice() {
   const handleFulfill = async (id) => {
     setFulfilling(id);
     try {
+      if(fulfillForm.driver_no.length < 10){
+        return showToast("فون نمبر درست نہیں ہے۔","error")
+      }
       setFulfillForm({ ...fulfillForm, fulfilled_by_name: auth.username })
-      await fulfillRequest(id, fulfillForm);
-      showToast(fulfillMode === "refulfill"
-        ? "دوبارہ روانہ کر دیا گیا ہے — مین اسٹور درست شدہ ڈیلیوری کی تصدیق کرے گا"
-        : "درخواست پوری کر دی گئی ہے — مین اسٹور ڈیلیوری کی تصدیق کرے گا", "success");
+      await fulfillRequesForHOAndPCash(id, fulfillForm);
+      showToast("درخواست پوری کر دی گئی ہے — مین اسٹور ڈیلیوری کی تصدیق کرے گا", "success");
       setFulfillModal(false)
       setFulfillForm({ ...EMPTY_FULFILL_FORM })
       load();
@@ -144,7 +143,7 @@ export default function HeadOffice() {
 
   const pendingFulfill = requests.filter((r) => r.status === "APPROVED").length;
   const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
-  const emergencyRequest = requests.filter((r) => r.is_emergency === true).length
+  const emergencyRequest = requests.filter((r) => r.is_emergency === true && r.status === "APPROVED").length
 
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message} />;

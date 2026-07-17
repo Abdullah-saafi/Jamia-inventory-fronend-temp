@@ -15,12 +15,6 @@ export default function ItemsTable({
 }) {
   const [previewImg, setPreviewImg] = useState(null);
   const isClosed = d.status === "CLOSED";
-  const hasActionColumn = items.some((item) => item.action_type);
-  const resolveActionLabel = (action) => {
-    if (action === "RESEND") return "Resend";
-    if (action === "RETURN_ACCEPT") return "Accept Return";
-    return action || "—";
-  };
 
   return (
     <>
@@ -59,9 +53,12 @@ export default function ItemsTable({
               <tr key={i.request_item_id} className={`border-b border-gray-100 ${hasItemIssue ? "bg-amber-50/50" : ""}`}>
                 <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
                   {i.item_no}
-                </td>
+                </td> 
 
-                <td className="py-2 pr-4 text-gray-800">{i.item_name}</td>
+                <td className="py-2 pr-4 text-gray-800 whitespace-nowrap">
+                    <span>{i.item_name}</span>
+                    {i.item_name_urdu && (<span className="ml-1">( {i.item_name_urdu} )</span>)}
+                </td>
 
                 <td className="py-2 pr-4 text-gray-700 text-sm">
                   {i.item_uom || "―"}

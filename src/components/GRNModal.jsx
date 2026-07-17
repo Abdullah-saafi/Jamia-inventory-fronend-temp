@@ -9,6 +9,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting, showT
       request_item_id: i.request_item_id,
       item_no: i.item_no,
       item_name: i.item_name,
+      item_name_urdu: i.item_name_urdu,
       item_uom: i.item_uom,
       fulfilled_qty: i.fulfilled_qty ?? i.approved_qty ?? i.requested_qty,
       received_qty: i.fulfilled_qty ?? i.approved_qty ?? i.requested_qty,
@@ -154,7 +155,10 @@ export default function GRNModal({ request, onClose, onSubmit, submitting, showT
                       <td className="px-4 py-3 font-mono text-emerald-600 text-xs font-bold">
                         {item.item_no}
                       </td>
-                      <td className="px-4 py-3 text-gray-800">{item.item_name}</td>
+                      <div className="flex flex-col">
+                        <td className="px-4 pt-3 text-gray-800">{item.item_name}</td>
+                        <td className="px-4 pb-3 text-gray-800">( {item.item_name_urdu} )</td>
+                      </div>
                       <td className="px-4 py-3 text-gray-400 text-xs">{item.item_uom}</td>
                       <td className="px-4 py-3">
                         <span className="font-mono text-gray-700 font-semibold">
@@ -322,10 +326,12 @@ export default function GRNModal({ request, onClose, onSubmit, submitting, showT
                       className={`${hasAnyIssue ? "text-amber-700" : ""} text-xs flex items-center gap-2`}
                     >
                       <span className="font-mono font-bold">{i.item_no}</span>
-                      <span>{i.item_name}</span>
+                        <span>{i.item_name}</span>
+                        <span>( {i.item_name_urdu} )</span>
                       {Number(i.received_qty) < Number(i.fulfilled_qty) && (
-                        <span className={`${hasAnyIssue && "text-amber-600"}`}>
-                          — {i.fulfilled_qty} میں سے {i.received_qty} موصول ہوئے
+                        <span className={hasAnyIssue ? "text-amber-600" : ""}>
+                          — میں سے{" "} <bdi>{i.received_qty}</bdi> موصول ہوئے
+                          <bdi>{i.fulfilled_qty}</bdi>
                         </span>
                       )}
                       {i.item_condition !== "OK" && (

@@ -91,7 +91,7 @@ const ApproveRejectModal = ({
                                             >
                                                 <td className="py-2">
                                                     <div className="text-gray-800 text-sm">
-                                                        {i.item_name}
+                                                        {i.item_name} ( {i.item_name_urdu} )
                                                     </div>
                                                     <div className="text-gray-400 text-xs font-mono">
                                                         {i.item_no} {i.item_type === "REUSABLE" ? "—" : `· ${i.item_uom}`}

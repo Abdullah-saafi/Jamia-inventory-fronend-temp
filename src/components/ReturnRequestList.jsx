@@ -68,6 +68,7 @@ export default function ReturnRequestList() {
   });
   const [itemSearch, setItemSearch] = useState("");
   const [itemDebouncedSearch, setItemDebouncedSearch] = useState("");
+  const [error, setError] = useState("")
 
   // ── Debounce search ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -100,7 +101,7 @@ export default function ReturnRequestList() {
       setPagination(res.data.pagination);
     } catch (error) {
       const msg = handleError(error, "Failed to load return requests");
-      showToast(msg, "error");
+      setError(msg);
     } finally {
       setPageLoading(false);
     }
@@ -155,7 +156,7 @@ export default function ReturnRequestList() {
     } catch (error) {
       const msg = handleError(error, "Failed to load return details");
       showToast(msg, "error");
-    } finally{
+    } finally {
       setItemLoading(false)
     }
   }
@@ -345,8 +346,8 @@ export default function ReturnRequestList() {
             <TableHead pageType={pageType} />
           </thead>
           <tbody>
-            {pageLoading || returns.length === 0 ? (
-              <CheckLoadingAndError loading={pageLoading} requests={returns} />
+            {pageLoading || error || returns.length === 0 ? (
+              <CheckLoadingAndError loading={pageLoading} error={error} requests={returns} />
             ) : (
               returns.map((r) => (
                 <tr
@@ -461,12 +462,18 @@ export default function ReturnRequestList() {
                         key={item.return_item_id}
                         className="border border-gray-200 rounded-lg p-4"
                       >
-                        <p className="font-semibold text-gray-800 text-sm">{item.item_name}</p>
+                        <div className="flex">
+                          <p className="font-semibold text-gray-800 text-sm">{item.item_name}</p>
+                          <p className="font-semibold text-gray-800 text-sm ml-1">( {item.item_name_urdu} )</p>
+                        </div>
                         <div className="flex items-center gap-3 mt-1 flex-wrap">
                           <span className="font-mono text-xs text-gray-400">{item.item_no}</span>
                           <span className="text-xs text-gray-400">{item.item_type}</span>
                           <span className="font-mono font-bold text-sm text-gray-700">
-                            مقدار: {item.return_qty} {item.item_uom}
+                            کل مقدار: <bdi className="text-emerald-600">{item.return_qty}</bdi>
+                          </span>
+                          <span className="font-mono font-bold text-sm text-gray-700">
+                            اکائی: <span className="text-emerald-600">{item.item_uom}</span>
                           </span>
                           {item.action_type && (
                             <span

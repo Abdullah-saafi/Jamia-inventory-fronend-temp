@@ -26,6 +26,7 @@ const EMPTY_LINE = {
   _showDropdown: false,
   item_no: "",
   item_name: "",
+  item_name_urdu: "",
   item_uom: "",
   requested_qty: 1,
 };
@@ -40,7 +41,6 @@ const EMPTY_FORM = {
 }
 
 export default function MainReqToHO({ showToast }) {
-  const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [toStore, setToStore] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -50,7 +50,6 @@ export default function MainReqToHO({ showToast }) {
   const [isEmergency, setIsEmergency] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [filterStore, setFilterStore] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -90,17 +89,17 @@ export default function MainReqToHO({ showToast }) {
       if (filterStatus) params.status = filterStatus;
       if (auth.role !== "super admin") {
         params.store_id = auth.store_id;
-      } else if (filterStore) {
-        params.store_id = filterStore;
       }
+      //  else if (filterStore) {
+      //   params.store_id = filterStore;
+      // }
       const [sRes, rRes, iRes] = await Promise.all([
         getStores(),
         getRequests(params),
-        getItems({ store_id: auth.store_id }),
+        getItems({ to_store_id: auth.store_id }),
       ]);
       const all = sRes.data.data;
       const items = iRes.data.data || [];
-      setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
       setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
       setToStore(all.filter((s) => s.store_type === "PETTY_CASH" || s.store_type === "HEAD_OFFICE"))
       setRequests(rRes.data.data);
@@ -126,7 +125,7 @@ export default function MainReqToHO({ showToast }) {
     if (auth.store_id || auth.role === "super admin") load();
   }, [
     filterStatus,
-    filterStore,
+    // filterStore,
     auth.store_id,
     page,
     pageSize,
@@ -175,7 +174,27 @@ export default function MainReqToHO({ showToast }) {
   const handleGRNSubmit = async (payload) => {
     setGrnSubmitting(true);
     try {
-      await submitGRN(grnRequest.request_id, payload);
+      const itemsWithImageUrls = [];
+      for (const item of payload.received_items) {
+        const { images, ...rest } = item;
+        const payloadItem = { ...rest };
+
+        if (images && images.length > 0) {
+          const formData = new FormData();
+          formData.append("image", images[0]);
+          const uploadRes = await uploadImg(formData);
+          payloadItem.image_url = uploadRes.data.image_url;
+        }
+
+        itemsWithImageUrls.push(payloadItem);
+      }
+
+      const finalPayload = {
+        grn_status: payload.grn_status,
+        grn_note: payload.grn_note,
+        received_items: itemsWithImageUrls,
+      };
+      await submitGRN(grnRequest.request_id, finalPayload);
       const label =
         payload.grn_status === "RECEIVED"
           ? "ڈیلیوری کی تصدیق ہو گئی ہے — موصول مارک کر دیا گیا ہے"
@@ -213,6 +232,7 @@ export default function MainReqToHO({ showToast }) {
             items[idx].item_id = found.item_id;
             items[idx].item_no = found.item_no;
             items[idx].item_name = found.item_name;
+            items[idx].item_name_urdu = found.item_name_urdu;
             items[idx].item_uom = found.item_uom;
             items[idx].item_type = found.item_type;
           }

@@ -126,21 +126,31 @@ const FulfillModal = ({
                             />
                         </div>
                         <div>
-                            <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                                ڈرائیور کا نمبر
-                            </label>
-                            <input
-                                type="text"
-                                inputMode="numeric"
-                                maxLength={11}
-                                placeholder="رابطہ نمبر درج کریں"
-                                value={fulfillForm.driver_no}
-                                className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                                onChange={(e) => {
-                                    const onlyNumbers = e.target.value.replace(/\D/g, "")
-                                    setFulfillForm((prev) => ({ ...prev, driver_no: onlyNumbers }))
-                                }}
-                            />
+                            <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">فون</label>
+                            <div className="relative flex items-center w-full">
+
+                                <span
+                                    className="absolute left-3 flex items-center gap-1 text-emerald-500 font-semibold text-sm select-none pointer-events-none"
+                                >
+                                    <span>+</span>
+                                    <span className="text-gray-400">92</span>
+                                    <span className="h-4 w-px bg-gray-700 ml-1.5 inline-block"></span>
+                                </span>
+
+                                {/* Input Field */}
+                                <input
+                                    name="driver_no"
+                                    inputMode="numeric"
+                                    maxLength={10}
+                                    value={fulfillForm.driver_no}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                                        setFulfillForm((f) => ({ ...f, driver_no: val }));
+                                    }}
+                                    placeholder="3001234567"
+                                    className="w-full pl-14 bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                                />
+                            </div>
                         </div>
                         <div>
                             <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">

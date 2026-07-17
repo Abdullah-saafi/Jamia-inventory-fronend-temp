@@ -5,6 +5,7 @@ import {
     acceptReturn,
     resendItems,
     fulfillRequest,
+    fulfillRequesForHOAndPCash,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
@@ -117,7 +118,7 @@ export default function PettyCash() {
     const handleFulfill = async (id, ref_no) => {
         setFulfilling(id);
         try {
-            await fulfillRequest(id, { ref_no, fulfilled_by_name: auth.username });
+            await fulfillRequesForHOAndPCash(id, { ref_no, fulfilled_by_name: auth.username });
             showToast(fulfillMode === "refulfill"
                 ? "دوبارہ روانہ کر دیا گیا ہے — مین اسٹور درست شدہ ڈیلیوری کی تصدیق کرے گا"
                 : "درخواست پوری کر دی گئی ہے — مین اسٹور ڈیلیوری کی تصدیق کرے گا", "success");
@@ -139,7 +140,7 @@ export default function PettyCash() {
 
     const pendingFulfill = requests.filter((r) => r.status === "APPROVED").length;
     const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
-    const emergencyRequest = requests.filter((r) => r.is_emergency === true).length
+    const emergencyRequest = requests.filter((r) => r.is_emergency === true && r.status === "APPROVED").length
 
     if (auth.isBlocked) {
         return <BlockedUI message={auth.message} />;

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import useErrorHandler from "./useErrorHandler";
 import StatusBadge from "./StatusBadge";
-import { acceptReturn, resendItems, resolveDispute } from "../services/api";
+import {resolveDispute } from "../services/api";
 import { useAuth } from "../context/authContext";
 
 const DisputeResolutionPanel = ({
@@ -11,7 +11,6 @@ const DisputeResolutionPanel = ({
   managerName,
 }) => {
   const [processing, setProcessing] = useState(false);
-  const [confirmed, setConfirmed] = useState(null);
   const [itemActions, setItemActions] = useState({});
 
   const { auth } = useAuth()
@@ -61,20 +60,6 @@ const DisputeResolutionPanel = ({
       </div>
 
       <div className="p-4 space-y-4 bg-white">
-        {/* {request.grn_note && (
-          <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2.5">
-            <div className="text-amber-500 text-xs font-bold uppercase tracking-wider mb-1">
-              سب اسٹور کا مؤقف
-            </div>
-            <div className="text-amber-800 text-sm">{request.grn_note}</div>
-            {request.grn_at && (
-              <div className="text-amber-400 text-xs mt-1">
-                {new Date(request.grn_at).toLocaleString()}
-              </div>
-            )}
-          </div>
-        )} */}
-
         {disputedItems.length > 0 && (
           <div>
             <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2 flex">
@@ -98,8 +83,11 @@ const DisputeResolutionPanel = ({
                     <span className="font-mono text-emerald-600 text-xs font-bold  shrink-0">
                       {i.item_no}
                     </span>
-                    <span className="text-gray-700 font-mono text-xs flex-1">
+                    <span className="font-mono text-emerald-600 text-xs font-bold  shrink-0">
                       {i.item_name}
+                    </span>
+                    <span className="text-gray-700 font-mono text-xs flex-1">
+                      ( {i.item_name_urdu} )
                     </span>
                     {shortfall > 0 && (
                       <span className="text-xs text-amber-600 font-semibold whitespace-nowrap">
