@@ -9,15 +9,14 @@ import {
   getStores,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
-import Toast from "../components/Toast";
 import BlockedUI from "../components/BlockedUI";
 import useErrorHandler from "../components/useErrorHandler";
 import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Pagination from "../components/Pagination";
 import StoreFilters from "../components/StoreFilters";
 import RequestRow from "../components/RequestRow";
-import ApproveRejectModal from "../components/ApproveRejectModal";
-import ItemHistoryModal from "../components/ItemHistoryModal";
+import ApproveRejectModal from "../components/Modals/ApproveRejectModal";
+import ItemHistoryModal from "../components/Modals/ItemHistoryModal";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import RequestDashboard from "../components/RequestDashboard";
@@ -373,7 +372,6 @@ export default function SubStoreManager() {
             ) : (
               requests.map((r) => (
                 <RequestRow
-                  key={r.request_id}
                   r={r}
                   detail={detail}
                   detailLoad={detailLoad}

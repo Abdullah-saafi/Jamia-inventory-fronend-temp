@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useAuth } from "../context/authContext";
-import NewRequestList from "../components/NewRequestList";
-import ReturnRequestList from "../components/ReturnRequestList";
+import NewRequestList from "../components/SubStore/NewRequestList";
+import ReturnRequestList from "../components/SubStore/ReturnRequestList";
+import BlockedUI from "../components/BlockedUI"
 
 export default function SubStore() {
-  const [activeTab, setActiveTab] = useState("new"); // "new" | "return"
+  const [activeTab, setActiveTab] = useState("new");
   const { auth } = useAuth();
 
   if (auth.isBlocked) {

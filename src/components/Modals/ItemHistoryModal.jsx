@@ -1,5 +1,4 @@
-import React from "react";
-import StatusBadge from "./StatusBadge";
+import StatusBadge from "../StatusBadge";
 
 export default function ItemHistoryModal({ open, onClose, itemNo, history }) {
   if (!open) return null;

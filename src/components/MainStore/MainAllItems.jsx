@@ -24,7 +24,7 @@ export default function MainAllItems({
   setFilterType,
   categories,
   setDebouncedSearch,
-  pageTypeProp
+  pageTypeProp // Prop from admin
 }) {
   const [showCategory, setShowCategory] = useState(false);
   const [showItemTypeDropdown, setShowItemTypeDropdown] = useState(false);

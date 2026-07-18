@@ -14,14 +14,13 @@ import { useToast } from "../context/ToastContext";
 import BlockedUI from "../components/BlockedUI";
 import useErrorHandler from "../components/useErrorHandler";
 import Pagination from "../components/Pagination";
-import StatusBadge from "../components/StatusBadge"
 import RequestDashboard from "../components/RequestDashboard";
 import StoreFilters from "../components/StoreFilters";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
-import ApproveRejectModal from "../components/ApproveRejectModal";
+import ApproveRejectModal from "../components/Modals/ApproveRejectModal";
 import RequestRow from "../components/RequestRow";
-import ItemHistoryModal from "../components/ItemHistoryModal";
+import ItemHistoryModal from "../components/Modals/ItemHistoryModal";
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MainStoreApprover() {
@@ -381,7 +380,6 @@ export default function MainStoreApprover() {
             ) : (
               requests.map((r) => (
                 <RequestRow
-                  key={r.request_id}
                   r={r}
                   detail={detail}
                   detailLoad={detailLoad}

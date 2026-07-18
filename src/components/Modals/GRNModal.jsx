@@ -1,5 +1,5 @@
 import { useState } from "react";
-import StatusBadge from "./StatusBadge";
+import StatusBadge from "../StatusBadge";
 import React from "react";
 
 export default function GRNModal({ request, onClose, onSubmit, submitting, showToast }) {

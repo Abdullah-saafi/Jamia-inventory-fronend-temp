@@ -1,14 +1,24 @@
 import { useState } from "react";
-import { useAuth } from "../context/authContext";
+import { useAuth } from "../../context/authContext";
 
 export default function CreateRequestModal({
   itemForm, setItemForm, mainStores, reusableItems,
   onClose, onSubmit, addLine, removeLine, updateLine,
   creating, EMPTY_FORM, usableItems, pageType, toStore, showToast,
-  itemsLoading,
+  itemsLoading, duplicateItemIds
 }) {
   const [activeTab, setActiveTab] = useState("items");
   const { auth } = useAuth();
+
+  const DuplicateBadge = ({ itemNo }) => {
+    if (!itemNo || !duplicateItemIds?.has(itemNo)) return null;
+    return (
+      <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+        ⚠ یہ آئٹم پہلے سے شامل ہے — مقدار جمع ہو جائے گی
+      </span>
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/30" onClick={() => {
@@ -133,9 +143,12 @@ export default function CreateRequestModal({
                       className="bg-gray-50 rounded-lg p-3 border border-gray-200"
                     >
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                          آئٹم {idx + 1}
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                            آئٹم {idx + 1}
+                          </span>
+                          <DuplicateBadge itemNo={item.item_no} />
+                        </div>
                         <button
                           type="button"
                           onClick={() => removeLine(idx)}
@@ -430,9 +443,12 @@ export default function CreateRequestModal({
                       className="bg-gray-50 rounded-lg p-3 border border-gray-200"
                     >
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                          آئٹم {idx + 1}
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                            آئٹم {idx + 1}
+                          </span>
+                          <DuplicateBadge itemNo={item.item_no} />
+                        </div>
                         <button
                           type="button"
                           onClick={() => removeLine(idx)}

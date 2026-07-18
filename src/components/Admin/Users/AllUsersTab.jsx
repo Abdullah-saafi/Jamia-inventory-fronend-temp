@@ -23,8 +23,8 @@ export default function AllUsersTab() {
   const handleError = useErrorHandler();
   const navigate = useNavigate();
 
-  const { loadStores: refreshAdminStores, showToast } = useOutletContext();
-
+  const { showToast } = useOutletContext();
+  
   const loadUsers = async () => {
     try {
       setLoading(true);

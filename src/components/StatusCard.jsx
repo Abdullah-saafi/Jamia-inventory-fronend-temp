@@ -1,7 +1,6 @@
 import { ArrowUpRight } from 'lucide-react';
 
 const StatusCard = ({ title, count, onClick, colorClass, isActive }) => {
-  // if (count <= 0) return null
 
   const activeStyles = "bg-gradient-to-bl from-green-600 via-emerald-600 to-green-600 border-transparent shadow-lg scale-103";
   const inactiveStyles = "bg-white border-gray-200 hover:shadow-md";

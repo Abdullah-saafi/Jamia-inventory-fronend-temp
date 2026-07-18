@@ -15,7 +15,7 @@ import CheckLoadingAndError from "../CheckLoadingAndError";
 import RequestDashboard from "../RequestDashboard";
 import RequestRow from "../RequestRow";
 import TableHead from "../TableHead";
-import InstantRestockModal from "../InstantRestockModal";
+import InstantRestockModal from "../Modals/InstantRestockModal";
 import InstantRequestPopup from "../InstantRequestPopup";
 
 const EMPTY_LINE = {
@@ -44,7 +44,6 @@ export default function MainSubStoreReqs({
   pagination,
   setCurrentPage,
   setPageLimit,
-  currentPage,
   onRefresh,
   showToast,
   onFilterChange,

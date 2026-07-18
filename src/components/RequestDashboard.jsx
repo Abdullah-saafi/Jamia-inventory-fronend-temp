@@ -4,13 +4,11 @@ const RequestDashboard = ({
   setFilterStatus,
   filterStatus,
   pageType,
-  data,
   isEmergency,
   setIsEmergency,
   setPage,
 }) => {
 
-  const isEmergent = data?.filter((r) => r.is_emergency).length;
   const handleFilter = (status) => {
     setPage(1)
     setFilterStatus((prev) => prev === status ? "" : status);

@@ -12,14 +12,7 @@ import { RETURN_STATUSES } from "../../services/constants";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates"
 import Pagination from "../Pagination";
-
-const STATUS_COLORS = {
-  PENDING: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  ADDED_TO_STOCK: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  SCRAPPED: "bg-red-100 text-red-700 border-red-200",
-  SCRAPPED_AND_STOCKED: "bg-orange-100 text-orange-700 border-orange-200",
-  SCRAP: "bg-red-100 text-red-700 border-red-200",
-};
+import StatusBadge from "../StatusBadge";
 
 function clampQty(value, max) {
   return Math.min(max, Math.max(0, Number(value) || 0));
@@ -451,13 +444,7 @@ export default function MainStoreProcessReturns({ showToast }) {
                     {new Date(r.created_at).toLocaleDateString("en-PK")}
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[r.status] ||
-                        "bg-gray-100 text-gray-600 border-gray-200"
-                        }`}
-                    >
-                      {r.status}
-                    </span>
+                  <StatusBadge status={r.status}/>
                   </td>
                   <td className="px-4 py-3">
                     {r.status === "PENDING" ? (
@@ -587,13 +574,7 @@ export default function MainStoreProcessReturns({ showToast }) {
                               </div>
                               {!isPending && item.action_type && (
                                 <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                  <span
-                                    className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[item.action_type] ||
-                                      "bg-gray-100 text-gray-600 border-gray-200"
-                                      }`}
-                                  >
-                                    {item.action_type}
-                                  </span>
+                                  <StatusBadge status={item.action_type}/>
                                   <span className="text-xs text-emerald-700 font-semibold">
                                     اسٹاک: {item.added_to_stock_qty}
                                   </span>

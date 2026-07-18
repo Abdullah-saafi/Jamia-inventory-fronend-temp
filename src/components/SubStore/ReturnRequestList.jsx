@@ -1,20 +1,20 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../context/authContext";
-import { useToast } from "../context/ToastContext";
-import { useStores } from "../hooks/useStores";
-import useErrorHandler from "./useErrorHandler";
-import CheckLoadingAndError from "./CheckLoadingAndError";
+import { useAuth } from "../../context/authContext";
+import { useToast } from "../../context/ToastContext";
+import { useStores } from "../../hooks/useStores";
+import useErrorHandler from "../useErrorHandler";
+import CheckLoadingAndError from "../CheckLoadingAndError";
 import {
   createReturnRequest,
   getItems,
   getReturnRequests,
   getReturnRequestById,
-} from "../services/api";
-import TableHead from "./TableHead";
-import ExcelDownloaderWithDates from "./Exceldownloaderwithdates";
-import Pagination from "./Pagination";
-import ReturnModal from "./ReturnModal";
-import { RETURN_STATUSES } from "../services/constants";
+} from "../../services/api";
+import TableHead from "../TableHead";
+import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
+import Pagination from "../Pagination";
+import ReturnModal from "../Modals/ReturnModal";
+import { RETURN_STATUSES } from "../../services/constants";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 const PRIORITY_STATUS = "PENDING";
@@ -23,7 +23,8 @@ const STATUS_COLORS = {
   PENDING: "bg-yellow-100 text-yellow-700 border-yellow-200",
   ADDED_TO_STOCK: "bg-emerald-100 text-emerald-700 border-emerald-200",
   SCRAPPED: "bg-red-100 text-red-700 border-red-200",
-  SCRAPPED_AND_STOCKED: "bg-orange-100 text-orange-700 border-orange-200",
+  SCRAPPED_AND_STOCKED:
+    "bg-orange-100 text-orange-700 border-orange-200",
 };
 
 export default function ReturnRequestList() {
@@ -31,33 +32,46 @@ export default function ReturnRequestList() {
   const { showToast } = useToast();
   const handleError = useErrorHandler();
   const { mainStores } = useStores();
+
   const pageType = "returnRequestList";
 
+  // Main return requests
   const [returns, setReturns] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const [filterStatus, setFilterStatus] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
-  const [selected, setSelected] = useState(null);
-  const [modalLoading, setModalLoading] = useState(false);
-  const [page, setPage] = useState(1);
+
   const [search, setSearch] = useState("");
-  const [pageSize, setPageSize] = useState(10);
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [returnItemsPageSize, setReturnItemsPageSize] = useState(10);
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const [pagination, setPagination] = useState({
     currentPage: 1,
     pageLimit: 10,
     totalItems: 0,
     totalPages: 1,
   });
+
+  // Detail modal
+  const [selected, setSelected] = useState(null);
+  const [modalLoading, setModalLoading] = useState(false);
+
+  // Return-back modal
   const [returnBackModal, setReturnBackModal] = useState(false);
-  const [returnBackLoading, setReturnBackLoading] = useState(false);
-  const [itemLoading, setItemLoading] = useState(false);
   const [returnBackSubmitting, setReturnBackSubmitting] = useState(false);
   const [returnBackNote, setReturnBackNote] = useState("");
+
+  // Items inside return-back modal
   const [allItems, setAllItems] = useState([]);
-  const [pageLimit, setPageLimit] = useState(10);
+  const [itemLoading, setItemLoading] = useState(false);
+
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemPageSize, setItemPageSize] = useState(10);
+
   const [itemsPagination, setItemsPagination] = useState({
     currentPage: 1,
     pageLimit: 10,
@@ -66,41 +80,65 @@ export default function ReturnRequestList() {
     hasNextPage: false,
     hasPrevPage: false,
   });
+
   const [itemSearch, setItemSearch] = useState("");
   const [itemDebouncedSearch, setItemDebouncedSearch] = useState("");
-  const [error, setError] = useState("")
 
-  // ── Debounce search ───────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────
+  // Debounce main request search
+  // ─────────────────────────────────────────────
+
   useEffect(() => {
-    const timer = setTimeout(() => setItemDebouncedSearch(itemSearch), 500);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // ─────────────────────────────────────────────
+  // Debounce item search
+  // ─────────────────────────────────────────────
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setItemDebouncedSearch(itemSearch);
+    }, 500);
+
     return () => clearTimeout(timer);
   }, [itemSearch]);
 
+  // ─────────────────────────────────────────────
+  // Load return requests
+  // ─────────────────────────────────────────────
 
-  // ─── Load ─────────────────────────────────────────────────────────────────
   const load = async () => {
     setPageLoading(true);
+    setError("");
+
     try {
       const params = {
         page,
         limit: pageSize,
         search: debouncedSearch,
         priority_status: PRIORITY_STATUS,
-        from_store_id: auth.store_id
+        from_store_id: auth.store_id,
       };
 
-      if (filterStatus) params.status = filterStatus;
-      // if (auth.role !== "super admin") {
-      //   params.from_store_id = auth.store_id;
-      // } else if (filterStore) {
-      //   params.from_store_id = filterStore;
-      // }
+      if (filterStatus) {
+        params.status = filterStatus;
+      }
 
       const res = await getReturnRequests(params);
+
       setReturns(res.data.data || []);
       setPagination(res.data.pagination);
     } catch (error) {
-      const msg = handleError(error, "Failed to load return requests");
+      const msg = handleError(
+        error,
+        "Failed to load return requests"
+      );
+
       setError(msg);
     } finally {
       setPageLoading(false);
@@ -111,100 +149,148 @@ export default function ReturnRequestList() {
     if (auth.store_id || auth.role === "super admin") {
       load();
     }
-  }, [filterStatus, auth.store_id, page, pageSize, debouncedSearch]);
+  }, [
+    filterStatus,
+    auth.store_id,
+    page,
+    pageSize,
+    debouncedSearch,
+  ]);
+
+  // ─────────────────────────────────────────────
+  // Load items for return-back modal
+  // ─────────────────────────────────────────────
+
+  const getStoreItems = async () => {
+    try {
+      setItemLoading(true);
+
+      const res = await getItems({
+        to_store_id: auth.store_id,
+        page: currentPage,
+        limit: itemPageSize,
+        search: itemDebouncedSearch,
+      });
+
+      setItemsPagination(res.data.pagination);
+
+      const items = (res.data.data || [])
+        .filter((item) => Number(item.item_quantity) > 0)
+        .map((item) => ({
+          ...item,
+          return_qty: 0,
+        }));
+
+      setAllItems(items);
+    } catch (error) {
+      const msg = handleError(
+        error,
+        "Failed to load store items"
+      );
+
+      showToast(msg, "error");
+    } finally {
+      setItemLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 500);
-    return () => clearTimeout(timer);
-  }, [search]);
+    if (returnBackModal) {
+      getStoreItems();
+    }
+  }, [
+    returnBackModal,
+    currentPage,
+    itemPageSize,
+    itemDebouncedSearch,
+  ]);
 
-  // ─── Detail ───────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────
+  // Open detail modal
+  // ─────────────────────────────────────────────
+
   const openDetail = async (returnId) => {
     try {
       setModalLoading(true);
+
       const res = await getReturnRequestById(returnId);
+
       setSelected(res.data.data);
-    } catch (err) {
-      const msg = handleError(err, "Failed to load return details");
+    } catch (error) {
+      const msg = handleError(
+        error,
+        "Failed to load return details"
+      );
+
       showToast(msg, "error");
     } finally {
       setModalLoading(false);
     }
   };
 
-  const closeModal = () => setSelected(null);
-
-  // ─── Return back (create) ──────────────────────────────────────────────────
-
-  const getStoreItems = async () => {
-    try {
-      setItemLoading(true)
-      const res = await getItems({
-        to_store_id: auth.store_id,
-        page: currentPage,
-        limit: pageLimit,
-        search: itemDebouncedSearch,
-      });
-      setItemsPagination(res.data.pagination);
-      const items = (res.data.data || []).filter(
-        (i) => Number(i.item_quantity) > 0
-      );
-      setAllItems(items.map((i) => ({
-        ...i,
-        return_qty: 0,
-      })));
-    } catch (error) {
-      const msg = handleError(error, "Failed to load return details");
-      showToast(msg, "error");
-    } finally {
-      setItemLoading(false)
-    }
-  }
-
-  const openReturnBack = async () => {
-    try {
-      setReturnBackLoading(true);
-      await getStoreItems()
-      setReturnBackModal(true);
-    } finally {
-      setReturnBackLoading(false);
-    }
+  const closeModal = () => {
+    setSelected(null);
   };
 
-  useEffect(() => {
-    getStoreItems()
-  }, [currentPage, pageLimit, itemDebouncedSearch])
+  // ─────────────────────────────────────────────
+  // Open return-back modal
+  // ─────────────────────────────────────────────
+
+  const openReturnBack = () => {
+    setReturnBackModal(true);
+  };
+
+  // ─────────────────────────────────────────────
+  // Submit return-back request
+  // ─────────────────────────────────────────────
 
   const handleReturnBack = async () => {
-    const selectedItems = allItems.filter((i) => Number(i.return_qty) > 0);
+    const selectedItems = allItems.filter(
+      (item) => Number(item.return_qty) > 0
+    );
+
     if (selectedItems.length === 0) {
       showToast("کم از کم ایک آئٹم منتخب کریں", "error");
       return;
     }
-    const mainStore = mainStores[0]; // or let user pick
+
+    const mainStore = mainStores[0];
+
     if (!mainStore) {
       showToast("Main store not found", "error");
       return;
     }
+
     try {
       setReturnBackSubmitting(true);
+
       await createReturnRequest({
         from_store_id: auth.store_id,
         to_store_id: mainStore.store_id,
         sent_by_name: auth.username,
         note: returnBackNote || null,
-        items: selectedItems.map((i) => ({
-          item_id: i.item_id,
-          return_qty: Number(i.return_qty),
+        items: selectedItems.map((item) => ({
+          item_id: item.item_id,
+          return_qty: Number(item.return_qty),
         })),
       });
-      showToast("آئٹمز واپس بھیج دیے گئے", "success");
+
+      showToast(
+        "آئٹمز واپس بھیج دیے گئے",
+        "success"
+      );
+
       setReturnBackModal(false);
       setAllItems([]);
       setReturnBackNote("");
+
       load();
-    } catch (err) {
-      const msg = handleError(err, "Failed to send items back");
+    } catch (error) {
+      const msg = handleError(
+        error,
+        "Failed to send items back"
+      );
+
       showToast(msg, "error");
     } finally {
       setReturnBackSubmitting(false);
@@ -213,23 +299,24 @@ export default function ReturnRequestList() {
 
   return (
     <div>
+      {/* Open return modal */}
       <div className="flex gap-2 my-4">
         <button
           onClick={openReturnBack}
-          disabled={returnBackLoading}
-          className="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
+          className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
         >
-          {returnBackLoading ? "Loading..." : "آئٹم واپس کریں "}
+          آئٹم واپس کریں
         </button>
       </div>
 
-      {/* ── Filters ── */}
+      {/* Filters */}
       {showDropdown && (
         <div
           className="absolute inset-0"
           onClick={() => setShowDropdown(false)}
         />
       )}
+
       <div className="flex py-2 items-end justify-between">
         <div className="Filter">
           <div className="flex gap-2">
@@ -240,25 +327,35 @@ export default function ReturnRequestList() {
                 setPage(1);
               }}
               placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
-              title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
               className="bg-white border mb-3 leading-none border-gray-300 rounded-lg px-3 h-10 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
             />
-            {/* Filter */}
+
+            {/* Status filter */}
             <div className="relative min-w-50">
               <button
                 type="button"
-                onClick={() => setShowDropdown((prev) => !prev)}
+                onClick={() =>
+                  setShowDropdown((prev) => !prev)
+                }
                 className="w-full h-10 px-3 flex items-center justify-between bg-white border border-gray-300 rounded-lg shadow-sm hover:border-emerald-400 focus:border-emerald-500 transition-all text-sm text-gray-700"
               >
                 <span>
-                  {RETURN_STATUSES.find((s) => s.value === filterStatus)?.label ||
-                    "تمام اسٹیٹس"}
+                  {RETURN_STATUSES.find(
+                    (status) =>
+                      status.value === filterStatus
+                  )?.label || "تمام اسٹیٹس"}
                 </span>
 
                 {showDropdown ? (
-                  <ChevronUp size={16} className="text-gray-400" />
+                  <ChevronUp
+                    size={16}
+                    className="text-gray-400"
+                  />
                 ) : (
-                  <ChevronDown size={16} className="text-gray-400" />
+                  <ChevronDown
+                    size={16}
+                    className="text-gray-400"
+                  />
                 )}
               </button>
 
@@ -275,25 +372,27 @@ export default function ReturnRequestList() {
                     تمام اسٹیٹس
                   </button>
 
-                  {RETURN_STATUSES.map((n) => (
+                  {RETURN_STATUSES.map((status) => (
                     <button
-                      key={n.value}
+                      key={status.value}
                       onClick={() => {
                         setPage(1);
-                        setFilterStatus(n.value);
+                        setFilterStatus(status.value);
                         setShowDropdown(false);
                       }}
-                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${filterStatus === n.value
-                        ? "bg-emerald-100 text-emerald-700 font-semibold"
-                        : "text-gray-700"
-                        }`}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${
+                        filterStatus === status.value
+                          ? "bg-emerald-100 text-emerald-700 font-semibold"
+                          : "text-gray-700"
+                      }`}
                     >
-                      {n.label}
+                      {status.label}
                     </button>
                   ))}
                 </div>
               )}
             </div>
+
             {(search || filterStatus) && (
               <button
                 onClick={() => {
@@ -308,10 +407,11 @@ export default function ReturnRequestList() {
               </button>
             )}
           </div>
+
           <button
             onClick={() => {
-              load();
               setPage(1);
+              load();
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto hover:bg-gray-50 shadow-sm"
           >
@@ -319,71 +419,113 @@ export default function ReturnRequestList() {
           </button>
         </div>
 
-        <div className="Temp-downloader flex justify-center items-center gap-4">
-          <div>
-            <ExcelDownloaderWithDates
-              data={returns}
-              dateKey="created_at"
-              fileName={auth.username}
-              columns={[
-                { key: "return_no", label: "واپسی نمبر", format: (v) => (v ? v : "—") },
-                { key: "to_store_name", label: "وصول کنندہ اسٹور", format: (v) => (v ? v : "—") },
-                { key: "sent_by_name", label: "بھیجنے والا", format: (v) => (v ? v : "—") },
-                { key: "item_count", label: "آئٹمز", format: (v) => (v ? v : "—") },
-                { key: "created_at", label: "تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—") },
-                { key: "status", label: "اسٹیٹس", format: (v) => (v ? v : "—") },
-              ]}
-              pageLoading={pageLoading}
-            />
-          </div>
-        </div>
+        <ExcelDownloaderWithDates
+          data={returns}
+          dateKey="created_at"
+          fileName={auth.username}
+          columns={[
+            {
+              key: "return_no",
+              label: "واپسی نمبر",
+              format: (value) => value || "—",
+            },
+            {
+              key: "to_store_name",
+              label: "وصول کنندہ اسٹور",
+              format: (value) => value || "—",
+            },
+            {
+              key: "sent_by_name",
+              label: "بھیجنے والا",
+              format: (value) => value || "—",
+            },
+            {
+              key: "item_count",
+              label: "آئٹمز",
+              format: (value) => value || "—",
+            },
+            {
+              key: "created_at",
+              label: "تاریخ",
+              format: (value) =>
+                value
+                  ? new Date(value).toLocaleDateString()
+                  : "—",
+            },
+            {
+              key: "status",
+              label: "اسٹیٹس",
+              format: (value) => value || "—",
+            },
+          ]}
+          pageLoading={pageLoading}
+        />
       </div>
 
-      {/* ── Table ── */}
+      {/* Table */}
       <div className="overflow-x-auto text-center rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <TableHead pageType={pageType} />
           </thead>
+
           <tbody>
-            {pageLoading || error || returns.length === 0 ? (
-              <CheckLoadingAndError loading={pageLoading} error={error} requests={returns} />
+            {pageLoading ||
+            error ||
+            returns.length === 0 ? (
+              <CheckLoadingAndError
+                loading={pageLoading}
+                error={error}
+                requests={returns}
+              />
             ) : (
-              returns.map((r) => (
+              returns.map((request) => (
                 <tr
-                  key={r.return_id}
+                  key={request.return_id}
                   className="border-b border-zinc-200 hover:bg-gray-100 transition-colors"
                 >
                   <td className="px-4 py-3">
                     <span className="font-mono text-emerald-600 text-xs font-bold">
-                      {r.return_no}
+                      {request.return_no}
                     </span>
                   </td>
+
                   <td className="px-4 py-3 text-gray-700 font-semibold text-xs">
-                    {r.to_store_name}
+                    {request.to_store_name}
                   </td>
+
                   <td className="px-4 py-3 text-gray-500 text-xs">
-                    {r.sent_by_name || "—"}
+                    {request.sent_by_name || "—"}
                   </td>
+
                   <td className="px-4 py-3">
                     <span className="bg-gray-100 text-gray-600 text-xs font-mono font-bold px-2 py-0.5 rounded-full">
-                      {r.item_count}
+                      {request.item_count}
                     </span>
                   </td>
+
                   <td className="px-4 py-3 text-gray-400 text-xs font-mono">
-                    {new Date(r.created_at).toLocaleDateString("en-PK")}
+                    {new Date(
+                      request.created_at
+                    ).toLocaleDateString("en-PK")}
                   </td>
+
                   <td className="px-4 py-3">
                     <span
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[r.status] || "bg-gray-100 text-gray-600 border-gray-200"
-                        }`}
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
+                        STATUS_COLORS[request.status] ||
+                        "bg-gray-100 text-gray-600 border-gray-200"
+                      }`}
                     >
-                      {r.status}
+                      {request.status}
                     </span>
                   </td>
+
                   <td className="px-4 py-3">
                     <button
-                      onClick={() => openDetail(r.return_id)}
+                      onClick={() =>
+                        openDetail(request.return_id)
+                      }
                       className="text-gray-400 hover:text-gray-600 text-xs px-3 py-1.5 border border-gray-200 rounded transition-colors"
                     >
                       View
@@ -401,14 +543,14 @@ export default function ReturnRequestList() {
           pageSize={pagination.pageLimit}
           onPageChange={setPage}
           pageSizeOptions={[10, 25, 50]}
-          onPageSizeChange={(s) => {
-            setPageSize(s);
+          onPageSizeChange={(size) => {
+            setPageSize(size);
             setPage(1);
           }}
         />
       </div>
 
-      {/* Detail Modal — read only, sub store can't process its own returns */}
+      {/* Detail modal */}
       {(selected || modalLoading) && (
         <div
           className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
@@ -423,10 +565,13 @@ export default function ReturnRequestList() {
                 <h3 className="font-bold text-gray-800">
                   واپسی درخواست — {selected?.return_no}
                 </h3>
+
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {selected?.from_store_name} → {selected?.to_store_name}
+                  {selected?.from_store_name} →{" "}
+                  {selected?.to_store_name}
                 </p>
               </div>
+
               <button
                 onClick={closeModal}
                 className="text-gray-400 hover:text-gray-700 text-2xl leading-none"
@@ -437,7 +582,9 @@ export default function ReturnRequestList() {
 
             <div className="flex-1 overflow-y-auto px-6 py-4">
               {modalLoading ? (
-                <div className="text-center py-12 text-gray-400 text-sm">لوڈ ہو رہا ہے...</div>
+                <div className="text-center py-12 text-gray-400 text-sm">
+                  لوڈ ہو رہا ہے...
+                </div>
               ) : (
                 <>
                   {selected?.note && (
@@ -449,8 +596,10 @@ export default function ReturnRequestList() {
 
                   <div className="flex items-center gap-2 mb-4">
                     <span
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[selected?.status] || "bg-gray-100 text-gray-600 border-gray-200"
-                        }`}
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
+                        STATUS_COLORS[selected?.status] ||
+                        "bg-gray-100 text-gray-600 border-gray-200"
+                      }`}
                     >
                       {selected?.status}
                     </span>
@@ -463,28 +612,52 @@ export default function ReturnRequestList() {
                         className="border border-gray-200 rounded-lg p-4"
                       >
                         <div className="flex">
-                          <p className="font-semibold text-gray-800 text-sm">{item.item_name}</p>
-                          <p className="font-semibold text-gray-800 text-sm ml-1">( {item.item_name_urdu} )</p>
+                          <p className="font-semibold text-gray-800 text-sm">
+                            {item.item_name}
+                          </p>
+
+                          <p className="font-semibold text-gray-800 text-sm ml-1">
+                            ({item.item_name_urdu})
+                          </p>
                         </div>
+
                         <div className="flex items-center gap-3 mt-1 flex-wrap">
-                          <span className="font-mono text-xs text-gray-400">{item.item_no}</span>
-                          <span className="text-xs text-gray-400">{item.item_type}</span>
-                          <span className="font-mono font-bold text-sm text-gray-700">
-                            کل مقدار: <bdi className="text-emerald-600">{item.return_qty}</bdi>
+                          <span className="font-mono text-xs text-gray-400">
+                            {item.item_no}
                           </span>
-                          <span className="font-mono font-bold text-sm text-gray-700">
-                            اکائی: <span className="text-emerald-600">{item.item_uom}</span>
+
+                          <span className="text-xs text-gray-400">
+                            {item.item_type}
                           </span>
+
+                          <span className="font-mono font-bold text-sm text-gray-700">
+                            کل مقدار:{" "}
+                            <bdi className="text-emerald-600">
+                              {item.return_qty}
+                            </bdi>
+                          </span>
+
+                          <span className="font-mono font-bold text-sm text-gray-700">
+                            اکائی:{" "}
+                            <span className="text-emerald-600">
+                              {item.item_uom}
+                            </span>
+                          </span>
+
                           {item.action_type && (
                             <span
-                              className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[item.action_type] ||
+                              className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
+                                STATUS_COLORS[
+                                  item.action_type
+                                ] ||
                                 "bg-gray-100 text-gray-600 border-gray-200"
-                                }`}
+                              }`}
                             >
                               {item.action_type}
                             </span>
                           )}
                         </div>
+
                         {item.note && (
                           <p className="text-xs text-gray-400 mt-2">
                             نوٹ: <bdi>{item.note}</bdi>
@@ -500,6 +673,7 @@ export default function ReturnRequestList() {
         </div>
       )}
 
+      {/* Return-back modal */}
       {returnBackModal && (
         <ReturnModal
           setReturnBackModal={setReturnBackModal}
@@ -507,16 +681,14 @@ export default function ReturnRequestList() {
           setReturnBackNote={setReturnBackNote}
           handleReturnBack={handleReturnBack}
           returnBackSubmitting={returnBackSubmitting}
-          itemLoading={itemLoading}
           currentPage={currentPage}
-          pageSize={returnItemsPageSize}
           setCurrentPage={setCurrentPage}
-          setPageSize={setReturnItemsPageSize}
+          setPageSize={setItemPageSize}
           allItems={allItems}
           pagination={itemsPagination}
-          setPageLimit={setPageLimit}
           setItemSearch={setItemSearch}
           setAllItems={setAllItems}
+          itemLoading={itemLoading}
         />
       )}
     </div>

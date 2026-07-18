@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getStores,
   getItems,
@@ -10,15 +10,15 @@ import {
 } from "../../services/api";
 import { useAuth } from "../../context/authContext";
 import useErrorHandler from "../useErrorHandler";
-import GRNModal from "../GRNModal";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
 import StoreFilters from "../StoreFilters";
 import RequestDashboard from "../RequestDashboard";
 import TableHead from "../TableHead";
-import CreateRequestModal from "../CreateRequestModal";
 import CheckLoadingAndError from "../CheckLoadingAndError";
 import RequestRow from "../RequestRow";
+import GRNModal from "../Modals/GRNModal"
+import CreateRequestModal from "../Modals/CreateRequestModal";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -39,6 +39,24 @@ const EMPTY_FORM = {
   is_emergency: false,
   items: [{ ...EMPTY_LINE }],
 }
+
+const mergeDuplicateLines = (lines) => {
+  const map = new Map();
+  const order = [];
+  for (const item of lines) {
+    const key = item.item_no;
+    if (map.has(key)) {
+      const existing = map.get(key);
+      existing.requested_qty =
+        (Number(existing.requested_qty) || 0) + (Number(item.requested_qty) || 0);
+      existing.images = [...(existing.images || []), ...(item.images || [])];
+    } else {
+      map.set(key, { ...item, images: [...(item.images || [])] });
+      order.push(key);
+    }
+  }
+  return order.map((key) => map.get(key));
+};
 
 export default function MainReqToHO({ showToast }) {
   const [mainStores, setMainStores] = useState([]);
@@ -73,6 +91,14 @@ export default function MainReqToHO({ showToast }) {
 
   const { auth } = useAuth();
   const pageType = "mainReqToHO";
+
+  const duplicateItemIds = useMemo(() => {
+    const counts = {};
+    form.items.forEach((i) => {
+      if (i.item_no) counts[i.item_no] = (counts[i.item_no] || 0) + 1;
+    });
+    return new Set(Object.keys(counts).filter((k) => counts[k] > 1));
+  }, [form.items]);
 
   // ── Data loading ───────────────────────────────────────────────────────────
   const load = async () => {
@@ -260,10 +286,14 @@ export default function MainReqToHO({ showToast }) {
     );
     if (!from_store_id || !to_store_id || !requested_by_name || invalid)
       return showToast("براہ کرم تمام لازمی خانے پُر کریں۔", "error");
+    if (!hasItems) return showToast("کم از کم ایک آئٹم شامل کریں۔", "error");
     if (
       itemLines.some((i) => !i.item_name || isUOMMissing || i.requested_qty < 1)
     )
-      return showToast("Check item details", "error");
+      return showToast("آئٹم کی تفصیلات چیک کریں۔", "error");
+
+      const mergedLines = mergeDuplicateLines(itemLines);
+
     setCreating(true);
     try {
       const selectedStore = toStore.find(
@@ -276,7 +306,7 @@ export default function MainReqToHO({ showToast }) {
           : "MAIN_TO_HO";
 
       const itemsWithImageUrls = [];
-      for (const item of itemLines) {
+      for (const item of mergedLines) {
         const { selected_item_no, item_search, _showDropdown, images, ...rest } = item;
         const payloadItem = { ...rest };
 
@@ -498,7 +528,6 @@ export default function MainReqToHO({ showToast }) {
           itemForm={form}
           setItemForm={setForm}
           mainStores={mainStores}
-          storeItems={storeItems}
           reusableItems={reusableItems}
           usableItems={usableItems}
           onClose={() => setShowCreate(false)}
@@ -510,6 +539,7 @@ export default function MainReqToHO({ showToast }) {
           EMPTY_FORM={EMPTY_FORM}
           pageType={pageType}
           toStore={toStore}
+          duplicateItemIds={duplicateItemIds}
         />
       )}
     </div>

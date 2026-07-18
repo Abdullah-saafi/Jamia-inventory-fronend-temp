@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   createItem,
   getStores,
@@ -11,7 +11,6 @@ import useErrorHandler from "../../useErrorHandler";
 import { useOutletContext } from "react-router-dom";
 import { ITEM_CONDITIONS } from "../../../services/constants";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useAuth } from "../../../context/authContext";
 import MainAllItems from "../../MainStore/MainAllItems";
 
 const EMPTY_NEW_ITEM = {
@@ -71,7 +70,6 @@ const AddItemsAndCategories = () => {
   const { showToast } = useOutletContext();
 
   const handleError = useErrorHandler();
-  const {auth} = useAuth()
   const pageType = "AddItemsAndCategories"
 
   const fetchData = async () => {
@@ -97,6 +95,15 @@ const AddItemsAndCategories = () => {
   }, []);
 
   useEffect(() => {
+    if (mainStores.length === 1 && !newItem.store_id) {
+      setNewItem((prev) => ({
+        ...prev,
+        store_id: mainStores[0].store_id,
+      }));
+    }
+  }, [mainStores, newItem.store_id]);
+
+  useEffect(() => {
     const handler = (e) => {
       if (!e.target.closest("#category-dropdown-wrapper")) {
         setShowCategoryDropdown(false);
@@ -106,7 +113,14 @@ const AddItemsAndCategories = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleSaveItem = async () => {
+  // ── Debounce search ───────────────────────────────────────────────────────
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const handleSaveItem = async (e) => {
+    e.preventDefault()
     const { item_uom, item_type } = newItem;
     const missingFields =
       !newItem.item_name ||
@@ -147,7 +161,8 @@ const AddItemsAndCategories = () => {
     }
   };
 
-  const handleSaveCategory = async () => {
+  const handleSaveCategory = async (e) => {
+    e.preventDefault()
     setCategoryServerError(null);
     if (!newCategory.name.trim()) {
       setCategoryServerError("Category name is required");
@@ -187,13 +202,13 @@ const AddItemsAndCategories = () => {
       setLoading(true);
       try {
         const iRes = await getItems({
-            to_store_id: 1,
-            page: currentPage,
-            limit: pageLimit,
-            search: debouncedSearch,
-            category: filterCategory || undefined,
-            item_type: filterType || undefined,
-          })
+          to_store_id: 1,
+          page: currentPage,
+          limit: pageLimit,
+          search: debouncedSearch,
+          category: filterCategory || undefined,
+          item_type: filterType || undefined,
+        })
         setAllItems(iRes.data.data);
         setItemsPagination(iRes.data.pagination);
 
@@ -268,368 +283,368 @@ const AddItemsAndCategories = () => {
 
       {activeTab === "item" && (
         <div className="flex gap-4">
-          <div className="ITEMS bg-white border border-gray-200 rounded-xl shadow-sm">
-            <div className="px-5 py-4 space-y-4">
-              <div className="item-english-urdu-container grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
-                    (English) اشیاء کا نام
-                  </label>
-                  <input
-                    value={newItem.item_name}
-                    onChange={(e) => {
-                      const value = e.target.value;
+          <form onSubmit={handleSaveItem}>
+            <div className="ITEMS bg-white border border-gray-200 rounded-xl shadow-sm">
+              <div className="px-5 py-4 space-y-4">
+                <div className="item-english-urdu-container grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
+                      (English) اشیاء کا نام
+                    </label>
+                    <input
+                      value={newItem.item_name}
+                      onChange={(e) => {
+                        const value = e.target.value;
 
-                      if (!/^[A-Za-z0-9()\s]*$/.test(value)) return;
+                        if (!/^[A-Za-z0-9()\s]*$/.test(value)) return;
 
-                      setNewItem((f) => ({
-                        ...f,
-                        item_name: value,
-                      }));
+                        setNewItem((f) => ({
+                          ...f,
+                          item_name: value,
+                        }));
 
-                      setItemErrors((f) => ({
-                        ...f,
-                        item_name: undefined,
-                      }));
-                    }}
-                    placeholder="English"
-                    className={inputCls("item_name")}
-                  />
-                  {fieldError("item_name")}
-                </div>
-
-                <div>
-                  <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
-                    (اردو) اشیاء کا نام
-                  </label>
-                  <input
-                    value={newItem.item_name_urdu}
-                    onChange={(e) => {
-                      const value = e.target.value;
-
-                      if (!/^[\u0600-\u06FFA-Za-z0-9()\s]*$/.test(value)) return;
-
-                      setNewItem((f) => ({
-                        ...f,
-                        item_name_urdu: value,
-                      }));
-
-                      setItemErrors((f) => ({
-                        ...f,
-                        item_name_urdu: undefined,
-                      }));
-                    }}
-                    placeholder="اردو"
-                    className={inputCls("item_name_urdu")}
-                  />
-                  {fieldError("item_name_urdu")}
-                </div>
-              </div>
-
-              <div>
-                {showItemTypeDropdown && (
-                  <div className="fixed inset-0 z-40" onClick={() => setShowItemTypeDropdown((prev) => !prev)} />
-                )}
-                <div className="relative min-w-45">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowItemTypeDropdown((prev) => !prev)
-                      setShowStoreDropdown(false)
-                    }}
-                    className={`${inputCls("item_type")} flex items-center justify-between`}
-                  >
-                    <span>
-                      {newItem.item_type
-                        ? ITEM_CONDITIONS.find((r) => r.value === newItem.item_type)?.label
-                        : "آئٹم کی قسم"}
-                    </span>
-
-                    {showItemTypeDropdown ? (
-                      <ChevronUp size={16} className="text-gray-400" />
-                    ) : (
-                      <ChevronDown size={16} className="text-gray-400" />
-                    )}
-                  </button>
-
-                  {showItemTypeDropdown && (
-                    <div
-                      className=" absolute z-50 mt-2 w-full max-h-48 bg-white border border-gray-200 rounded-xl shadow-xl overflow-y-auto">
-                      <button
-                        className=" w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-sm"
-                        onClick={() => {
-                          setShowItemTypeDropdown(false);
-
-                          setNewItem((f) => ({
-                            ...f,
-                            item_type: "",
-                          }));
-                        }}
-                      >
-                        آئٹم کی قسم
-                      </button>
-
-                      {ITEM_CONDITIONS.map((r) => (
-                        <button
-                          key={r.value}
-                          onClick={async () => {
-                            setShowItemTypeDropdown(false);
-                            const selectedType = r.value
-                            setNewItem((f) => ({
-                              ...f,
-                              item_type: selectedType,
-                              item_uom:
-                                selectedType === "REUSABLE" ? "" : f.item_uom,
-                            }));
-                            setItemErrors((f) => ({ ...f, item_type: undefined }));
-                          }}
-                          className={` w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${newItem.item_type === r.value
-                            ? "bg-emerald-100 text-emerald-700 font-semibold"
-                            : "text-gray-700"
-                            }
-                              `}
-                        >
-                          {r.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {fieldError("item_type")}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div id="uom-dropdown-wrapper" className="relative">
-                  <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
-                    اکائی *
-                  </label>
-                  <input
-                    value={newItem.item_uom}
-                    id="UOM"
-                    disabled={newItem.item_type === "REUSABLE"}
-                    autoComplete="off"
-                    onChange={(e) => {
-                      setNewItem((f) => ({
-                        ...f,
-                        item_uom: e.target.value,
-                      }));
-                      setItemErrors((f) => ({ ...f, item_uom: undefined }));
-                    }}
-                    placeholder="Type UOM"
-                    className={`w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 disabled:bg-gray-100 ${itemErrors.item_uom ? "border-red-400" : "border-gray-300"
-                      }`}
-                  />
-                  {fieldError("item_uom")}
-                </div>
-
-                <div id="category-dropdown-wrapper" className="relative">
-                  <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
-                    زمرہ
-                  </label>
-                  <input
-                    value={
-                      categories.find((c) => c.category_id === newItem.category)?.category_name ||
-                      newItem.category ||
-                      ""
-                    }
-                    onChange={(e) =>
-                      setNewItem((f) => ({
-                        ...f,
-                        category: e.target.value,
-                      }))
-                    }
-                    onFocus={() => setShowCategoryDropdown(true)}
-                    placeholder="Select Category"
-                    className={`${inputCls("category")} ${loading ? "pl-5" : ""}`}
-                    autoComplete="off"
-                  />
-                  {loading && (
-                    <div className="flex justify-center absolute top-1/2 left-1">
-                      <div className="w-4 h-4 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                    </div>
-                  )}
-                  {fieldError("category")}
-                  {showCategoryDropdown && categories.length > 0 && (
-                    <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                      {categories
-                        .filter((c) => {
-                          const isSelectedId = categories.some((cat) => cat.category_id === newItem.category);
-                          if (isSelectedId) return true;
-
-                          return c.category_name
-                            .toLowerCase()
-                            .includes((newItem.category || "").toLowerCase());
-                        })
-                        .map((cat) => (
-                          <button
-                            key={cat.category_id}
-                            type="button"
-                            onMouseDown={() => {
-                              setNewItem((f) => ({
-                                ...f,
-                                category: cat.category_id,
-                              }));
-                              setShowCategoryDropdown(false);
-                            }}
-                            className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
-                          >
-                            {cat.category_name}
-                          </button>
-                        ))}
-                      {categories.filter((c) => {
-                        const isSelectedId = categories.some((cat) => cat.category_id === newItem.category);
-                        if (isSelectedId) return true;
-
-                        return c.category_name
-                          .toLowerCase()
-                          .includes((newItem.category || "").toLowerCase());
-                      }).length === 0 && (
-                          <p className="px-3 py-2 text-sm text-gray-400 italic">
-                            No matching categories
-                          </p>
-                        )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
-                    ابتدائی مقدار
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newItem.item_quantity}
-                    onChange={(e) =>
-                      setNewItem((f) => ({
-                        ...f,
-                        item_quantity: e.target.value,
-                      }))
-                    }
-                    placeholder="0"
-                    className={inputCls("item_quantity")}
-                  />
-                  {fieldError("item_quantity")}
-                </div>
-                <div>
-                  <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
-                    کم از کم اسٹاک
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newItem.min_quantity}
-                    onChange={(e) =>
-                      setNewItem((f) => ({
-                        ...f,
-                        min_quantity: e.target.value,
-                      }))
-                    }
-                    placeholder="0"
-                    className={inputCls("min_quantity")}
-                  />
-                  {fieldError("min_quantity")}
-                </div>
-              </div>
-
-              <div>
-                <div>
-                  <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
-                    اسٹور*
-                  </label>
-
-                  {showStoreDropdown && (
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setShowStoreDropdown(false)}
+                        setItemErrors((f) => ({
+                          ...f,
+                          item_name: undefined,
+                        }));
+                      }}
+                      placeholder="English"
+                      className={inputCls("item_name")}
                     />
-                  )}
+                    {fieldError("item_name")}
+                  </div>
 
-                  <div className="relative">
+                  <div>
+                    <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
+                      (اردو) اشیاء کا نام
+                    </label>
+                    <input
+                      value={newItem.item_name_urdu}
+                      onChange={(e) => {
+                        const value = e.target.value;
+
+                        if (!/^[\u0600-\u06FFA-Za-z0-9()\s]*$/.test(value)) return;
+
+                        setNewItem((f) => ({
+                          ...f,
+                          item_name_urdu: value,
+                        }));
+
+                        setItemErrors((f) => ({
+                          ...f,
+                          item_name_urdu: undefined,
+                        }));
+                      }}
+                      placeholder="اردو"
+                      className={inputCls("item_name_urdu")}
+                    />
+                    {fieldError("item_name_urdu")}
+                  </div>
+                </div>
+
+                <div>
+                  {showItemTypeDropdown && (
+                    <div className="fixed inset-0 z-40" onClick={() => setShowItemTypeDropdown((prev) => !prev)} />
+                  )}
+                  <div className="relative min-w-45">
                     <button
                       type="button"
                       onClick={() => {
-                        setShowStoreDropdown((prev) => !prev)
-                        setShowItemTypeDropdown(false)
+                        setShowItemTypeDropdown((prev) => !prev)
+                        setShowStoreDropdown(false)
                       }}
-                      className={`${inputCls("store_id")} flex items-center justify-between`}
+                      className={`${inputCls("item_type")} flex items-center justify-between`}
                     >
                       <span>
-                        {newItem.store_id
-                          ? mainStores.find(
-                            (s) => s.store_id === newItem.store_id
-                          )?.store_name
-                          : "اسٹور منتخب کریں"}
+                        {newItem.item_type
+                          ? ITEM_CONDITIONS.find((r) => r.value === newItem.item_type)?.label
+                          : "آئٹم کی قسم"}
                       </span>
 
-                      {showStoreDropdown ? (
+                      {showItemTypeDropdown ? (
                         <ChevronUp size={16} className="text-gray-400" />
                       ) : (
                         <ChevronDown size={16} className="text-gray-400" />
                       )}
                     </button>
 
-                    {showStoreDropdown && (
-                      <div className="absolute z-50 mt-2 w-full max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-xl">
+                    {showItemTypeDropdown && (
+                      <div
+                        className=" absolute z-50 mt-2 w-full max-h-48 bg-white border border-gray-200 rounded-xl shadow-xl overflow-y-auto">
                         <button
-                          type="button"
-                          className={`w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50`}
+                          className=" w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-sm"
                           onClick={() => {
-                            setShowStoreDropdown(false);
+                            setShowItemTypeDropdown(false);
 
                             setNewItem((f) => ({
                               ...f,
-                              store_id: "",
+                              item_type: "",
                             }));
                           }}
                         >
-                          اسٹور منتخب کریں
+                          آئٹم کی قسم
                         </button>
 
-                        {mainStores.map((s) => (
+                        {ITEM_CONDITIONS.map((r) => (
                           <button
-                            key={s.store_id}
+                            key={r.value}
+                            onClick={async () => {
+                              setShowItemTypeDropdown(false);
+                              const selectedType = r.value
+                              setNewItem((f) => ({
+                                ...f,
+                                item_type: selectedType,
+                                item_uom:
+                                  selectedType === "REUSABLE" ? "" : f.item_uom,
+                              }));
+                              setItemErrors((f) => ({ ...f, item_type: undefined }));
+                            }}
+                            className={` w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${newItem.item_type === r.value
+                              ? "bg-emerald-100 text-emerald-700 font-semibold"
+                              : "text-gray-700"
+                              }
+                              `}
+                          >
+                            {r.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {fieldError("item_type")}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div id="uom-dropdown-wrapper" className="relative">
+                    <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
+                      اکائی *
+                    </label>
+                    <input
+                      value={newItem.item_uom}
+                      id="UOM"
+                      disabled={newItem.item_type === "REUSABLE"}
+                      autoComplete="off"
+                      onChange={(e) => {
+                        setNewItem((f) => ({
+                          ...f,
+                          item_uom: e.target.value,
+                        }));
+                        setItemErrors((f) => ({ ...f, item_uom: undefined }));
+                      }}
+                      placeholder="Type UOM"
+                      className={`w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 disabled:bg-gray-100 ${itemErrors.item_uom ? "border-red-400" : "border-gray-300"
+                        }`}
+                    />
+                    {fieldError("item_uom")}
+                  </div>
+
+                  <div id="category-dropdown-wrapper" className="relative">
+                    <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
+                      زمرہ
+                    </label>
+                    <input
+                      value={
+                        categories.find((c) => c.category_id === newItem.category)?.category_name ||
+                        newItem.category ||
+                        ""
+                      }
+                      onChange={(e) =>
+                        setNewItem((f) => ({
+                          ...f,
+                          category: e.target.value,
+                        }))
+                      }
+                      onFocus={() => setShowCategoryDropdown(true)}
+                      placeholder="Select Category"
+                      className={`${inputCls("category")} ${loading ? "pl-5" : ""}`}
+                      autoComplete="off"
+                    />
+                    {loading && (
+                      <div className="flex justify-center absolute top-1/2 left-1">
+                        <div className="w-4 h-4 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                      </div>
+                    )}
+                    {fieldError("category")}
+                    {showCategoryDropdown && categories.length > 0 && (
+                      <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {categories
+                          .filter((c) => {
+                            const isSelectedId = categories.some((cat) => cat.category_id === newItem.category);
+                            if (isSelectedId) return true;
+
+                            return c.category_name
+                              .toLowerCase()
+                              .includes((newItem.category || "").toLowerCase());
+                          })
+                          .map((cat) => (
+                            <button
+                              key={cat.category_id}
+                              type="button"
+                              onMouseDown={() => {
+                                setNewItem((f) => ({
+                                  ...f,
+                                  category: cat.category_id,
+                                }));
+                                setShowCategoryDropdown(false);
+                              }}
+                              className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                            >
+                              {cat.category_name}
+                            </button>
+                          ))}
+                        {categories.filter((c) => {
+                          const isSelectedId = categories.some((cat) => cat.category_id === newItem.category);
+                          if (isSelectedId) return true;
+
+                          return c.category_name
+                            .toLowerCase()
+                            .includes((newItem.category || "").toLowerCase());
+                        }).length === 0 && (
+                            <p className="px-3 py-2 text-sm text-gray-400 italic">
+                              No matching categories
+                            </p>
+                          )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
+                      ابتدائی مقدار
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newItem.item_quantity}
+                      onChange={(e) =>
+                        setNewItem((f) => ({
+                          ...f,
+                          item_quantity: e.target.value,
+                        }))
+                      }
+                      placeholder="0"
+                      className={inputCls("item_quantity")}
+                    />
+                    {fieldError("item_quantity")}
+                  </div>
+                  <div>
+                    <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
+                      کم از کم اسٹاک
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newItem.min_quantity}
+                      onChange={(e) =>
+                        setNewItem((f) => ({
+                          ...f,
+                          min_quantity: e.target.value,
+                        }))
+                      }
+                      placeholder="0"
+                      className={inputCls("min_quantity")}
+                    />
+                    {fieldError("min_quantity")}
+                  </div>
+                </div>
+
+                <div>
+                  <div>
+                    <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
+                      اسٹور*
+                    </label>
+
+                    {showStoreDropdown && (
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowStoreDropdown(false)}
+                      />
+                    )}
+
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowStoreDropdown((prev) => !prev)
+                          setShowItemTypeDropdown(false)
+                        }}
+                        className={`${inputCls("store_id")} flex items-center justify-between`}
+                      >
+                        <span>
+                          {newItem.store_id
+                            ? mainStores.find(
+                              (s) => s.store_id === newItem.store_id
+                            )?.store_name
+                            : "اسٹور منتخب کریں"}
+                        </span>
+                        {showStoreDropdown ? (
+                          <ChevronUp size={16} className="text-gray-400" />
+                        ) : (
+                          <ChevronDown size={16} className="text-gray-400" />
+                        )}
+                      </button>
+
+                      {showStoreDropdown && (
+                        <div className="absolute z-50 mt-2 w-full max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-xl">
+                          <button
                             type="button"
+                            className={`w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50`}
                             onClick={() => {
                               setShowStoreDropdown(false);
 
                               setNewItem((f) => ({
                                 ...f,
-                                store_id: s.store_id,
-                              }));
-
-                              setItemErrors((f) => ({
-                                ...f,
-                                store_id: undefined,
+                                store_id: "",
                               }));
                             }}
-                            className={`w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${newItem.store_id === s.store_id
-                              ? "bg-emerald-100 text-emerald-700 font-semibold"
-                              : "text-gray-700"
-                              }`}
                           >
-                            {s.store_name}
+                            اسٹور منتخب کریں
                           </button>
-                        ))}
-                      </div>
-                    )}
 
-                    {fieldError("store_id")}
+                          {mainStores.map((s) => (
+                            <button
+                              key={s.store_id}
+                              type="button"
+                              onClick={() => {
+                                setShowStoreDropdown(false);
+
+                                setNewItem((f) => ({
+                                  ...f,
+                                  store_id: s.store_id,
+                                }));
+
+                                setItemErrors((f) => ({
+                                  ...f,
+                                  store_id: undefined,
+                                }));
+                              }}
+                              className={`w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${newItem.store_id === s.store_id
+                                ? "bg-emerald-100 text-emerald-700 font-semibold"
+                                : "text-gray-700"
+                                }`}
+                            >
+                              {s.store_name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {fieldError("store_id")}
+                    </div>
                   </div>
                 </div>
               </div>
+              <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200">
+                <button
+                  disabled={loading}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2 rounded disabled:opacity-40 transition-all"
+                >
+                  {submitLoading ? "شامل ہو رہا ہے..." : "آئٹم شامل کریں"}
+                </button>
+              </div>
             </div>
-            <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200">
-              <button
-                onClick={handleSaveItem}
-                disabled={loading}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2 rounded disabled:opacity-40 transition-all"
-              >
-                {submitLoading ? "شامل ہو رہا ہے..." : "آئٹم شامل کریں"}
-              </button>
-            </div>
-          </div>
+          </form>
         </div>
       )}
 
@@ -662,46 +677,47 @@ const AddItemsAndCategories = () => {
                 </div>
               )}
 
-              <div className="ADD_CATEGORY w-[40%] flex flex-col gap-4">
-                <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block ">
-                  زمرے کا نام *
-                </label>
-                <input
-                  value={newCategory.name}
-                  onChange={(e) => {
-                    setNewCategory((f) => ({ ...f, name: e.target.value }));
-                    setCategoryServerError(null);
-                  }}
-                  placeholder="e.g. Medical Supplies"
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                />
-                <div>
+              <form className="w-[40%]" onSubmit={handleSaveCategory}>
+                <div className="ADD_CATEGORY w-[100%] flex flex-col gap-4">
                   <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block ">
-                    تفصیل
+                    زمرے کا نام *
                   </label>
-                  <textarea
-                    value={newCategory.description}
-                    onChange={(e) =>
-                      setNewCategory((f) => ({
-                        ...f,
-                        description: e.target.value,
-                      }))
-                    }
-                    placeholder="تفصیل (اختیاری)…"
-                    rows={3}
-                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none"
+                  <input
+                    value={newCategory.name}
+                    onChange={(e) => {
+                      setNewCategory((f) => ({ ...f, name: e.target.value }));
+                      setCategoryServerError(null);
+                    }}
+                    placeholder="e.g. Medical Supplies"
+                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                   />
+                  <div>
+                    <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block ">
+                      تفصیل
+                    </label>
+                    <textarea
+                      value={newCategory.description}
+                      onChange={(e) =>
+                        setNewCategory((f) => ({
+                          ...f,
+                          description: e.target.value,
+                        }))
+                      }
+                      placeholder="تفصیل (اختیاری)…"
+                      rows={3}
+                      className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none"
+                    />
+                  </div>
+                  <div className="flex items-center justify-end gap-2 px-5 py-4 ">
+                    <button
+                      disabled={categorySubmitLoading}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2 rounded disabled:opacity-40 transition-all"
+                    >
+                      {categorySubmitLoading ? "شامل ہو رہا ہے..." : "کیٹیگری شامل کریں"}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center justify-end gap-2 px-5 py-4 ">
-                  <button
-                    onClick={handleSaveCategory}
-                    disabled={categorySubmitLoading}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2 rounded disabled:opacity-40 transition-all"
-                  >
-                    {categorySubmitLoading ? "شامل ہو رہا ہے..." : "کیٹیگری شامل کریں"}
-                  </button>
-                </div>
-              </div>
+              </form>
               <div className="DELETE_CATEGORY w-[40%] flex flex-col gap-4">
                 <div className="SEARCH">
                   <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">

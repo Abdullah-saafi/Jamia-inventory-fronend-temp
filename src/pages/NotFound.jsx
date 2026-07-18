@@ -1,8 +1,4 @@
-import { Link } from "react-router-dom";
-import { useAuth } from "../context/authContext";
-
 export default function NotFound() {
-  const { auth } = useAuth();
 
   return (
     <div className="flex flex-col items-center justify-center py-20">

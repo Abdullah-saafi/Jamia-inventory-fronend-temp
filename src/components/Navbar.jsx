@@ -1,7 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { logout } from "../services/api";
 import { useAuth } from "../context/authContext";
-import DatePicker from "react-multi-date-picker";
 import moment from "moment-hijri";
 import { useState } from "react";
 import baitussalam from "../assets/baitussalam.svg";
@@ -131,6 +130,7 @@ export default function Navbar() {
                 month: "short",
                 year: "numeric",
               })}
+              you bull shit
             </span>
 
             <span className="text-[11px] text-white font-medium">

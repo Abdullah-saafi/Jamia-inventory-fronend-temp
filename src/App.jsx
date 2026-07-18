@@ -19,7 +19,6 @@ import NotFound from "./pages/NotFound";
 import EditUser from "./components/Admin/Users/EditUser";
 import EditStore from "./components/Admin/Stores/EditStore";
 import AddItemsAndCategories from "./components/Admin/ItemsAndCategories/AddItemsAndCategories";
-import { useEffect } from "react";
 import { ToastProvider } from "./context/ToastContext";
 import EditItems from "./components/Admin/ItemsAndCategories/EditItems";
 

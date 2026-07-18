@@ -223,13 +223,10 @@ export default function MainStore() {
         <MainAllItems
           allItems={allItems}
           onRefresh={refresh}
-          showToast={showToast}
           loading={loading}
           mainStoreError={mainStoreError}
           pagination={itemsPagination}
-          currentPage={currentPage}
           setCurrentPage={setCurrentPage}
-          pageLimit={pageLimit}
           setPageLimit={setPageLimit}
           search={search}
           setSearch={setSearch}
@@ -246,7 +243,6 @@ export default function MainStore() {
         <MainSubStoreReqs
           requests={requests}
           pagination={requestsPagination}
-          currentPage={currentPage}
           setCurrentPage={setCurrentPage}
           setPageLimit={setPageLimit}
           onFilterChange={setRequestStatusFilter}

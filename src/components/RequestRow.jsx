@@ -2,7 +2,6 @@ import StatusBadge from "../components/StatusBadge";
 import DateTimeCell from "../components/DateTimeCell";
 import ItemsTable from "../components/ItemsTable";
 import TypeBadge from "./TypeBadge";
-import { useAuth } from "../context/authContext";
 
 export default function RequestRow({
   r,
@@ -34,8 +33,6 @@ export default function RequestRow({
   const isEmergency = r.is_emergency;
   const isClosed = r.status === "CLOSED";
   const canFulfill = r.status === "APPROVED";
-
-  const { auth } = useAuth()
 
   return (
     <>
@@ -366,9 +363,6 @@ export default function RequestRow({
                     isReceived={isReceived}
                     isReturned={isReturned}
                     d={detail}
-                    detailLoad={detailLoad}
-                    handleFulfill={handleFulfill}
-                    fulfilling={fulfilling}
                     handleResolved={handleResolved}
                     showToast={showToast}
                     username={username}

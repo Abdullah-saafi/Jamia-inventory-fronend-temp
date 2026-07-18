@@ -2,23 +2,16 @@ import { useEffect, useState } from "react";
 import {
     getRequests,
     getRequestById,
-    acceptReturn,
-    resendItems,
-    fulfillRequest,
     fulfillRequesForHOAndPCash,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
-import Toast from "../components/Toast";
 import BlockedUI from "../components/BlockedUI";
 import useErrorHandler from "../components/useErrorHandler";
 import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Pagination from "../components/Pagination";
-import StatusBadge from "../components/StatusBadge";
-import DateTimeCell from "../components/DateTimeCell";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
-import DisputeResolutionPanel from "../components/DisputeResolutionPanel";
 import { useToast } from "../context/ToastContext";
-import FulfillModal from "../components/FulfillModal";
+import FulfillModal from "../components/Modals/FulfillModal";
 import RequestDashboard from "../components/RequestDashboard";
 import StoreFilters from "../components/StoreFilters";
 import TableHead from "../components/TableHead";
@@ -40,10 +33,6 @@ export default function PettyCash() {
     const [fulfillModal, setFulfillModal] = useState(null);
     const [referenceNo, setReferenceNo] = useState("");
     const [requestNo, setRequestNo] = useState(null);
-    const [fulfillMode, setFulfillMode] = useState("fulfill");
-    const [fulfilledItems, setFulfilledItems] = useState([]);
-    const [fulfillerName, setFulfillerName] = useState("");
-    const [fulfillNotes, setFulfillNotes] = useState("");
     const [fulfilling, setFulfilling] = useState(false);
     const [pagination, setPagination] = useState({
         currentPage: 1,
@@ -119,9 +108,7 @@ export default function PettyCash() {
         setFulfilling(id);
         try {
             await fulfillRequesForHOAndPCash(id, { ref_no, fulfilled_by_name: auth.username });
-            showToast(fulfillMode === "refulfill"
-                ? "دوبارہ روانہ کر دیا گیا ہے — مین اسٹور درست شدہ ڈیلیوری کی تصدیق کرے گا"
-                : "درخواست پوری کر دی گئی ہے — مین اسٹور ڈیلیوری کی تصدیق کرے گا", "success");
+            showToast("درخواست پوری کر دی گئی ہے — مین اسٹور ڈیلیوری کی تصدیق کرے گا", "success");
             setFulfillModal(false)
             load();
         } catch (e) {
@@ -274,7 +261,6 @@ export default function PettyCash() {
                         ) : (
                             requests.map((r) => (
                                 <RequestRow
-                                    key={r.request_id}
                                     r={r}
                                     detail={detail}
                                     detailLoad={detailLoad}
@@ -309,7 +295,6 @@ export default function PettyCash() {
             {fulfillModal && (
                 <FulfillModal
                     pageType={pageType}
-                    setRequestNo={setRequestNo}
                     setFulfillModal={setFulfillModal}
                     requestNo={requestNo}
                     referenceNo={referenceNo}

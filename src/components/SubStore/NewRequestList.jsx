@@ -1,18 +1,18 @@
-import { useEffect, useState } from "react";
-import { uploadImg, getItems, createRequest, getRequests, getRequestById, submitGRN } from "../services/api";
-import { useAuth } from "../context/authContext";
-import { useToast } from "../context/ToastContext";
-import { useStores } from "../hooks/useStores";
-import useErrorHandler from "./useErrorHandler";
-import GRNModal from "./GRNModal";
-import ExcelDownloaderWithDates from "./Exceldownloaderwithdates";
-import StoreFilters from "./StoreFilters";
-import Pagination from "./Pagination";
-import CreateRequestModal from "./CreateRequestModal";
-import RequestRow from "./RequestRow";
-import TableHead from "./TableHead";
-import CheckLoadingAndError from "./CheckLoadingAndError";
-import RequestDashboard from "./RequestDashboard";
+import { useEffect, useMemo, useState } from "react";
+import { uploadImg, getItems, createRequest, getRequests, getRequestById, submitGRN } from "../../services/api";
+import { useAuth } from "../../context/authContext";
+import { useToast } from "../../context/ToastContext";
+import { useStores } from "../../hooks/useStores";
+import useErrorHandler from "../useErrorHandler";
+import GRNModal from "../Modals/GRNModal";
+import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
+import StoreFilters from "../StoreFilters";
+import Pagination from "../Pagination";
+import CreateRequestModal from "../Modals/CreateRequestModal";
+import RequestRow from "../RequestRow";
+import TableHead from "../TableHead";
+import CheckLoadingAndError from "../CheckLoadingAndError";
+import RequestDashboard from "../RequestDashboard";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -33,6 +33,24 @@ const EMPTY_FORM = {
   notes: "",
   images: [],
   items: [{ ...EMPTY_LINE }],
+};
+
+const mergeDuplicateLines = (lines) => {
+  const map = new Map();
+  const order = [];
+  for (const item of lines) {
+    const key = item.item_no;
+    if (map.has(key)) {
+      const existing = map.get(key);
+      existing.requested_qty =
+        (Number(existing.requested_qty) || 0) + (Number(item.requested_qty) || 0);
+      existing.images = [...(existing.images || []), ...(item.images || [])];
+    } else {
+      map.set(key, { ...item, images: [...(item.images || [])] });
+      order.push(key);
+    }
+  }
+  return order.map((key) => map.get(key));
 };
 
 export default function NewRequestList() {
@@ -62,7 +80,6 @@ export default function NewRequestList() {
   const [grnLoading, setGrnLoading] = useState(false);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
-  const [returnModalLoading, setReturnModalLoading] = useState(false);
   const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [pagination, setPagination] = useState({
@@ -73,6 +90,14 @@ export default function NewRequestList() {
     hasNextPage: false,
     hasPrevPage: false,
   });
+
+  const duplicateItemIds = useMemo(() => {
+    const counts = {};
+    itemForm.items.forEach((i) => {
+      if (i.item_no) counts[i.item_no] = (counts[i.item_no] || 0) + 1;
+    });
+    return new Set(Object.keys(counts).filter((k) => counts[k] > 1));
+  }, [itemForm.items]);
 
   // ─── Load ─────────────────────────────────────────────────────────────────
   const load = async () => {
@@ -283,15 +308,17 @@ export default function NewRequestList() {
       (i) => i.item_type === "USABLE" && !i.item_uom,
     );
     if (!from_store_id || !to_store_id || !requested_by_name)
-      return showToast("Please fill all required fields", "error");
-    if (!hasItems) return showToast("Add at least one item", "error");
+      return showToast("برائے مہربانی تمام لازمی خانے پُر کریں۔", "error");
+    if (!hasItems) return showToast("کم از کم ایک آئٹم شامل کریں۔", "error");
     if (itemLines.some((i) => !i.item_name || isUOMMissing || i.requested_qty < 1))
-      return showToast("Check item details", "error");
+      return showToast("آئٹم کی تفصیلات چیک کریں۔", "error");
+
+    const mergedLines = mergeDuplicateLines(itemLines);
 
     setCreating(true);
     try {
       const itemsWithImageUrls = [];
-      for (const item of itemLines) {
+      for (const item of mergedLines) {
         const { selected_item_no, item_search, _showDropdown, images, ...rest } = item;
         const payloadItem = { ...rest };
 
@@ -448,7 +475,6 @@ export default function NewRequestList() {
             ) : (
               requests.map((r) => (
                 <RequestRow
-                  key={r.request_id}
                   r={r}
                   detail={detail}
                   detailLoad={detailLoad}
@@ -456,7 +482,6 @@ export default function NewRequestList() {
                   openGRN={openGRN}
                   grnLoading={grnLoading}
                   pageType={pageType}
-                  returnModalLoading={returnModalLoading}
                 />
               ))
             )}
@@ -489,10 +514,8 @@ export default function NewRequestList() {
       {showCreate && (
         <CreateRequestModal
           itemForm={itemForm}
-          setCreating={setCreating}
           setItemForm={setItemForm}
           mainStores={mainStores}
-          storeItems={storeItems}
           reusableItems={reusableItems}
           usableItems={usableItems}
           onClose={() => setShowCreate(false)}
@@ -505,6 +528,7 @@ export default function NewRequestList() {
           pageType={pageType}
           showToast={showToast}
           itemsLoading={itemsLoading}
+          duplicateItemIds={duplicateItemIds}
         />
       )}
     </div>
