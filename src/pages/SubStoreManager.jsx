@@ -134,17 +134,31 @@ export default function SubStoreManager() {
   const openApprove = async (request_id, request_no) => {
     try {
       setActioning(request_id);
+
       const res = await getRequestById(request_id);
-      setEditedItems(
-        (res.data.data.items || []).map((i) => ({
-          ...i,
-          approved_qty: i.requested_qty,
-        })),
-      );
+
+      setEditedItems((currentItems) => {
+        const freshItems = res.data.data.items || [];
+
+        return freshItems.map((freshItem) => {
+          const existingItem = currentItems.find(
+            (currentItem) =>
+              currentItem.item_id === freshItem.item_id
+          );
+
+          return {
+            ...freshItem,
+            approved_qty:
+              existingItem?.approved_qty ?? freshItem.requested_qty,
+          };
+        });
+      });
+
       setApproveModal({
         id: request_id,
-        no: request_no
+        no: request_no,
       });
+
       setApproverName(auth.username || "");
     } catch (error) {
       const msg = handleError(error, "Failed to load items");

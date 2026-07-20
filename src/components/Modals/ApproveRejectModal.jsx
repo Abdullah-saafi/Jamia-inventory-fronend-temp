@@ -108,12 +108,16 @@ const ApproveRejectModal = ({
                                                         min="1"
                                                         value={Number(i.approved_qty)}
                                                         onChange={(e) => {
-                                                            const u = [...editedItems];
-                                                            u[idx] = {
-                                                                ...u[idx],
-                                                                approved_qty: +e.target.value,
+                                                            const quantity = Number(e.target.value);
+
+                                                            const updatedItems = [...editedItems];
+
+                                                            updatedItems[idx] = {
+                                                                ...updatedItems[idx],
+                                                                approved_qty: quantity,
                                                             };
-                                                            setEditedItems(u);
+
+                                                            setEditedItems(updatedItems);
                                                         }}
                                                         className="w-20 bg-gray-50 border border-gray-300 rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none focus:border-emerald-500"
                                                     />
