@@ -4,12 +4,14 @@ const RequestDashboard = ({
   setFilterStatus,
   filterStatus,
   pageType,
-  data
+  isEmergency,
+  setIsEmergency,
+  setPage,
 }) => {
 
-  const isEmergent = data?.filter((r) => r.is_emergency).length;
   const handleFilter = (status) => {
-    setFilterStatus(status);
+    setPage(1)
+    setFilterStatus((prev) => prev === status ? "" : status);
   };
 
   return (
@@ -28,7 +30,7 @@ const RequestDashboard = ({
 
       {/* Pending Card */}
       {(pageType === "subStoreManager" || pageType === "mainStoreApprover") && (
-        <StatusCard 
+        <StatusCard
           title="منظوری کی منتظر"
           count={counts.pending}
           colorClass="bg-blue-500"
@@ -37,16 +39,6 @@ const RequestDashboard = ({
         />
       )}
 
-      {/* Emergency Card */}
-      {/* {(pageType === "headOffice" || pageType === "pettyCash") && (
-        <StatusCard
-          title="ہنگامی درخواستیں"
-          count={counts.emergency}
-          colorClass="bg-red-500"
-          isActive={filterStatus === "APPROVED" || isEmergent > 0}
-          onClick={() => handleFilter("APPROVED")}
-        />
-      )} */}
 
       {/* Approved Card */}
 
@@ -54,7 +46,7 @@ const RequestDashboard = ({
         <StatusCard
           title="منظور شدہ"
           count={counts.pending}
-          colorClass="bg-red-500"
+          colorClass="bg-blue-500"
           isActive={filterStatus === "APPROVED"}
           onClick={() => handleFilter("APPROVED")}
         />
@@ -70,16 +62,19 @@ const RequestDashboard = ({
           onClick={() => handleFilter("DISPUTED")}
         />
       )}
-
-      {/* Return Card */}
-      {pageType === "subStore" && (
+      {/* Emergency Card */}
+      {(pageType === "mainReqToHO" || pageType === "headOffice" || pageType === "pettyCash" || pageType === "mainStoreApprover") && (
         <StatusCard
-          title="واپسی کی منتظر"
-          count={counts.returnBack}
-          colorClass="bg-amber-500"
-          isActive={filterStatus === (pageType === "mainSubStoreReqs" ? "RETURN_BACK" : "RECEIVED")}
-          onClick={() => handleFilter(pageType === "mainSubStoreReqs" ? "RETURN_BACK" : "RECEIVED")}
-        />)}
+          title="ہنگامی درخواستیں"
+          count={counts.emergency}
+          colorClass="bg-red-500"
+          isActive={isEmergency}
+          onClick={() => {
+            setPage(1);
+            setIsEmergency((prev) => !prev);
+          }}
+        />
+      )}
     </div>
   );
 };

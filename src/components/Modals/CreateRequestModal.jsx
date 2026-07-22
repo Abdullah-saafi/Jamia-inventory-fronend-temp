@@ -1,31 +1,23 @@
-import { useEffect, useState } from "react";
-import API, { resendItems } from "../services/api";
-import { useAuth } from "../context/authContext";
+import { useState } from "react";
+import { useAuth } from "../../context/authContext";
 
 export default function CreateRequestModal({
-  itemForm,
-  setItemForm,
-  mainStores,
-  storeItems,
-  reusableItems,
-  onClose,
-  onSubmit,
-  addLine,
-  removeLine,
-  updateLine,
-  creating,
-  EMPTY_FORM,
-  usableItems,
-  pageType,
-  toStore,
-  showToast,
+  itemForm, setItemForm, mainStores, reusableItems,
+  onClose, onSubmit, addLine, removeLine, updateLine,
+  creating, EMPTY_FORM, usableItems, pageType, toStore, showToast,
+  itemsLoading, duplicateItemIds
 }) {
-  // ── Asset section state ────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("items");
   const { auth } = useAuth();
 
-  const selectedStore = toStore?.find((s) => s.store_id === itemForm.to_store_id)
-  const isHeadOffice = selectedStore?.store_name === "Head Office"
+  const DuplicateBadge = ({ itemNo }) => {
+    if (!itemNo || !duplicateItemIds?.has(itemNo)) return null;
+    return (
+      <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+        ⚠ یہ آئٹم پہلے سے شامل ہے — مقدار جمع ہو جائے گی
+      </span>
+    );
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -38,11 +30,7 @@ export default function CreateRequestModal({
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <h2 className="text-gray-900 font-bold">نئی اشیاء کی درخواست</h2>
-            {itemForm.is_emergency && (
-              <span className="inline-flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                Urgent
-              </span>
-            )}
+            {itemForm.is_emergency && <span className="inline-flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">Urgent</span>}
           </div>
           <button
             onClick={() => {
@@ -54,85 +42,38 @@ export default function CreateRequestModal({
             ×
           </button>
         </div>
-
-        {/* ── Emergency banner ── */}
         {itemForm.is_emergency && (
           <div className="bg-red-50 border-b border-red-200 px-5 py-3 flex items-center gap-2 justify-end">
-            <span className="text-red-600 text-sm font-semibold text-left">
-              یہ درخواست براہ راست مرکزی اسٹور کو بھیجی جائے گی
-            </span>
+            <span className="text-red-600 text-sm font-semibold text-left">یہ درخواست براہ راست مرکزی اسٹور کو بھیجی جائے گی</span>
           </div>
         )}
-
         <form onSubmit={onSubmit} className="p-5 space-y-4">
-          {/* ── Emergency toggle ── */}
           {pageType === "mainReqToHO" && (
-            <div
-              onClick={() =>
-                setItemForm((f) => ({ ...f, is_emergency: !f.is_emergency }))
-              }
-              className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none
-              ${itemForm.is_emergency ? "bg-red-50 border-red-400" : "bg-gray-50 border-gray-200 hover:border-red-300"}`}
-            >
-              <div className="flex items-center gap-3">
-                <div>
-                  <p
-                    className={`text-sm font-bold ${itemForm.is_emergency ? "text-red-700" : "text-gray-700"}`}
-                  >
-                    ہنگامی درخواست (Emergency Request)
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    سب اسٹور منیجر کی منظوری کے بغیر مرکزی اسٹور کو بھیجیں
-                  </p>
-                </div>
+            <div onClick={() => setItemForm((f) => ({ ...f, is_emergency: !f.is_emergency }))}
+              className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none ${itemForm.is_emergency ? "bg-red-50 border-red-400" : "bg-gray-50 border-gray-200 hover:border-red-300"}`}>
+              <div>
+                <p className={`text-sm font-bold ${itemForm.is_emergency ? "text-red-700" : "text-gray-700"}`}>ہنگامی درخواست (Emergency Request)</p>
+                <p className="text-xs text-gray-400 mt-0.5">سب اسٹور منیجر کی منظوری کے بغیر مرکزی اسٹور کو بھیجیں</p>
               </div>
-              <div
-                className={`relative w-11 h-6 rounded-full transition-colors ${itemForm.is_emergency ? "bg-red-500" : "bg-gray-300"}`}
-              >
-                <div
-                  className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${itemForm.is_emergency ? "translate-x-5" : "translate-x-0.5"}`}
-                />
+              <div className={`relative w-11 h-6 rounded-full transition-colors ${itemForm.is_emergency ? "bg-red-500" : "bg-gray-300"}`}>
+                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${itemForm.is_emergency ? "translate-x-5" : "translate-x-0.5"}`} />
               </div>
             </div>
           )}
-
-          {/* ── Store + requester row ── */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                درخواست کنندہ
-              </label>
-              <input
-                value={itemForm.requested_by_name}
-                readOnly
-                className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
-              />
+              <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">درخواست کنندہ</label>
+              <input value={itemForm.requested_by_name} readOnly className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none" />
             </div>
             {pageType === "subStore" && (
               <div>
-                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  بھیجیں(مرکزی اسٹور)
-                </label>
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">بھیجیں(مرکزی اسٹور)</label>
                 {mainStores.length === 1 ? (
-                  <input
-                    value={mainStores[0].store_name}
-                    readOnly
-                    className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
-                  />
+                  <input value={mainStores[0].store_name} readOnly className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none" />
                 ) : (
-                  <select
-                    value={itemForm.to_store_id}
-                    onChange={(e) =>
-                      setItemForm((f) => ({ ...f, to_store_id: e.target.value }))
-                    }
-                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                  >
-                    <option value="">Select Main Store</option>
-                    {mainStores.map((s) => (
-                      <option key={s.store_id} value={s.store_id}>
-                        {s.store_name}
-                      </option>
-                    ))}
+                  <select value={itemForm.to_store_id} onChange={(e) => setItemForm((f) => ({ ...f, to_store_id: e.target.value }))} className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500">
+                    <option value="">مرکزی اسٹور منتخب کریں</option>
+                    {mainStores.map((s) => <option key={s.store_id} value={s.store_id}>{s.store_name}</option>)}
                   </select>
                 )}
               </div>
@@ -145,38 +86,16 @@ export default function CreateRequestModal({
                 <select
                   value={itemForm.to_store_id}
                   onChange={(e) =>
-                    setItemForm((f) => ({ ...f, to_store_id: e.target.value }))
+                    setItemForm((f) => ({ ...f, to_store_id: Number(e.target.value) }))
                   }
                   className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                 >
-                  <option value="">Select Main Store</option>
-                  {toStore.map((s) => (
-                    <option key={s.store_id} value={s.store_id}>
-                      {s.store_name}
-                    </option>
-                  ))}
+                  <option value="">مرکزی اسٹور منتخب کریں</option>
+                  {toStore.map((s) => <option key={s.store_id} value={s.store_id}>{s.store_name}</option>)}
                 </select>
               </div>
             )}
           </div>
-
-          {/* ── Notes ── */}
-          <div>
-            <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-              ہدایت یا نوٹس
-            </label>
-            <textarea
-              value={itemForm.notes}
-              onChange={(e) =>
-                setItemForm((f) => ({ ...f, notes: e.target.value }))
-              }
-              rows={2}
-              placeholder="اختیاری وجہ یا نوٹ"
-              className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none"
-            />
-          </div>
-
-          {/* ── Tab switcher ── */}
           <div className="flex rounded-lg border border-gray-200 overflow-hidden">
             <button
               type="button"
@@ -194,27 +113,11 @@ export default function CreateRequestModal({
             >
               استعمال ہونے والی اشیاء
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab("assets");
-                setItemForm((prev) => ({
-                  ...EMPTY_FORM,
-                  to_store_id: prev.to_store_id, // ← same fix here
-                  requested_by_name: auth.username || "",
-                  from_store_id: auth.store_id || "",
-                }));
-              }}
-              className={`flex-1 py-2 text-sm font-semibold transition-colors border-l border-gray-200
-                ${activeTab === "assets" ? "bg-blue-600 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
-            >
-              مستقل استعمال کی اشیاء
+            <button type="button" onClick={() => { setActiveTab("assets"); setItemForm((prev) => ({ ...EMPTY_FORM, to_store_id: prev.to_store_id, requested_by_name: auth.username || "", from_store_id: auth.store_id || "" })); }}
+              className={`flex-1 py-2 text-sm font-semibold transition-colors border-l border-gray-200 ${activeTab === "assets" ? "bg-blue-600 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}>
+              واپس بھیجنے والی اشیاء
             </button>
           </div>
-
-          {/* ══════════════════════════════════════════════════════════
-              CONSUMABLE ITEMS TAB
-          ══════════════════════════════════════════════════════════ */}
           {activeTab === "items" && (
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -229,7 +132,6 @@ export default function CreateRequestModal({
                   + آئٹم شامل کریں
                 </button>
               </div>
-
               {!itemForm.to_store_id ? (
                 <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">
                   {pageType === "subStore" ? "دستیاب اشیاء دیکھنے کے لیے پہلے مرکزی اسٹور کا انتخاب کریں" : "دستیاب اشیاء دیکھنے کے لیے پہلے سورس کا انتخاب کریں"}
@@ -242,9 +144,12 @@ export default function CreateRequestModal({
                       className="bg-gray-50 rounded-lg p-3 border border-gray-200"
                     >
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                          آئٹم {idx + 1}
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                            آئٹم {idx + 1}
+                          </span>
+                          <DuplicateBadge itemNo={item.item_no} />
+                        </div>
                         <button
                           type="button"
                           onClick={() => removeLine(idx)}
@@ -277,8 +182,13 @@ export default function CreateRequestModal({
                               )
                             }
                             placeholder="...آئٹم کے نام یا نمبر سے تلاش کریں"
-                            className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                            className={`w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${itemsLoading ? "pl-6" : ""}`}
                           />
+                          {itemsLoading && (
+                            <div className="flex justify-center absolute top-1/3 left-1">
+                              <div className="w-4 h-4 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                            </div>
+                          )}
                           {item._showDropdown && (
                             <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                               {usableItems
@@ -304,19 +214,28 @@ export default function CreateRequestModal({
                                       updateLine(
                                         idx,
                                         "item_search",
-                                        `${si.item_no} — ${si.item_name}`,
+                                        `${si.item_no} — ${si.item_name} ( ${si.item_name_urdu} )`,
                                       );
                                       updateLine(idx, "_showDropdown", false);
                                     }}
                                     className={`px-3 py-2 cursor-pointer hover:bg-emerald-50 border-t border-gray-100 flex items-center justify-between ${item.selected_item_no === si.item_no ? "bg-emerald-50" : ""}`}
                                   >
-                                    <div>
-                                      <span className="font-mono text-emerald-600 text-xs font-bold">
-                                        {si.item_no}
-                                      </span>
-                                      <span className="text-gray-700 text-xs ml-2">
-                                        {si.item_name}
-                                      </span>
+                                    <div className="flex items-center">
+                                      <div>
+                                        <span className="font-mono text-emerald-600 text-xs font-bold">
+                                          {si.item_no}
+                                        </span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-700 text-xs ml-2">
+                                          {si.item_name}
+                                        </span>
+                                        <span className="text-gray-700 text-xs ml-2">{"("}</span>
+                                        <span className="text-gray-700 text-xs ml-2">
+                                          {si.item_name_urdu}
+                                        </span>
+                                        <span className="text-gray-700 text-xs ml-2">{")"}</span>
+                                      </div>
                                     </div>
                                   </div>
                                 ))}
@@ -344,12 +263,12 @@ export default function CreateRequestModal({
                             className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none"
                           />
                         </div>
-                        <div className="col-span-5">
+                        <div className="col-span-5 relative">
                           <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
                             نام
                           </label>
                           <input
-                            value={item.item_name}
+                            value={item.item_name && `${item.item_name} ( ${item.item_name_urdu ?? ""} )`}
                             readOnly
                             className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-sm outline-none"
                           />
@@ -403,7 +322,7 @@ export default function CreateRequestModal({
                               تصویر منتخب کرنے کے لیے یہاں کلک کریں
                             </p>
                             <p className="text-[10px] text-gray-400 mt-0.5">
-                              PNG, JPG (زیادہ سے زیادہ 3 تصاویر)
+                              (زیادہ سے زیادہ 1 تصاویر)
                             </p>
                           </div>
 
@@ -428,8 +347,8 @@ export default function CreateRequestModal({
 
                               const total = currentImages.length + newFiles.length;
 
-                              if (total > 3) {
-                                showToast("Maximum 3 images allowed per item", "warn");
+                              if (total > 1) {
+                                showToast("ہر آئٹم کے لیے صرف ایک تصویر کی اجازت ہے۔", "warn");
                                 e.target.value = null;
                                 return;
                               }
@@ -489,6 +408,10 @@ export default function CreateRequestModal({
                       </div>
                     </div>
                   ))}
+                  <div>
+                    <label className="text-gray-400 text-xs mt-3 font-semibold uppercase tracking-wider block mb-1">ہدایت یا نوٹس</label>
+                    <textarea value={itemForm.notes} onChange={(e) => setItemForm((f) => ({ ...f, notes: e.target.value }))} rows={2} placeholder="اختیاری وجہ یا نوٹ" className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none" />
+                  </div>
                 </div>
               )}
             </div>
@@ -511,11 +434,8 @@ export default function CreateRequestModal({
                   + آئٹم شامل کریں
                 </button>
               </div>
-
               {!itemForm.to_store_id ? (
-                <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">
-                  دستیاب اشیاء دیکھنے کے لیے پہلے مرکزی اسٹور کا انتخاب کریں
-                </div>
+                <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">دستیاب اشیاء دیکھنے کے لیے پہلے مرکزی اسٹور کا انتخاب کریں</div>
               ) : (
                 <div className="space-y-3">
                   {itemForm.items.map((item, idx) => (
@@ -524,9 +444,12 @@ export default function CreateRequestModal({
                       className="bg-gray-50 rounded-lg p-3 border border-gray-200"
                     >
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                          آئٹم {idx + 1}
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                            آئٹم {idx + 1}
+                          </span>
+                          <DuplicateBadge itemNo={item.item_no} />
+                        </div>
                         <button
                           type="button"
                           onClick={() => removeLine(idx)}
@@ -560,8 +483,13 @@ export default function CreateRequestModal({
                               )
                             }
                             placeholder="...آئٹم کے نام یا نمبر سے تلاش کریں"
-                            className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                            className={`w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${itemsLoading ? "pl-6" : ""}`}
                           />
+                          {itemsLoading && (
+                            <div className="flex justify-center absolute top-1/3 left-1">
+                              <div className="w-4 h-4 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                            </div>
+                          )}
                           {item._showDropdown && (
                             <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                               {reusableItems
@@ -638,7 +566,7 @@ export default function CreateRequestModal({
                           />
                         </div>
                         <div className="col-span-2">
-                          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block text-emerald-600">
+                          <label className="text-[10px] uppercase font-bold mb-1 block text-emerald-600">
                             مقدار
                           </label>
                           <input
@@ -676,7 +604,7 @@ export default function CreateRequestModal({
                               تصویر منتخب کرنے کے لیے یہاں کلک کریں
                             </p>
                             <p className="text-[10px] text-gray-400 mt-0.5">
-                              PNG, JPG (زیادہ سے زیادہ 3 تصاویر)
+                              (زیادہ سے زیادہ 1 تصاویر)
                             </p>
                           </div>
 
@@ -700,8 +628,8 @@ export default function CreateRequestModal({
                               );
 
                               const total = currentImages.length + newFiles.length;
-                              if (total > 3) {
-                                showToast("Maximum 3 images allowed per item", "warn");
+                              if (total > 1) {
+                                showToast("ہر آئٹم کے لیے صرف ایک تصویر کی اجازت ہے۔", "warn");
                                 e.target.value = null;
                                 return;
                               }
@@ -761,23 +689,18 @@ export default function CreateRequestModal({
                       </div>
                     </div>
                   ))}
+                  <div>
+                    <label className="text-gray-400 text-xs mt-3 font-semibold uppercase tracking-wider block mb-1">ہدایت یا نوٹس</label>
+                    <textarea value={itemForm.notes} onChange={(e) => setItemForm((f) => ({ ...f, notes: e.target.value }))} rows={2} placeholder="اختیاری وجہ یا نوٹ" className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none" />
+                  </div>
                 </div>
               )}
             </div>
           )}
-
-          {/* ── Submit row ── */}
           <div className="pt-4 flex items-center justify-between gap-3 border-t border-gray-100">
-            {/* Summary pills */}
             <div className="flex items-center gap-2 text-xs text-gray-400">
-              {itemForm.items?.length > 0 && (
-                <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded">
-                  {itemForm.items.length} آئٹم
-                  {itemForm.items.length > 1 ? "s" : ""}
-                </span>
-              )}
+              {itemForm.items?.length > 0 && <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded">{itemForm.items.length} آئٹم{itemForm.items.length > 1 ? "s" : ""}</span>}
             </div>
-
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -804,7 +727,7 @@ export default function CreateRequestModal({
             </div>
           </div>
         </form>
-      </div >
-    </div >
+      </div>
+    </div>
   );
 }

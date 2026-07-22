@@ -3,34 +3,54 @@ import { useAuth } from "../context/authContext"
 
 const useErrorHandler = () => {
     const navigate = useNavigate()
-    const {setAuth} = useAuth()
-    
-    const handleError = (error, customMessage) => {
-        const errorMsg = error.response?.data?.message || "Server Error"
-        const status = error.response?.status
+    const { setAuth } = useAuth()
 
-        if(status === 401 || status === 400 && errorMsg.includes("Session") || status === 401 && errorMsg.includes("Invalid" || "expired")){
+    const handleError = (error, customMessage) => {
+        const errorMsg = error.response?.data?.message || "Server Error";
+        const status = error.response?.status;
+
+        const isSessionError =
+            errorMsg.includes("Session") ||
+            errorMsg.includes("Invalid") ||
+            errorMsg.includes("expired");
+
+        if (
+            (status === 401 && isSessionError) ||
+            (status === 400 && isSessionError)
+        ) {
             setAuth({
                 accessToken: null,
                 username: null,
                 role: null,
                 storeName: null,
                 store_id: null,
-                message: errorMsg
-            })
-            navigate("/login")
-            return errorMsg
-        } 
-        if (status === 403 && errorMsg.includes("inactive") || status === 400 && errorMsg.includes("inactive") ){
-            setAuth(prev => ({...prev, isBlocked: true, message: errorMsg}))
-            return errorMsg
+                message: errorMsg,
+            });
+
+            navigate("/login");
+            return errorMsg;
         }
-        else{
-            console.log(customMessage, error)
-            return errorMsg || customMessage
+
+        if (
+            (status === 403 || status === 400) &&
+            (
+                errorMsg.includes("inactive") ||
+                errorMsg.includes("غیر فعال")
+            )
+        ) {
+            setAuth((prev) => ({
+                ...prev,
+                isBlocked: true,
+                message: errorMsg,
+            }));
+
+            return errorMsg;
         }
-    }
-  return handleError
+
+        console.error(customMessage, error);
+        return errorMsg || customMessage;
+    };
+    return handleError
 }
 
 export default useErrorHandler

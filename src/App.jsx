@@ -11,16 +11,16 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Admin from "./pages/Admin";
 import Unauthorized from "./pages/Unauthorized";
 import { ContextProvider } from "./context/authContext";
-import AddUserTab from "./components/Admin/AddUserTab";
-import AllUsersTab from "./components/Admin/AllUsersTab";
-import AllStoresTab from "./components/Admin/AllStoresTab";
-import AddStoreTab from "./components/Admin/AddStoreTab";
+import AddUserTab from "./components/Admin/Users/AddUserTab";
+import AllUsersTab from "./components/Admin/Users/AllUsersTab";
+import AllStoresTab from "./components/Admin/Stores/AllStoresTab";
+import AddStoreTab from "./components/Admin/Stores/AddStoreTab";
 import NotFound from "./pages/NotFound";
-import EditUser from "./components/Admin/EditUser";
-import EditStore from "./components/Admin/EditStore";
-import AddItemsAndCategories from "./components/Admin/AddItemsAndCategories";
-import { useEffect } from "react";
+import EditUser from "./components/Admin/Users/EditUser";
+import EditStore from "./components/Admin/Stores/EditStore";
+import AddItemsAndCategories from "./components/Admin/ItemsAndCategories/AddItemsAndCategories";
 import { ToastProvider } from "./context/ToastContext";
+import EditItems from "./components/Admin/ItemsAndCategories/EditItems";
 
 export default function App() {
   return (
@@ -47,7 +47,7 @@ export default function App() {
                 <Route
                   element={
                     <ProtectedRoute
-                      allowedRoles={["sub-store-approver", "super admin"]}
+                      allowedRoles={["sub-store-manager", "super admin"]}
                     />
                   }
                 >
@@ -69,12 +69,12 @@ export default function App() {
                 <Route
                   element={
                     <ProtectedRoute
-                      allowedRoles={["main-store-approver", "super admin"]}
+                      allowedRoles={["main-store-manager", "super admin"]}
                     />
                   }
                 >
                   <Route
-                    path="/mainstore-approver"
+                    path="/mainstore-manager"
                     element={<MainStoreApprover />}
                   />
                 </Route>
@@ -95,7 +95,7 @@ export default function App() {
                 <Route
                   element={
                     <ProtectedRoute
-                      allowedRoles={["PETTY_CASH", "super admin"]}
+                      allowedRoles={["pettycash", "super admin"]}
                     />
                   }
                 >
@@ -117,6 +117,7 @@ export default function App() {
                     <Route path="all-users" element={<AllUsersTab />} />
                     <Route path="all-stores" element={<AllStoresTab />} />
                     <Route path="items-and-categories" element={<AddItemsAndCategories />} />
+                    <Route path="item/:id" element={<EditItems/>}/>
                   </Route>
                 </Route>
 

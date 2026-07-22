@@ -1,57 +1,35 @@
 import { useEffect, useState } from "react";
-import { createReturnRequest } from "../services/api";
 import {
-  getStores,
-  getItems,
-  createRequest,
   getRequests,
   getRequestById,
-  submitGRN,
-  sendReturnToMain,
+  approveRequest,
+  rejectRequest,
+  rejectItemById,
+  getStores,
+  getItemHistory,
 } from "../services/api";
-import { useAuth } from "../context/authContext";
-import GRNModal from "../components/GRNModal";
 import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
-import Toast from "../components/Toast";
-import StoreFilters from "../components/StoreFilters";
+import { useAuth } from "../context/authContext";
+import { useToast } from "../context/ToastContext";
+import BlockedUI from "../components/BlockedUI";
+import useErrorHandler from "../components/useErrorHandler";
 import Pagination from "../components/Pagination";
-import CreateRequestModal from "../components/CreateRequestModal";
-import RequestRow from "../components/RequestRow";
+import RequestDashboard from "../components/RequestDashboard";
+import StoreFilters from "../components/StoreFilters";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
-import ApproveRejectModal from "../components/ApproveRejectModal";
+import ApproveRejectModal from "../components/Modals/ApproveRejectModal";
+import RequestRow from "../components/RequestRow";
+import ItemHistoryModal from "../components/Modals/ItemHistoryModal";
 
-const EMPTY_LINE = {
-  selected_item_no: "",
-  item_search: "",
-  _showDropdown: false,
-  item_id: 0,
-  item_no: "",
-  item_name: "",
-  item_uom: "",
-  requested_qty: 1,
-  item_type: "abc",
-};
-
-const EMPTY_FORM = {
-  from_store_id: "",
-  to_store_id: "",
-  requested_by_name: "",
-  notes: "",
-  is_emergency: false,
-  items: [{ ...EMPTY_LINE }],
-  requested_assets: [],
-};
-
-export default function SubStore() {
-  const [subStores, setSubStores] = useState([]);
-  const [mainStores, setMainStores] = useState([]);
+// ── Main component ────────────────────────────────────────────────────────────
+export default function MainStoreApprover() {
   const [requests, setRequests] = useState([]);
-  const [allRequests, setAllRequests] = useState([]);
-  const [pageLoading, setPageLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterStore, setFilterStore] = useState("");
+  const [filter, setFilter] = useState("");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [approveModal, setApproveModal] = useState(null);
@@ -60,201 +38,85 @@ export default function SubStore() {
   const [actioning, setActioning] = useState(null);
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
+  const [currentStore, setCurrentStore] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [page, setPage] = useState(1);
+  const [isEmergency, setIsEmergency] = useState(false);
   const [pageSize, setPageSize] = useState(10);
-  const [grnRequest, setGrnRequest] = useState(null);
-  const [grnLoading, setGrnLoading] = useState(false);
-  const [grnSubmitting, setGrnSubmitting] = useState(false);
-  const [returnModal, setReturnModal] = useState(false);
-  const [returnModalLoading, setReturnModalLoading] = useState(false);
-  const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
-  const [username, setUsername] = useState("");
-  const [returnItemData, setReturnItemData] = useState([]);
-  const [returnBackModal, setReturnBackModal] = useState(false);
-  const [returnBackItems, setReturnBackItems] = useState([]);
-  const [returnBackLoading, setReturnBackLoading] = useState(false);
-  const [returnBackSubmitting, setReturnBackSubmitting] = useState(false);
-  const [returnBackNote, setReturnBackNote] = useState("");
-  const [returnForm, setReturnForm] = useState({
-    sendByName: "",
-    returnData: [],
-    note: "",
-  });
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    pageLimit: 10,
-    totalItems: 0,
-    totalPages: 1,
-    hasNextPage: false,
-    hasPrevPage: false,
-  });
+  const [rejectSpecificItem, setRejectSpecificItem] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(null);
+  const [itemHistory, setItemHistory] = useState({ itemNo: null, rows: [] });
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
 
   const { auth } = useAuth();
-  const { showToast } = useToast();
+  const { showToast } = useToast()
+
   const handleError = useErrorHandler();
-  const pageType = "subStore";
+  const pageType = "mainStoreApprover"
 
-  const openReturnBack = async () => {
-    try {
-      setReturnBackLoading(true);
-      const res = await getItems({ store_id: auth.store_id });
-      const items = (res.data.data || []).filter(
-        (i) => Number(i.item_quantity) > 0,
-      );
-      setReturnBackItems(items.map((i) => ({ ...i, return_qty: 0 })));
-      setReturnBackModal(true);
-    } catch (err) {
-      const msg = handleError(err, "Failed to load items");
-      showToast(msg, "error");
-    } finally {
-      setReturnBackLoading(false);
-    }
-  };
-
-  const handleReturnBack = async () => {
-    const selected = returnBackItems.filter((i) => Number(i.return_qty) > 0);
-    if (selected.length === 0) {
-      showToast("کم از کم ایک آئٹم منتخب کریں", "error");
-      return;
-    }
-    const mainStore = mainStores[0]; // or let user pick
-    if (!mainStore) {
-      showToast("Main store not found", "error");
-      return;
-    }
-    try {
-      setReturnBackSubmitting(true);
-      console.log("FROM STORE:", auth.store_id);
-      console.log("TO STORE:", mainStore.store_id);
-      console.log("USER:", auth.username);
-      console.log("NOTE:", returnBackNote);
-
-      console.log(
-        "ITEMS:",
-        selected.map((i) => ({
-          item_id: i.item_id,
-          return_qty: Number(i.return_qty),
-        })),
-      );
-      await createReturnRequest({
-        from_store_id: auth.store_id,
-        to_store_id: mainStore.store_id,
-        sent_by_name: auth.username,
-        note: returnBackNote || null,
-        items: selected.map((i) => ({
-          item_id: i.item_id,
-          return_qty: Number(i.return_qty),
-        })),
-      });
-      showToast("آئٹمز واپس بھیج دیے گئے", "success");
-      setReturnBackModal(false);
-      setReturnBackItems([]);
-      setReturnBackNote("");
-
-      load();
-    } catch (err) {
-      const msg = handleError(err, "Failed to send items back");
-      showToast(msg, "error");
-    } finally {
-      setReturnBackSubmitting(false);
-    }
-  };
-  // ─── Load ─────────────────────────────────────────────────────────────────
   const load = async () => {
-    setPageLoading(true);
+    setLoading(true);
     try {
-      const params = {
-        direction: "SUB_TO_MAIN",
-        page,
-        limit: pageSize,
-      };
-
-      if (filterStatus) params.status = filterStatus;
-      if (auth.role !== "super admin") {
-        params.store_id = auth.store_id;
-      } else if (filterStore) {
-        params.store_id = filterStore;
-      }
-      const [sRes, rRes] = await Promise.all([
-        getStores(),
-        getRequests(params),
-      ]);
-      const all = sRes.data.data;
-      setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
-      setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
-      if (!filterStatus) {
-        setAllRequests(rRes.data.data);
-      }
-      setRequests(rRes.data.data || []);
-      setPagination(rRes.data.pagination);
+      const params = { direction: ["MAIN_TO_PCASH", "MAIN_TO_HO"], search: debouncedSearch, emergency: isEmergency || undefined, priority_status: "PENDING" };
+      if (filter) params.status = filter;
+      const r = await getRequests(params);
+      setRequests(r.data.data);
     } catch (error) {
-      const msg = handleError(error, "Failed to load data");
+      const msg = handleError(error, "Failed to load requests");
       setError(msg);
     } finally {
-      setPageLoading(false);
+      setLoading(false);
     }
   };
 
-  const fetchStoreData = async () => {
-    if (!itemForm.to_store_id) {
-      setStoreItems([]);
-      setReusableItems([]);
-      setUsableItems([]);
-      return;
-    }
-    try {
-      const response = await getItems({ store_id: itemForm.to_store_id });
-      if (response.data?.success) {
-        const items = response.data.data || [];
-        setStoreItems(items);
-        const reusable = items.filter((i) => i.item_type === "REUSABLE");
-        const usable = items.filter((i) => i.item_type === "USABLE");
-        setReusableItems(reusable);
-        setUsableItems(usable);
-      } else {
-        setStoreItems([]);
-        setReusableItems([]);
-        setUsableItems([]);
+  useEffect(() => {
+    load();
+  }, [filter, debouncedSearch, isEmergency]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const response = await getStores()
+        setCurrentStore(response.data.data.filter((s) => s.store_name === auth.storeName))
+      } catch (e) {
+        const msg = handleError(e, "Failed to get stores")
+        showToast(msg, "error")
       }
-    } catch (error) {
-      setStoreItems([]);
-      setUsableItems([]);
-      setReusableItems([]);
-      const msg = handleError(error, "Failed to fetch items");
-      showToast(msg, "error");
-    }
-  };
+    };
+
+    fetchStores();
+  }, []);
 
   useEffect(() => {
-    if (auth.store_id || auth.role === "super admin") {
-      load();
-    }
-  }, [filterStatus, filterStore, auth.store_id, page, pageSize]);
+    const fetchStores = async () => {
+      try {
+        const response = await getStores();
+        setCurrentStore(response.data.data.filter((s) => s.store_name === auth.storeName));
+      } catch (e) {
+        const msg = handleError(e, "Failed to get stores");
+        showToast(msg, "error");
+      }
+    };
+    fetchStores();
+  }, []);
 
-  useEffect(() => {
-    fetchStoreData();
-  }, [itemForm.to_store_id]);
-
-  useEffect(() => {
-    if (mainStores.length === 1 && !itemForm.to_store_id) {
-      setItemForm((f) => ({ ...f, to_store_id: mainStores[0].store_id }));
-    }
-  }, [mainStores]);
-
-  // ─── Detail ───────────────────────────────────────────────────────────────
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
       return;
     }
     setDL(true);
-    setDetail({ ...r, items: [], assets: [] });
+    setDetail({ ...r, items: [] });
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
     } catch (error) {
-      const msg = handleError(error, "Failed to open detail");
+      const msg = handleError(error, "Failed to load data");
       showToast(msg, "error");
     } finally {
       setDL(false);
@@ -277,15 +139,14 @@ export default function SubStore() {
       });
       setApproverName(auth.username || "");
     } catch (error) {
-      const msg = handleError(error, "Failed to load request details");
+      const msg = handleError(error, "Failed to load items");
       showToast(msg, "error");
     } finally {
       setActioning(null);
     }
   };
 
-  const handleGRNSubmit = async (payload) => {
-    setGrnSubmitting(true);
+  const openReject = async (r) => {
     try {
       setActioning(r.request_id);
       const res = await getRequestById(r.request_id);
@@ -311,163 +172,83 @@ export default function SubStore() {
           approved_qty: i.approved_qty,
         })),
       });
-      showToast("Request approved — Head Office will now fulfill it", "success");
+      showToast("درخواست منظور کر دی گئی ہے — ہیڈ آفس کا انتظار کریں", "success");
       setApproveModal(null);
       setApproverName("");
       setEditedItems([]);
       load();
     } catch (e) {
-      const msg = handleError(e, "Failed to submit GRN");
+      const msg = handleError(e, "Error approving");
       showToast(msg, "error");
     } finally {
-      setGrnSubmitting(false);
+      setActioning(false);
     }
   };
 
-  const addLine = () =>
-    setItemForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_LINE }] }));
-
-  const removeLine = (idx) =>
-    setItemForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
-
-  const updateLine = (idx, field, value) => {
-    setItemForm((f) => {
-      const items = [...f.items];
-      items[idx] = { ...items[idx], [field]: value };
-      if (field === "selected_item_no") {
-        const found = storeItems.find((i) => i.item_no === value);
-        if (found) {
-          items[idx].item_id = found.item_id;
-          items[idx].item_no = found.item_no;
-          items[idx].item_name = found.item_name;
-          items[idx].item_uom = found.item_uom;
-          items[idx].item_type = found.item_type;
-        } else {
-          items[idx].item_id = 0;
-          items[idx].item_no = "";
-          items[idx].item_name = "";
-          items[idx].item_uom = "";
-          items[idx].item_type = "";
-        }
-      }
-      return { ...f, items };
-    });
-  };
-
-  const returnItem = async (id) => {
+  const rejectItem = async (id, rid) => {
     try {
-      setReturnModalLoading(true);
-      const response = await getRequestById(id);
-      setReturnForm((f) => ({
-        ...f,
-        returnData: response.data.data,
-        sendByName: auth.username,
-      }));
-      setReturnModal(true);
+      setRejectSpecificItem(rid)
+      await rejectItemById(id, rid)
+      openApprove(id, approveModal.no)
     } catch (error) {
-      const msg = handleError(error, "Failed to open return modal");
+      const msg = handleError(error, "Error approving");
       showToast(msg, "error");
     } finally {
-      setReturnModalLoading(false);
+      setRejectSpecificItem(null)
     }
-  };
+  }
 
-  const handleReturn = async (id) => {
+  const handleReject = async () => {
+    if (!rejecterName.trim() || !rejectReason.trim()) return;
+    setActioning(true);
     try {
-      setReturnModalLoading(true);
-
-      const payload = {
-        resolved_by_name: auth.username,
-        note: returnForm.note,
-        returned_items: returnForm.returnData.items
-          .map((i) => ({
-            request_item_id: i.request_item_id,
-            returned_qty: Number(i.return_qty_input || i.received_qty),
-          }))
-          .filter((i) => i.returned_qty > 0),
-      };
-
-      await sendReturnToMain(id, payload);
-      setReturnForm(() => ({
-        sendByName: "",
-        returnData: [],
-        note: "",
-      }));
-
-      setReturnModal(false);
-      showToast("Items returned successfully", "success");
-
-      load();
-    } catch (error) {
-      const msg = handleError(error, "Failed to return");
-      showToast(msg, "error");
-    } finally {
-      setReturnModalLoading(false);
-    }
-  };
-
-  // ─── Submit ───────────────────────────────────────────────────────────────
-  const handleCreate = async (e) => {
-    e?.preventDefault();
-    const {
-      from_store_id,
-      to_store_id,
-      requested_by_name,
-      items,
-      requested_assets = [],
-    } = itemForm;
-
-    const itemLines = items.filter((i) => i.item_no);
-    const hasItems = itemLines.length > 0;
-
-    const isUOMMissing = itemLines.some(
-      (i) => i.item_type === "USABLE" && !i.item_uom,
-    );
-    if (!from_store_id || !to_store_id || !requested_by_name)
-      return showToast("Please fill all required fields", "error");
-    if (!hasItems && !hasAssets)
-      return showToast("Add at least one item or one asset", "error");
-    if (
-      itemLines.some((i) => !i.item_name || isUOMMissing || i.requested_qty < 1)
-    )
-      return showToast("Check item details", "error");
-
-    setCreating(true);
-    try {
-      const payload = {
-        from_store_id,
-        to_store_id,
-        requested_by_name,
-        notes: itemForm.notes,
-        is_emergency: itemForm.is_emergency,
-        direction: "SUB_TO_MAIN",
-        items: itemLines.map(
-          ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
-        ),
-        requested_assets: requested_assets.map((a) => a.asset_id),
-      };
-
-      await createRequest(payload);
-      showToast("Request submitted successfully", "success");
-      setShowCreate(false);
-      setItemForm({ ...EMPTY_FORM });
+      await rejectRequest(rejectModal.request_id, {
+        approved_by_name: rejecterName,
+        rejection_reason: rejectReason,
+      });
+      showToast("درخواست مسترد کر دی گئی ہے", "info");
+      setRejectModal(null);
+      setRejecterName("");
+      setRejectReason("");
       load();
     } catch (e) {
-      const msg = handleError(e, "Failed to load request details");
+      const msg = handleError(e, "Error rejecting");
       showToast(msg, "error");
     } finally {
-      setCreating(false);
+      setActioning(false);
     }
   };
 
-  // ─── Computed ─────────────────────────────────────────────────────────────
-  const pendingGRN = allRequests.filter(
-    (r) => r.status === "FULFILLED" && !r.grn_at,
-  ).length;
+  const openHistory = async (item_no) => {
+    try {
+      setHistoryLoading(item_no)
+      const storeId = (currentStore && currentStore[0] && currentStore[0].store_id) ? currentStore[0].store_id : auth.store_id;
+      if (!storeId) {
+        showToast("Store information unavailable", "error");
+        return;
+      }
+      const response = await getItemHistory(storeId, item_no);
+      if (!response || !response.data) {
+        showToast("Server Error: empty response", "error");
+        return;
+      }
+      if (response.data.success === false) {
+        showToast(response.data.message || "Server Error", "error");
+        return;
+      }
+      const data = response.data.data || {};
+      setItemHistory({ itemNo: item_no, rows: data.history || [] });
+      setHistoryModalOpen(true);
+    } catch (e) {
+      const msg = handleError(e, "Error fetching history");
+      showToast(msg, "error");
+    } finally {
+      setHistoryLoading(null)
+    }
+  }
 
-  const pendingReturn = allRequests.filter(
-    (r) => r.status === "RECEIVED" && r.item_type === "REUSABLE",
-  ).length;
+  const pendingCount = requests.filter((r) => r.status === "PENDING").length;
+  const emergencyRequest = requests.filter((r) => r.is_emergency === true).length
 
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message} />;
@@ -475,89 +256,94 @@ export default function SubStore() {
 
   return (
     <div>
-      <div className="flex gap-2 my-4">
-        <button
-          onClick={openReturnBack}
-          disabled={returnBackLoading}
-          className="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
-        >
-          {returnBackLoading ? "لوڈ ہو رہا ہے..." : "آئٹم واپس کریں "}
-        </button>
-        <button
-          onClick={() => {
-            // const nextItemNo = getNextItemNo(storeItems);
-            setItemForm({
-              from_store_id: auth.store_id || "",
-              to_store_id:
-                mainStores.length === 1 ? mainStores[0].store_id : "",
-              requested_by_name: auth.username || "",
-              notes: "",
-              items: [{ ...EMPTY_LINE }],
-              requested_assets: [],
-            });
-            setShowCreate(true);
-          }}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
-        >
-          نئی درخواست
-        </button>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
+          <span className="text-gray-500 text-xs mt-0.5 bg-gray-200 rounded p-1">{auth.storeName || "loading..."}</span>
+          <p className="text-gray-500 text-sm mt-0.5">
+            مین اسٹور کی طرف سے ہیڈ آفس یا پیٹی کیش کو بھیجی گئی درخواستوں کو منظور یا مسترد کریں
+          </p>
+        </div>
       </div>
-      {/* // */}
+
+      {/* ── Pending alert ── */}
       <RequestDashboard
         pageType={pageType}
-        setFilterStatus={setFilterStatus}
-        filterStatus={filterStatus}
+        setFilterStatus={setFilter}
+        filterStatus={filter}
         counts={{
-          pending: pendingGRN,
-          returnBack: pendingReturn,
-          emergency: 0,
-          disputed: 0,
+          pending: pendingCount,
+          returnBack: 0,
+          emergency: emergencyRequest,
+          disputed: 0
         }}
+        setPage={setPage}
+        setIsEmergency={setIsEmergency}
+        isEmergency={isEmergency}
       />
-      {/* ── Filters ── */}
-      <div className="flex h-full py-2  items-end justify-between">
-        <div className="Filter">
-          <StoreFilters
-            filterStatus={filterStatus}
-            setFilterStatus={(v) => {
-              setFilterStatus(v);
-              setPage(1);
-            }}
-            pageType={pageType}
-            filterStore={filterStore}
-            setFilterStore={(v) => {
-              setFilterStore(v);
-              setPage(1);
-            }}
-            role={auth.role}
-            subStores={subStores}
-            loading={pageLoading}
-          />
+
+      {/* ── Filter ── */}
+      <div className="flex h-full py-2 items-end justify-between">
+        <div>
+          <div className="flex gap-2">
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+            />
+            <StoreFilters
+              filterStatus={filter}
+              setFilterStatus={setFilter}
+              pageType={pageType}
+            />
+            {(search || filter || isEmergency) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilter("");
+                  setPage(1);
+                  setDebouncedSearch("")
+                  setIsEmergency(false)
+                }}
+                className="text-gray-500 hover:text-gray-800 text-sm px-3 h-7.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
           <button
             onClick={() => {
-              load();
-              fetchStoreData();
+              setPage(1)
+              load()
             }}
-            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto hover:bg-gray-50 shadow-sm"
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >
             ↻ Refresh
           </button>
         </div>
 
-        <div className="Temp-downloader flex justify-center items-center gap-4">
-          <div className="">
+        <div className="Temp-downloader">
+          {/* Excel specific Date Downloader */}
+          <div className="downloader">
             <ExcelDownloaderWithDates
+              data={requests}
               dateKey="created_at"
-              fileName="requests"
+              fileName={auth.username}
               columns={[
-                { key: "request_id", label: "درخواست نمبر" },
+                { key: "request_no", label: "درخواست نمبر" },
                 { key: "requested_by_name", label: "درخواست کنندہ" },
                 {
                   key: "created_at",
                   label: "درخواست کی تاریخ",
                   format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                 },
-                { key: "status", label: "حالت" },
                 {
                   key: "approved_at",
                   label: "منظوری کی تاریخ",
@@ -568,28 +354,32 @@ export default function SubStore() {
                   label: "تکمیل کی تاریخ",
                   format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                 },
+                { key: "status", label: "حالت" },
               ]}
+              pageLoading={loading}
             />
           </div>
         </div>
       </div>
+
       {/* ── Table ── */}
       <div className="overflow-x-auto text-center rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <TableHead />
+            <TableHead
+              pageType={pageType}
+            />
           </thead>
           <tbody>
-            {pageLoading || error || requests.length === 0 ? (
+            {(loading || error || requests.length === 0) ? (
               <CheckLoadingAndError
-                loading={pageLoading}
+                loading={loading}
                 error={error}
                 requests={requests}
               />
             ) : (
               requests.map((r) => (
                 <RequestRow
-                  key={r.request_id}
                   r={r}
                   detail={detail}
                   detailLoad={detailLoad}
@@ -603,22 +393,23 @@ export default function SubStore() {
             )}
           </tbody>
         </table>
-
         <Pagination
-          currentPage={pagination.currentPage}
-          totalItems={pagination.totalItems}
-          pageSize={pagination.pageLimit}
+          currentPage={page}
+          totalItems={requests.length}
+          pageSize={pageSize}
           onPageChange={setPage}
           pageSizeOptions={[10, 25, 50]}
-          onPageSizeChange={(s) => {
-            setPageSize(s);
-            setPage(1);
-          }}
+          onPageSizeChange={setPageSize}
+        />
+        <ItemHistoryModal
+          open={historyModalOpen}
+          onClose={() => setHistoryModalOpen(false)}
+          itemNo={itemHistory.itemNo}
+          history={itemHistory.rows}
         />
       </div>
 
       {/* ── Approve Modal ── */}
-
       {approveModal && (
         <ApproveRejectModal
           setApproveModal={setApproveModal}
@@ -630,7 +421,11 @@ export default function SubStore() {
           actioning={actioning}
           handleApprove={handleApprove}
           handleReject={handleReject}
+          rejectItem={rejectItem}
+          rejectSpecificItem={rejectSpecificItem}
           action={"Approve"}
+          openHistory={openHistory}
+          historyLoading={historyLoading}
         />
       )}
 
@@ -647,8 +442,7 @@ export default function SubStore() {
           handleReject={handleReject}
           action={"Reject"}
         />
-      )
-      }
-    </div >
+      )}
+    </div>
   );
 }

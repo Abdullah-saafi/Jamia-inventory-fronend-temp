@@ -7,14 +7,13 @@ import { useAuth } from "../context/authContext";
 const Unauthorized = () => {
   const [logoutLoading, setLogoutLoading] = useState(false)
 
-  const {auth, setAuth} = useAuth()
+  const {setAuth} = useAuth()
   const navigate = useNavigate();
 
   const logoutUser = async () => {
     try {
       setLogoutLoading(true);
-      const response = await logout();
-      if (response.data.message) console.log("successfully logout");
+      await logout();
       setAuth({
         accessToken: null,
         username: null,
@@ -26,7 +25,6 @@ const Unauthorized = () => {
       });
       navigate("/login");
     } catch (error) {
-      console.error("Logout failed", error);
       setAuth({
         accessToken: null,
         username: null,

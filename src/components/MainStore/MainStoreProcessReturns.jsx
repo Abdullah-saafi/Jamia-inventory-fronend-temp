@@ -8,13 +8,57 @@ import {
   processReturnRequest,
 } from "../../services/api";
 import TableHead from "../TableHead";
+import { RETURN_STATUSES } from "../../services/constants";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import ExcelDownloaderWithDates from "../Exceldownloaderwithdates"
+import Pagination from "../Pagination";
+import StatusBadge from "../StatusBadge";
 
-const STATUS_COLORS = {
-  PENDING: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  ADDED_TO_STOCK: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  SCRAPPED: "bg-red-100 text-red-700 border-red-200",
-  PARTIALLY_SCRAPPED: "bg-orange-100 text-orange-700 border-orange-200",
-};
+function clampQty(value, max) {
+  return Math.min(max, Math.max(0, Number(value) || 0));
+}
+
+function QuantityInput({ label, value, max, onChange, colorClass }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className={`text-xs font-semibold ${colorClass}`}>{label}</span>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => onChange(clampQty(value - 1, max))}
+          className="w-7 h-7 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 font-bold flex items-center justify-center"
+        >
+          −
+        </button>
+        <input
+          type="number"
+          min={0}
+          max={max}
+          value={value}
+          onChange={(e) => onChange(clampQty(e.target.value, max))}
+          className="w-16 border border-gray-300 rounded px-2 py-1 text-center font-mono text-sm focus:outline-none focus:border-emerald-500 bg-white"
+        />
+        <button
+          type="button"
+          onClick={() => onChange(clampQty(value + 1, max))}
+          className="w-7 h-7 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 font-bold flex items-center justify-center"
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function getItemCardStyle(stockQty, scrapQty) {
+  if (scrapQty > 0 && stockQty > 0) {
+    return "border-orange-200 bg-orange-50";
+  }
+  if (scrapQty > 0) {
+    return "border-red-200 bg-red-50";
+  }
+  return "border-emerald-200 bg-emerald-50";
+}
 
 export default function MainStoreProcessReturns({ showToast }) {
   const { auth } = useAuth();
@@ -29,20 +73,53 @@ export default function MainStoreProcessReturns({ showToast }) {
   const [modalLoading, setModalLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [itemActions, setItemActions] = useState({});
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [pageLimit, setPageLimit] = useState(10);
+
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalItems: 0,
+    pageLimit: 10,
+    totalPages: 1,
+  });
+
 
   useEffect(() => {
     fetchReturns();
-  }, [filterStatus]);
+  }, [filterStatus, currentPage, pageLimit, debouncedSearch]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const fetchReturns = async () => {
     try {
       setLoading(true);
       setError(null);
+
       const res = await getReturnRequests({
         to_store_id: auth.store_id,
         ...(filterStatus ? { status: filterStatus } : {}),
+        page: currentPage,
+        limit: pageLimit,
+        search: debouncedSearch,
+        priority_status: "PENDING",
       });
+
       setReturns(res.data.data || []);
+
+      setPagination(
+        res.data.pagination || {
+          currentPage,
+          totalItems: 0,
+          pageLimit,
+          totalPages: 1,
+        }
+      );
     } catch (err) {
       const msg = handleError(err, "Failed to load return requests");
       setError(msg);
@@ -57,15 +134,19 @@ export default function MainStoreProcessReturns({ showToast }) {
       const res = await getReturnRequestById(returnId);
       const data = res.data.data;
       setSelected(data);
-      // Default all items to ADD_TO_STOCK
       const defaults = {};
       data.items.forEach((i) => {
-        defaults[i.return_item_id] = { action: "ADD_TO_STOCK", note: "" };
+        const returnQty = Number(i.return_qty);
+        defaults[i.return_item_id] = {
+          stock_qty: i.stock_qty != null ? Number(i.stock_qty) : returnQty,
+          scrap_qty: i.scrap_qty != null ? Number(i.scrap_qty) : 0,
+          note: "",
+        };
       });
       setItemActions(defaults);
     } catch (err) {
       const msg = handleError(err, "Failed to load return details");
-      showToast( msg,"error");
+      showToast(msg, "error");
     } finally {
       setModalLoading(false);
     }
@@ -76,10 +157,27 @@ export default function MainStoreProcessReturns({ showToast }) {
     setItemActions({});
   };
 
-  const setAction = (return_item_id, action) => {
+  const setStockQty = (return_item_id, stockQty, returnQty) => {
+    const stock = clampQty(stockQty, returnQty);
     setItemActions((prev) => ({
       ...prev,
-      [return_item_id]: { ...prev[return_item_id], action },
+      [return_item_id]: {
+        ...prev[return_item_id],
+        stock_qty: stock,
+        scrap_qty: returnQty - stock,
+      },
+    }));
+  };
+
+  const setScrapQty = (return_item_id, scrapQty, returnQty) => {
+    const scrap = clampQty(scrapQty, returnQty);
+    setItemActions((prev) => ({
+      ...prev,
+      [return_item_id]: {
+        ...prev[return_item_id],
+        scrap_qty: scrap,
+        stock_qty: returnQty - scrap,
+      },
     }));
   };
 
@@ -91,37 +189,56 @@ export default function MainStoreProcessReturns({ showToast }) {
   };
 
   const handleProcess = async () => {
+    const invalidItem = selected?.items?.find((item) => {
+      const action = itemActions[item.return_item_id];
+      if (!action) return true;
+      const total =
+        Number(action.stock_qty) + Number(action.scrap_qty);
+      return total !== Number(item.return_qty);
+    });
+
+    if (invalidItem) {
+      showToast(
+        "ہر آئٹم کی اسٹاک اور اسکریپ مقدار کل واپسی مقدار کے برابر ہونی چاہیے",
+        "error",
+      );
+      return;
+    }
+
     try {
       setSubmitting(true);
       const payload = {
         received_by_name: auth.username,
         items: Object.entries(itemActions).map(([return_item_id, v]) => ({
           return_item_id: Number(return_item_id),
-          action: v.action,
+          stock_qty: Number(v.stock_qty),
+          scrap_qty: Number(v.scrap_qty),
           note: v.note || null,
         })),
       };
       await processReturnRequest(selected.return_id, payload);
-      showToast("Return request processed successfully","success",);
+      showToast("واپسی کی درخواست کامیابی سے مکمل ہو گئی ہے", "success",);
       closeModal();
       fetchReturns();
     } catch (err) {
       const msg = handleError(err, "Failed to process return");
-      showToast(msg,"error");
+      showToast(msg, "error");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const scrapCount = Object.values(itemActions).filter(
-    (v) => v.action === "SCRAP",
-  ).length;
-  const stockCount = Object.values(itemActions).filter(
-    (v) => v.action === "ADD_TO_STOCK",
-  ).length;
+  const totalStockQty = Object.values(itemActions).reduce(
+    (sum, v) => sum + Number(v.stock_qty || 0),
+    0,
+  );
+  const totalScrapQty = Object.values(itemActions).reduce(
+    (sum, v) => sum + Number(v.scrap_qty || 0),
+    0,
+  );
 
   return (
-    <div className="p-4">
+    <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -132,35 +249,158 @@ export default function MainStoreProcessReturns({ showToast }) {
             واپس آئٹمز کو اسٹاک میں شامل کریں یا اسکریپ کریں
           </p>
         </div>
-        <button
-          onClick={fetchReturns}
-          className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm"
-        >
-          ↻ Refresh
-        </button>
       </div>
+      {/* Header finished */}
+
 
       {/* Filter */}
-      <div className="flex items-center gap-3 mb-4">
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm"
-        >
-          <option value="">تمام اسٹیٹس</option>
-          <option value="PENDING">زیر التواء</option>
-          <option value="ADDED_TO_STOCK">اسٹاک میں شامل کر دیا گیا</option>
-          <option value="SCRAPPED">اسکریپ کر دیا گیا</option>
-          <option value="PARTIALLY_SCRAPPED">جزوی طور پر اسکریپ کیا گیا</option>
-        </select>
-        {filterStatus && (
+      <div className="flex items-end justify-between py-2">
+        <div>
+          {showDropdown && (
+            <div
+              className="absolute inset-0"
+              onClick={() => setShowDropdown(false)}
+            />
+          )}
+
+          {/* Search + Filter + Clear */}
+          <div className="flex items-center gap-2">
+            {/* Search */}
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              className="bg-white border border-gray-300 rounded px-3 h-10 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+            />
+
+            {/* Filter */}
+            <div className="relative min-w-50">
+              <button
+                type="button"
+                onClick={() => setShowDropdown((prev) => !prev)}
+                className="w-full h-10 px-3 flex items-center justify-between bg-white border border-gray-300 rounded-lg shadow-sm hover:border-emerald-400 focus:border-emerald-500 transition-all text-sm text-gray-700"
+              >
+                <span>
+                  {RETURN_STATUSES.find((s) => s.value === filterStatus)?.label ||
+                    "تمام اسٹیٹس"}
+                </span>
+
+                {showDropdown ? (
+                  <ChevronUp size={16} className="text-gray-400" />
+                ) : (
+                  <ChevronDown size={16} className="text-gray-400" />
+                )}
+              </button>
+
+              {showDropdown && (
+                <div className="absolute z-50 mt-2 w-full max-h-48 bg-white border border-gray-200 rounded-xl shadow-xl overflow-y-auto">
+                  <button
+                    className="w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-sm"
+                    onClick={() => {
+                      setFilterStatus("");
+                      setCurrentPage(1);
+                      setShowDropdown(false);
+                    }}
+                  >
+                    تمام اسٹیٹس
+                  </button>
+
+                  {RETURN_STATUSES.map((n) => (
+                    <button
+                      key={n.value}
+                      onClick={() => {
+                        setCurrentPage(1);
+                        setFilterStatus(n.value);
+                        setShowDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${filterStatus === n.value
+                        ? "bg-emerald-100 text-emerald-700 font-semibold"
+                        : "text-gray-700"
+                        }`}
+                    >
+                      {n.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Clear */}
+            {(filterStatus || search) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilterStatus("");
+                  setCurrentPage(1);
+                  setDebouncedSearch("")
+                }}
+                className="h-10 px-3 text-gray-500 hover:text-gray-800 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Refresh stays below */}
           <button
-            onClick={() => setFilterStatus("")}
-            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+            onClick={() => {
+              fetchReturns()
+              setCurrentPage(1);
+            }}
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >
-            Clear
+            ↻ Refresh
           </button>
-        )}
+        </div>
+
+        {/* Excel Export */}
+        <div className="Temp-downloader">
+          <div className="downloader">
+            <ExcelDownloaderWithDates
+              data={returns}
+              dateKey="created_at"
+              fileName={auth.username}
+              pageLoading={loading}
+              columns={[
+                {
+                  key: "return_no",
+                  label: "واپسی نمبر",
+                  format: (v) => (v ? v : "—"),
+                },
+                {
+                  key: "from_store_name",
+                  label: "بھیجنے والا اسٹور",
+                  format: (v) => (v ? v : "—"),
+                },
+                {
+                  key: "sent_by_name",
+                  label: "بھیجنے والا",
+                  format: (v) => (v ? v : "—"),
+                },
+                {
+                  key: "item_count",
+                  label: "آئٹمز",
+                  format: (v) => (v ? v : "—"),
+                },
+                {
+                  key: "created_at",
+                  label: "تاریخ",
+                  format: (v) =>
+                    v ? new Date(v).toLocaleDateString() : "—",
+                },
+                {
+                  key: "status",
+                  label: "اسٹیٹس",
+                  format: (v) => (v ? v : "—"),
+                },
+              ]}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Table */}
@@ -182,7 +422,7 @@ export default function MainStoreProcessReturns({ showToast }) {
               returns.map((r) => (
                 <tr
                   key={r.return_id}
-                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                  className="border-b border-zinc-200 hover:bg-gray-100 transition-colors"
                 >
                   <td className="px-4 py-3">
                     <span className="font-mono text-emerald-600 text-xs font-bold">
@@ -204,14 +444,7 @@ export default function MainStoreProcessReturns({ showToast }) {
                     {new Date(r.created_at).toLocaleDateString("en-PK")}
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
-                        STATUS_COLORS[r.status] ||
-                        "bg-gray-100 text-gray-600 border-gray-200"
-                      }`}
-                    >
-                      {r.status}
-                    </span>
+                  <StatusBadge status={r.status}/>
                   </td>
                   <td className="px-4 py-3">
                     {r.status === "PENDING" ? (
@@ -219,7 +452,7 @@ export default function MainStoreProcessReturns({ showToast }) {
                         onClick={() => openModal(r.return_id)}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded transition-colors"
                       >
-                        Process
+                        عمل کریں
                       </button>
                     ) : (
                       <button
@@ -236,13 +469,28 @@ export default function MainStoreProcessReturns({ showToast }) {
           </tbody>
         </table>
       </div>
+      <div className="mt-4">
+        <Pagination
+          currentPage={pagination.currentPage}
+          totalItems={pagination.totalItems}
+          pageSize={pagination.pageLimit}
+          onPageChange={setCurrentPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={(size) => {
+            setPageLimit(size);
+            setCurrentPage(1);
+          }}
+        />
+      </div>
 
       {/* Process Modal */}
       {(selected || modalLoading) && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={closeModal}>
+          {/* <div className="absolute inset-0 z-40 bg-black/30" onClick={closeModal} /> */}
+          <div onClick={(e) => { e.stopPropagation() }}
+            className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
               <div>
                 <h3 className="font-bold text-gray-800">
                   واپسی درخواست — {selected?.return_no}
@@ -270,30 +518,47 @@ export default function MainStoreProcessReturns({ showToast }) {
                   {/* Note */}
                   {selected?.note && (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2 mb-4 text-xs text-yellow-700">
-                      نوٹ: {selected.note}
+                      <span>نوٹ: </span>
+                      <bdi>{selected.note}</bdi>
                     </div>
+                  )}
+
+                  {selected?.status === "PENDING" && (
+                    <p className="text-xs text-gray-500 mb-4">
+                      ہر آئٹم کے لیے اسٹاک اور اسکریپ مقدار الگ الگ منتخب کریں۔ دونوں کا مجموعہ کل واپسی مقدار کے برابر ہونا چاہیے۔
+                    </p>
                   )}
 
                   {/* Items */}
                   <div className="space-y-3">
                     {selected?.items?.map((item) => {
-                      const action = itemActions[item.return_item_id]?.action;
-                      const isScrap = action === "SCRAP";
+                      const returnQty = Number(item.return_qty);
+                      const isPending = selected.status === "PENDING";
+                      const action = itemActions[item.return_item_id];
+                      const stockQty = isPending
+                        ? Number(action?.stock_qty ?? returnQty)
+                        : Number(item.stock_qty ?? 67);
+                      const scrapQty = isPending
+                        ? Number(action?.scrap_qty ?? 0)
+                        : Number(item.scrap_qty ?? 0);
+                      const hasScrap = scrapQty > 0;
+
                       return (
                         <div
                           key={item.return_item_id}
-                          className={`border rounded-lg p-4 transition-colors ${
-                            isScrap
-                              ? "border-red-200 bg-red-50"
-                              : "border-emerald-200 bg-emerald-50"
-                          }`}
+                          className={`border rounded-lg p-4 transition-colors ${getItemCardStyle(stockQty, scrapQty)}`}
                         >
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-gray-800 text-sm">
-                                {item.item_name}
-                              </p>
-                              <div className="flex items-center gap-3 mt-1">
+                              <div className="flex">
+                                <p className="font-semibold text-gray-800 text-sm">
+                                  {item.item_name}
+                                </p>
+                                <p className="font-semibold text-gray-800 text-sm ml-1">
+                                  ( {item.item_name_urdu} )
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-3 mt-1 flex-wrap">
                                 <span className="font-mono text-xs text-gray-400">
                                   {item.item_no}
                                 </span>
@@ -301,47 +566,54 @@ export default function MainStoreProcessReturns({ showToast }) {
                                   {item.item_type}
                                 </span>
                                 <span className="font-mono font-bold text-sm text-gray-700">
-                                  مقدار: {item.return_qty} {item.item_uom}
+                                  کل مقدار: <bdi className="text-emerald-600">{returnQty}</bdi> 
+                                </span>
+                                <span className="font-mono font-bold text-sm text-gray-700">
+                                اکائی: <span className="text-emerald-600">{item.item_uom}</span>
                                 </span>
                               </div>
+                              {!isPending && item.action_type && (
+                                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                  <StatusBadge status={item.action_type}/>
+                                  <span className="text-xs text-emerald-700 font-semibold">
+                                    اسٹاک: {item.added_to_stock_qty}
+                                  </span>
+                                  <span className="text-xs text-red-600 font-semibold">
+                                    اسکریپ: {item.scrap_qty}
+                                  </span>
+                                </div>
+                              )}
                             </div>
-
-                            {/* Only show action buttons if PENDING */}
-                            {selected.status === "PENDING" && (
-                              <div className="flex gap-2 shrink-0">
-                                <button
-                                  onClick={() =>
-                                    setAction(
-                                      item.return_item_id,
-                                      "ADD_TO_STOCK",
-                                    )
-                                  }
-                                  className={`text-xs font-semibold px-3 py-1.5 rounded border transition-colors ${
-                                    action === "ADD_TO_STOCK"
-                                      ? "bg-emerald-600 text-white border-emerald-600"
-                                      : "bg-white text-emerald-600 border-emerald-300 hover:bg-emerald-50"
-                                  }`}
-                                >
-                                  ✓ اسٹاک میں
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    setAction(item.return_item_id, "SCRAP")
-                                  }
-                                  className={`text-xs font-semibold px-3 py-1.5 rounded border transition-colors ${
-                                    action === "SCRAP"
-                                      ? "bg-red-600 text-white border-red-600"
-                                      : "bg-white text-red-500 border-red-300 hover:bg-red-50"
-                                  }`}
-                                >
-                                  ✕ اسکریپ
-                                </button>
-                              </div>
-                            )}
                           </div>
 
+                          {isPending && (
+                            <div className="mt-3 flex flex-wrap items-end gap-6">
+                              <QuantityInput
+                                label="✓ اسٹاک میں"
+                                value={stockQty}
+                                max={returnQty}
+                                onChange={(val) =>
+                                  setStockQty(item.return_item_id, val, returnQty)
+                                }
+                                colorClass="text-emerald-600"
+                              />
+                              <QuantityInput
+                                label="✕ اسکریپ"
+                                value={scrapQty}
+                                max={returnQty}
+                                onChange={(val) =>
+                                  setScrapQty(item.return_item_id, val, returnQty)
+                                }
+                                colorClass="text-red-500"
+                              />
+                              <span className="text-xs text-gray-500 pb-1">
+                                باقی: {returnQty - stockQty - scrapQty} {item.item_uom}
+                              </span>
+                            </div>
+                          )}
+
                           {/* Scrap note */}
-                          {selected.status === "PENDING" && isScrap && (
+                          {isPending && hasScrap && (
                             <input
                               value={
                                 itemActions[item.return_item_id]?.note || ""
@@ -363,13 +635,13 @@ export default function MainStoreProcessReturns({ showToast }) {
 
             {/* Modal Footer */}
             {selected?.status === "PENDING" && (
-              <div className="border-t px-6 py-4 flex items-center justify-between">
+              <div className="border-t border-zinc-200 px-6 py-4 flex items-center justify-between">
                 <div className="text-xs text-gray-500 flex gap-4">
                   <span className="text-emerald-600 font-semibold">
-                    ✓ اسٹاک: {stockCount}
+                    ✓ کل اسٹاک: {totalStockQty}
                   </span>
                   <span className="text-red-500 font-semibold">
-                    ✕ اسکریپ: {scrapCount}
+                    ✕ کل اسکریپ: {totalScrapQty}
                   </span>
                 </div>
                 <div className="flex gap-3">

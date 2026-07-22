@@ -1,25 +1,20 @@
 import { useState } from "react";
-import { createItem } from "../../services/api";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
 import { useAuth } from "../../context/authContext";
-import useErrorHandler from "../useErrorHandler";
 import CheckLoadingAndError from "../CheckLoadingAndError";
-import AddItemModal from "../AddItemModal";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import TableHead from "../TableHead";
+import { ITEM_CONDITIONS } from "../../services/constants";
+import { useNavigate } from "react-router-dom";
 
 export default function MainAllItems({
   allItems,
-  mainStores,
   onRefresh,
-  showToast,
   loading,
   mainStoreError,
   pagination = { currentPage: 1, totalItems: 0, pageLimit: 10 },
-  currentPage,
   setCurrentPage,
-  pageLimit,
   setPageLimit,
   search,
   setSearch,
@@ -27,18 +22,18 @@ export default function MainAllItems({
   setFilterCategory,
   filterType,
   setFilterType,
+  categories,
+  setDebouncedSearch,
+  pageTypeProp // Prop from admin
 }) {
-  const [showAddItem, setShowAddItem] = useState(false);
   const [showCategory, setShowCategory] = useState(false);
+  const [showItemTypeDropdown, setShowItemTypeDropdown] = useState(false);
 
   const { auth } = useAuth();
-  const handleError = useErrorHandler();
+  const navigate = useNavigate();
 
   const pageType = "mainAllItems"
 
-  const categories = [
-    ...new Set(allItems.map((i) => i.category).filter(Boolean)),
-  ];
 
   return (
     <div>
@@ -52,8 +47,10 @@ export default function MainAllItems({
                 setCurrentPage(1);
               }}
               placeholder="آئٹم کے نام یا نمبر سے تلاش کریں..."
-              className="bg-white border leading-none border-gray-300 rounded px-3 py-3 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-64 shadow-sm"
+              className="bg-white border leading-none border-gray-300 rounded px-3 py-3 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
             />
+
+            {/* Category drop down */}
 
             {showCategory && (
               <div className="absolute inset-0" onClick={() => setShowCategory((prev) => !prev)} />
@@ -71,11 +68,11 @@ export default function MainAllItems({
                 readOnly
                 value={
                   filterCategory
-                    ? filterCategory
+                    ? categories.find((c) => c.category_id === filterCategory).category_name
                     : "تمام زمرے"
                 }
                 onClick={() => setShowCategory((prev) => !prev)}
-                className="bg-white leading-none border w-full border-gray-300 rounded pl-3 pr-10 py-3 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 cursor-pointer shadow-sm"
+                className="bg-white leading-none rounded-lg border w-full border-gray-300 pl-3 pr-10 py-3 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 cursor-pointer shadow-sm"
               />
 
               {/* Arrow */}
@@ -89,7 +86,7 @@ export default function MainAllItems({
 
               {/* Dropdown */}
               {showCategory && (
-                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
 
                   {/* Default option */}
                   <button
@@ -106,33 +103,86 @@ export default function MainAllItems({
                   {/* Category list */}
                   {categories.map((c) => (
                     <button
-                      key={c}
+                      key={c.category_id}
                       type="button"
                       onClick={() => {
-                        setFilterCategory(c);
+                        setFilterCategory(c.category_id);
                         setShowCategory(false);
                       }}
                       className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
                     >
-                      {c}
+                      {c.category_name}
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            <select
-              value={filterType}
-              onChange={(e) => {
-                setFilterType(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-white border border-gray-300 rounded px-3 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm mr-2"
-            >
-              <option value="">آئٹم کی قسم</option>
-              <option value="USABLE">USABLE</option>
-              <option value="REUSABLE">REUSABLE</option>
-            </select>
+            {/* Category drop down end  */}
+
+
+            {/* Item type drop down */}
+
+            {showItemTypeDropdown && (
+              <div className="absolute inset-0" onClick={() => setShowItemTypeDropdown((prev) => !prev)} />
+            )}
+            <div className="relative min-w-45">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowItemTypeDropdown((prev) => !prev)
+                  setShowCategory(false);
+                }}
+                className=" w-full h-10.5 px-3 flex items-center justify-between bg-white border border-gray-300 rounded-lg shadow-sm hover:border-emerald-400 focus:border-emerald-500 transition-all text-sm text-gray-700">
+                <span>
+                  {filterType
+                    ? ITEM_CONDITIONS.find((r) => r.value === filterType)?.label
+                    : "آئٹم کی قسم"}
+                </span>
+
+                {showItemTypeDropdown ? (
+                  <ChevronUp size={16} className="text-gray-400" />
+                ) : (
+                  <ChevronDown size={16} className="text-gray-400" />
+                )}
+              </button>
+
+              {showItemTypeDropdown && (
+                <div
+                  className=" absolute z-50 mt-2 w-full max-h-48 bg-white border border-gray-200 rounded-xl shadow-xl overflow-y-auto">
+                  <button
+                    className=" w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-sm"
+                    onClick={() => {
+                      setFilterType("");
+                      setShowItemTypeDropdown(false);
+                      setShowCategory(false);
+                    }}
+                  >
+                    آئٹم کی قسم
+                  </button>
+
+                  {ITEM_CONDITIONS.map((r) => (
+                    <button
+                      key={r.value}
+                      onClick={() => {
+                        setFilterType(r.value);
+                        setShowItemTypeDropdown(false);
+                      }}
+                      className={` w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${filterType === r.value
+                        ? "bg-emerald-100 text-emerald-700 font-semibold"
+                        : "text-gray-700"
+                        }
+                      `}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Item type drop down end */}
+
             {(search || filterCategory || filterType) && (
               <button
                 onClick={() => {
@@ -140,6 +190,7 @@ export default function MainAllItems({
                   setFilterType("");
                   setFilterCategory("");
                   setCurrentPage(1);
+                  setDebouncedSearch("")
                 }}
                 className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
               >
@@ -149,10 +200,8 @@ export default function MainAllItems({
           </div>
           <button
             onClick={() => {
-              setSearch("");
-              setFilterCategory("");
-              setCurrentPage(1);
               onRefresh();
+              setCurrentPage(1);
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >
@@ -166,15 +215,28 @@ export default function MainAllItems({
             dateKey="created_at"
             fileName={auth.username}
             columns={[
-              { key: "item_id", label: "آئٹم نمبر" },
-              { key: "item_name", label: "نام" },
-              { key: "category", label: "زمرہ" },
-              { key: "item_uom", label: "اکائی / UOM" },
-              { key: "item_quantity", label: "مرکزی اسٹور کا اسٹاک" },
-              { key: "sub_qty", label: "ذیلی اسٹورز کو بھیجا گیا" },
-              { key: "total_qty", label: "باقی اسٹاک" },
-              { key: "min_quantity", label: "کم از کم اسٹاک" },
+              { key: "item_no", label: "آئٹم نمبر", format: (v) => (v ? v : "—") },
+              { key: "item_name", label: "نام", format: (v) => (v ? v : "—") },
+              { key: "category", label: "زمرہ", format: (v) => (v ? v : "—") },
+              { key: "item_uom", label: "اکائی / UOM", format: (v) => (v ? v : "—") },
+              { key: "item_quantity", label: "مرکزی اسٹور کا اسٹاک", format: (v) => (v ? v : "—") },
+              { key: "sub_qty", label: "ذیلی اسٹورز کو بھیجا گیا", format: (v) => (v ? v : "—") },
+              { key: "transit_qty", label: "ذیلی اسٹورزکوبھیجی جارہی", format: (v) => (v ? v : "—") },
+              { key: "mainstore_transit_qty", label: "مین اسٹور کو بھیجی جارہی", format: (v) => (v ? v : "—") },
+              { key: "total_qty", label: "باقی اسٹاک", format: (v) => (v ? v : "—") },
+              { key: "min_quantity", label: "کم از کم اسٹاک", format: (v) => (v ? v : "—") },
+              { key: "returned_qty", label: "واپس آئٹمز", format: (v) => (v ? v : "—") },
+              { key: "scrapped_qty", label: "اسکریپ", format: (v) => (v ? v : "—") },
+              {
+                key: "condition",
+                label: "حالت",
+                format: (_, row) =>
+                  row.current_quantity <= row.minimum_quantity
+                    ? "Low"
+                    : "OK",
+              },
             ]}
+            pageLoading={loading}
           />
         </div>
       </div>
@@ -185,6 +247,7 @@ export default function MainAllItems({
           <thead>
             <TableHead
               pageType={pageType}
+              pageTypeProp={pageTypeProp}
             />
           </thead>
           <tbody>
@@ -193,14 +256,15 @@ export default function MainAllItems({
                 loading={loading}
                 error={mainStoreError}
                 requests={allItems}
+                pageType={pageType}
               />
             ) : (
               allItems.map((i) => {
-                const isLow = i.main_qty <= parseFloat(i.min_quantity || 0);
+                const isLow = i.is_low_stock
                 return (
                   <tr
                     key={i.item_id}
-                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    className={`border-b border-gray-100 hover:bg-gray-100 transition-colors whitespace-nowrap ${isLow ? "bg-red-200/50 hover:bg-red-200" : ""}`}
                   >
                     <td className="px-4 py-3">
                       <span className="font-mono text-emerald-600 text-xs">
@@ -224,27 +288,33 @@ export default function MainAllItems({
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`font-mono font-bold ${isLow ? "text-red-500" : "text-emerald-600"}`}
+                        className="font-mono font-bold text-emerald-600"
                       >
                         {Number(i.item_quantity) || "―"}
                       </span>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">
-                      {Number(i.sub_qty).toFixed(0)}
+                      {(
+                        Number(i.sub_qty)
+                      ).toFixed(0)}
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-bold text-gray-700">
                         {i.transit_qty}
                       </span>
                     </td>
-
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-xs font-bold text-gray-700">
+                        {i.mainstore_transit_qty}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`font-mono text-xs font-bold ${i.main_qty - i.sub_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
+                        className={`font-mono text-xs font-bold ${isLow ? "text-red-500" : "text-gray-700"}`}
                       >
-                        {Number(
-                          i.item_quantity - i.sub_qty - i.transit_qty,
-                        ).toFixed(0)}
+                        {
+                          Number(i.available_qty).toFixed(0)
+                        }
                       </span>
                     </td>
                     <td className="px-4 py-3 font-mono text-gray-400 text-xs">
@@ -252,24 +322,33 @@ export default function MainAllItems({
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-bold text-orange-500">
-                        {Number(i.returned_qty) || "0"}
+                        {Number(i.returned_stock) || "0"}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-bold text-red-500">
-                        {Number(i.scrap_qty) || "0"}
+                        {Number(i.scrapped_qty) || "0"}
                       </span>
                     </td>
-
-
-
                     <td className="px-4 py-3">
                       <span
-                        className={`text-xs font-semibold ${isLow ? "text-red-500" : "text-emerald-600"}`}
+                        className={`text-xs ${isLow ? "text-red-500 font-extrabold" : "text-emerald-600 font-semibold"}`}
                       >
                         {isLow ? "Low" : "OK"}
                       </span>
                     </td>
+                    {pageTypeProp && (
+                      <td className="px-4 py-3">
+                        <button
+                          className="text-[10px] uppercase font-bold text-gray-600 border border-gray-300 bg-gray-200 rounded px-3 py-1 hover:bg-gray-300"
+                          onClick={() => {
+                            navigate(`/admin/item/${i.item_id}`);
+                          }}
+                        >
+                          ترمیم کریں
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 );
               })

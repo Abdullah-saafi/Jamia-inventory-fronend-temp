@@ -1,7 +1,6 @@
 import { ArrowUpRight } from 'lucide-react';
 
 const StatusCard = ({ title, count, onClick, colorClass, isActive }) => {
-  // if (count <= 0) return null
 
   const activeStyles = "bg-gradient-to-bl from-green-600 via-emerald-600 to-green-600 border-transparent shadow-lg scale-103";
   const inactiveStyles = "bg-white border-gray-200 hover:shadow-md";
@@ -9,7 +8,7 @@ const StatusCard = ({ title, count, onClick, colorClass, isActive }) => {
   return (
     <div 
       onClick={onClick}
-      className={`relative rounded-2xl p-4 border transition-all duration-300 cursor-pointer group min-w-[200px] flex-1 ${
+      className={`relative rounded-2xl p-4 ml-2 border transition-all duration-300 cursor-pointer group min-w-50 flex-1 ${
         isActive ? activeStyles : inactiveStyles
       }`}
     >

@@ -2,32 +2,26 @@ import { useEffect, useState } from "react";
 import {
   getRequests,
   getRequestById,
-  acceptReturn,
-  resendItems,
-  fulfillRequest,
+  fulfillRequesForHOAndPCash,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
-import Toast from "../components/Toast";
 import BlockedUI from "../components/BlockedUI";
 import useErrorHandler from "../components/useErrorHandler";
 import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Pagination from "../components/Pagination";
-import StatusBadge from "../components/StatusBadge";
-import DateTimeCell from "../components/DateTimeCell";
 import { useToast } from "../context/ToastContext";
-import DisputeResolutionPanel from "../components/DisputeResolutionPanel"
 import RequestDashboard from "../components/RequestDashboard";
 import StoreFilters from "../components/StoreFilters";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import RequestRow from "../components/RequestRow";
-import FulfillModal from "../components/FulfillModal";
+import FulfillModal from "../components/Modals/FulfillModal";
 
-const 
-EMPTY_FULFILL_FORM = {
+const EMPTY_FULFILL_FORM = {
   driver_name: "",
   driver_no: "",
   vehicle_no: "",
+  fulfilled_by_name: "",
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -36,18 +30,26 @@ export default function HeadOffice() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [page, setPage] = useState(1);
+  const [isEmergency, setIsEmergency] = useState(false);
   const [pageSize, setPageSize] = useState(10);
   const [fulfillModal, setFulfillModal] = useState(null);
-  const [fulfillMode, setFulfillMode] = useState("fulfill");
-  const [fulfilledItems, setFulfilledItems] = useState([]);
-  const [fulfillerName, setFulfillerName] = useState("");
-  const [fulfillNotes, setFulfillNotes] = useState("");
   const [fulfilling, setFulfilling] = useState(false);
   const [requestNo, setRequestNo] = useState(null);
-  const [fulfillForm, setFulfillForm] = useState({...EMPTY_FULFILL_FORM})
+  const [fulfillForm, setFulfillForm] = useState({ ...EMPTY_FULFILL_FORM })
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    pageLimit: 10,
+    totalItems: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+
   const { auth } = useAuth();
   const { showToast } = useToast()
   const handleError = useErrorHandler();
@@ -56,10 +58,24 @@ export default function HeadOffice() {
   const load = async () => {
     setLoading(true);
     try {
-      const params = { direction: "MAIN_TO_HO" };
+      const params = {
+        direction: "MAIN_TO_HO",
+        page,
+        limit: pageSize,
+        search: debouncedSearch,
+        emergency: isEmergency || undefined,
+      };
       if (filter) params.status = filter;
       const r = await getRequests(params);
+
       setRequests(r.data.data);
+      setPagination(
+        r.data.pagination || {
+          currentPage: 1,
+          pageLimit: pageSize,
+          totalItems: r.data.data.length,
+        }
+      );
     } catch (error) {
       const msg = handleError(error, "Failed to load requests");
       setError(msg);
@@ -70,7 +86,12 @@ export default function HeadOffice() {
 
   useEffect(() => {
     load();
-  }, [filter]);
+  }, [filter, page, pageSize, debouncedSearch, isEmergency]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
@@ -93,12 +114,14 @@ export default function HeadOffice() {
   const handleFulfill = async (id) => {
     setFulfilling(id);
     try {
-      await fulfillRequest(id, fulfillForm);
-      showToast(fulfillMode === "refulfill"
-        ? "Re-dispatched — Main Store will verify the corrected delivery"
-        : "Request fulfilled — Main Store will verify delivery", "success");
+      if(fulfillForm.driver_no.length < 10){
+        return showToast("فون نمبر درست نہیں ہے۔","error")
+      }
+      setFulfillForm({ ...fulfillForm, fulfilled_by_name: auth.username })
+      await fulfillRequesForHOAndPCash(id, fulfillForm);
+      showToast("درخواست پوری کر دی گئی ہے — مین اسٹور ڈیلیوری کی تصدیق کرے گا", "success");
       setFulfillModal(false)
-      setFulfillForm({...EMPTY_FULFILL_FORM})
+      setFulfillForm({ ...EMPTY_FULFILL_FORM })
       load();
     } catch (e) {
       const msg = handleError(e, "Error fulfilling request");
@@ -115,6 +138,7 @@ export default function HeadOffice() {
 
   const pendingFulfill = requests.filter((r) => r.status === "APPROVED").length;
   const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
+  const emergencyRequest = requests.filter((r) => r.is_emergency === true && r.status === "APPROVED").length
 
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message} />;
@@ -127,7 +151,7 @@ export default function HeadOffice() {
         <div>
           <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
           <p className="text-gray-500 text-sm mt-0.5">
-            Head Office — fulfill approved Main Store requests
+            ہیڈ آفس — مین اسٹور کی منظور شدہ درخواست کو پورا کریں
           </p>
         </div>
       </div>
@@ -139,27 +163,55 @@ export default function HeadOffice() {
         counts={{
           pending: pendingFulfill,
           returnBack: 0,
-          emergency: 0,
+          emergency: emergencyRequest,
           disputed: disputedCount
         }}
+        setIsEmergency={setIsEmergency}
+        isEmergency={isEmergency}
+        setPage={setPage}
       />
 
       {/* ── Filter ── */}
-      <div className="flex h-full py-2 items-end justify-between">
+      <div className="flex py-2 items-end justify-between">
         <div>
-          <StoreFilters
-            filterStatus={filter}
-            setFilterStatus={(v) => {
-              setFilter(v);
-              setPage(1);
-            }}
-            pageType={pageType}
-          />
+          <div className="flex gap-2">
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+            />
+            <StoreFilters
+              filterStatus={filter}
+              setFilterStatus={(v) => {
+                setFilter(v);
+                setPage(1);
+              }}
+              pageType={pageType}
+            />
+            {(search || filter || isEmergency) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilter("");
+                  setPage(1);
+                  setDebouncedSearch("")
+                  setIsEmergency(false)
+                }}
+                className="text-gray-500 hover:text-gray-800 text-sm px-3 h-7.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
           <button
             onClick={() => {
-              setFilter("");
-              setPage(1);
               load();
+              setPage(1);
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >
@@ -175,14 +227,14 @@ export default function HeadOffice() {
               dateKey="created_at"
               fileName={auth.username}
               columns={[
-                { key: "request_id", label: "درخواست نمبر" },
-                { key: "requested_by_name", label: "درخواست کنندہ" },
+                { key: "request_no", label: "درخواست نمبر", format: (v) => (v ? v : "—") },
+                { key: "requested_by_name", label: "درخواست کنندہ", format: (v) => (v ? v : "—") },
+                { key: "fulfilled_by_name", label: "مکمل کرنے والا", format: (v) => (v ? v : "—") },
                 {
                   key: "created_at",
                   label: "درخواست کی تاریخ",
                   format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                 },
-                { key: "status", label: "حالت" },
                 {
                   key: "approved_at",
                   label: "منظوری کی تاریخ",
@@ -193,7 +245,9 @@ export default function HeadOffice() {
                   label: "تکمیل کی تاریخ",
                   format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                 },
+                { key: "status", label: "حالت", format: (v) => (v ? v : "—") },
               ]}
+              pageLoading={loading}
             />
           </div>
         </div>
@@ -201,7 +255,7 @@ export default function HeadOffice() {
 
       {/* ── Table ── */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-        <table className="w-full text-sm">
+        <table className="w-full text-center text-sm">
           <thead>
             <TableHead
               pageType={pageType}
@@ -217,7 +271,6 @@ export default function HeadOffice() {
             ) : (
               requests.map((r) => (
                 <RequestRow
-                  key={r.request_id}
                   r={r}
                   detail={detail}
                   detailLoad={detailLoad}
@@ -235,14 +288,18 @@ export default function HeadOffice() {
           </tbody>
         </table>
         <Pagination
-          currentPage={page}
-          totalItems={requests.length}
-          pageSize={pageSize}
+          currentPage={pagination.currentPage}
+          totalItems={pagination.totalItems}
+          pageSize={pagination.pageLimit}
           onPageChange={setPage}
           pageSizeOptions={[10, 25, 50]}
-          onPageSizeChange={setPageSize}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
         />
       </div>
+
       {fulfillModal && (
         <FulfillModal
           pageType={pageType}

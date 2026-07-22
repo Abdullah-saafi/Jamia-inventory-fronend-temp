@@ -11,7 +11,11 @@ export default function StatusBadge({ status }) {
     MISSING: "bg-red-50 border-red-300 text-red-700",
     RETURN: "bg-blue-50 border-blue-300 text-blue-700",
     OK: "bg-emerald-50 border-emerald-300 text-emerald-700",
-    PARTIALLY_RECEIVED: "bg-teal-50 text-teal-600 border border-teal-300"
+    PARTIALLY_RECEIVED: "bg-teal-50 text-teal-600 border border-teal-300",
+    ADDED_TO_STOCK: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    SCRAPPED: "bg-red-100 text-red-700 border-red-200",
+    SCRAPPED_AND_STOCKED: "bg-orange-100 text-orange-700 border-orange-200",
+    SCRAP: "bg-red-100 text-red-700 border-red-200",
   };
   return (
     <span
@@ -21,4 +25,3 @@ export default function StatusBadge({ status }) {
     </span>
   );
 }
-

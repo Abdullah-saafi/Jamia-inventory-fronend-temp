@@ -8,7 +8,7 @@ const BlockedUI = ({ message }) => (
             </div>
             <h2 className="text-gray-900 text-xl font-black uppercase tracking-tight mb-2">رسائی ممنوع ہے</h2>
             <p className="text-gray-500 text-sm mb-6 leading-relaxed">
-                {message || "آپ کا اکاؤنٹ فی الحال غیر فعال ہے۔ رسائی دوبارہ حاصل کرنے کے لیے براہ کرم اپنے ایڈمنسٹریٹر سے رابطہ کریں۔"}
+                {message.includes("یہ اسٹور فی الحال غیر فعال ہے۔ ") ? "یہ اسٹور فی الحال غیر فعال ہے۔ رسائی دوبارہ حاصل کرنے کے لیے براہ کرم اپنے ایڈمنسٹریٹر سے رابطہ کریں۔" : "آپ کا اکاؤنٹ فی الحال غیر فعال ہے۔ رسائی دوبارہ حاصل کرنے کے لیے براہ کرم اپنے ایڈمنسٹریٹر سے رابطہ کریں۔"}
             </p>
             {/* <button 
                 onClick={() => window.location.href = "/"} 

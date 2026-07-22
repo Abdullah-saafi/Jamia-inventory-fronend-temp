@@ -4,20 +4,18 @@ import {
   fulfillRequest,
   acceptReturnFromSub,
   createRequest,
+  getRequestByRequestItemId,
 } from "../../services/api";
-import StatusBadge from "../StatusBadge";
 import { useAuth } from "../../context/authContext";
 import useErrorHandler from "../useErrorHandler";
-import React from "react";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
-import DateTimeCell from "../DateTimeCell";
 import StoreFilters from "../StoreFilters";
 import CheckLoadingAndError from "../CheckLoadingAndError";
 import RequestDashboard from "../RequestDashboard";
 import RequestRow from "../RequestRow";
 import TableHead from "../TableHead";
-import InstantRestockModal from "../InstantRestockModal";
+import InstantRestockModal from "../Modals/InstantRestockModal";
 import InstantRequestPopup from "../InstantRequestPopup";
 
 const EMPTY_LINE = {
@@ -46,16 +44,17 @@ export default function MainSubStoreReqs({
   pagination,
   setCurrentPage,
   setPageLimit,
-  currentPage,
   onRefresh,
   showToast,
   onFilterChange,
   loading,
   mainStoreError,
-  mainStores,
-  toStore
+  toStore,
+  setSearch,
+  search,
+  setDebouncedSearch,
 }) {
-  const [reqFilter, setReqFilter] = useState("APPROVED");
+  const [reqFilter, setReqFilter] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [fulfilling, setFulfilling] = useState(null);
@@ -81,8 +80,6 @@ export default function MainSubStoreReqs({
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-      console.log("detail", res.data.data);
-      console.log("r", r);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
       showToast(msg, "error");
@@ -93,7 +90,7 @@ export default function MainSubStoreReqs({
 
   const getDetail = async (requestId) => {
     try {
-      const res = await getRequestById(requestId);
+      const res = await getRequestByRequestItemId(requestId);
       setItemForm((prev) => ({
         ...prev,
         items: res.data.data.items.map(item => ({
@@ -110,21 +107,21 @@ export default function MainSubStoreReqs({
     }
   };
 
-  const handleFulfill = async (requestId, status) => {
+  const handleFulfill = async (requestId, status,) => {
     setFulfilling(requestId);
     try {
       if (status === "DISPUTED") {
         showToast("Cannot fulfill — dispute resolution required", "error");
         return;
       }
-      await fulfillRequest(requestId);
-      showToast("Request fulfilled and inventory updated", "success");
+      await fulfillRequest(requestId, { fulfilled_by_name: auth.username });
+      showToast("درخواست پوری کر دی گئی اور انوینٹری اپڈیٹ ہو گئی ہے", "success");
       setDetail(null);
       onRefresh();
     } catch (e) {
       const msg = handleError(e, "Failed to fulfill");
       if (msg.includes("Cannot fulfill: stock is low for item")) {
-        setLowStockRequest(requestId);
+        setLowStockRequest(e.response?.data?.request_item_id);
         setShowInstantRequestPopup(true)
         return
       }
@@ -140,7 +137,6 @@ export default function MainSubStoreReqs({
       const response = await getRequestById(id);
       const accepted_by_name = auth.username;
       const requestId = response.data.data.request_id;
-      console.log("requesid", requestId);
       await acceptReturnFromSub(requestId, accepted_by_name);
       showToast("Return accepted successfully", "success");
       onRefresh();
@@ -181,8 +177,10 @@ export default function MainSubStoreReqs({
         (s) => s.store_id === itemForm.to_store_id
       )
 
+      const stype = (selectedStore?.store_type || "").toUpperCase();
+      const sname = (selectedStore?.store_name || "").toLowerCase();
       const direction =
-        selectedStore?.store_type === "PETTY_CASH"
+        stype === "PETTYCASH" || sname.includes("petty") || sname.includes("پٹی")
           ? "MAIN_TO_PCASH"
           : "MAIN_TO_HO";
 
@@ -196,22 +194,10 @@ export default function MainSubStoreReqs({
         items: itemLines.map(
           ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
         ),
-      };      
-
-      // const formData = new FormData();
-      // formData.append("from_store_id", itemForm.from_store_id);
-      // formData.append("to_store_id", itemForm.to_store_id);
-      // formData.append("requested_by_name", itemForm.requested_by_name);
-      // formData.append("notes", itemForm.notes);
-      // formData.append("is_emergency", itemForm.is_emergency);
-      // formData.append("direction", payload.direction);
-      // formData.append("items", JSON.stringify(payload.items));
-      // itemForm.images.forEach((img) => {
-      //   formData.append("images", img);
-      // });
+      };
 
       await createRequest(payload);
-      showToast("Request submitted successfully", "success");
+      showToast("درخواست کامیابی سے جمع کر دی گئی۔", "success");
       setShowInstantRequestModal(false)
       setItemForm({ ...EMPTY_FORM });
       onRefresh();
@@ -250,23 +236,50 @@ export default function MainSubStoreReqs({
           disputed: disputedCount,
           returnBack: returnBack,
         }}
+        setPage={setCurrentPage}
       />
 
-      <div className="flex h-full py-2 items-end justify-between">
+      <div className="flex py-2 items-end justify-between">
         <div>
-          <StoreFilters
-            filterStatus={reqFilter}
-            setFilterStatus={(v) => {
-              setReqFilter(v);
-              setCurrentPage(1);
-              onFilterChange(v);
-            }}
-            pageType={pageType}
-          />
+          <div className="flex gap-2">
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
+              className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+            />
+            <StoreFilters
+              filterStatus={reqFilter}
+              setFilterStatus={(v) => {
+                setReqFilter(v);
+                setCurrentPage(1);
+                onFilterChange(v);
+              }}
+              pageType={pageType}
+            />
+            {(search || reqFilter) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setReqFilter("");
+                  setCurrentPage(1);
+                  setDebouncedSearch("")
+
+                }}
+                className="text-gray-500 hover:text-gray-800 text-sm px-3 h-7.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
           <button
             onClick={() => {
-              setCurrentPage(1);
               onRefresh();
+              setCurrentPage(1);
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
           >
@@ -281,27 +294,17 @@ export default function MainSubStoreReqs({
               dateKey="created_at"
               fileName={auth.username}
               columns={[
-                { key: "request_id", label: "درخواست نمبر" },
-                { key: "i.item_no", label: "test" },
-                // {}
-                { key: "requested_by_name", label: "درخواست کنندہ" },
-                {
-                  key: "created_at",
-                  label: "درخواست کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                { key: "status", label: "حالت" },
-                {
-                  key: "approved_at",
-                  label: "منظوری کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                {
-                  key: "fulfilled_at",
-                  label: "تکمیل کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
+                { key: "request_no", label: "درخواست نمبر", format: (v) => (v ? v : "—") },
+                { key: "from_store_name", label: "اسٹور سے", format: (v) => (v ? v : "—") },
+                { key: "to_store_name", label: "مرکزی اسٹور کو", format: (v) => (v ? v : "—") },
+                { key: "requested_by_name", label: "درخواست کنندہ", format: (v) => (v ? v : "—") },
+                { key: "approved_by_name", label: "منظور کنندہ", format: (v) => (v ? v : "—") },
+                { key: "fulfilled_by_name", label: "مکمل کرنے والا", format: (v) => (v ? v : "—") },
+                { key: "created_at", label: "درخواست کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"), },
+                { key: "fulfilled_at", label: "تکمیل کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"), },
+                { key: "status", label: "حالت", format: (v) => (v ? v : "—") },
               ]}
+              pageLoading={loading}
             />
           </div>
         </div>

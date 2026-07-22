@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5500",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5500/api",
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
@@ -39,6 +39,10 @@ API.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
+    const isAuthRoute =
+      originalRequest.url.includes("/users/refresh") ||
+      originalRequest.url.includes("/users/login");
 
     if (
       error.response?.status === 401 &&
@@ -90,17 +94,23 @@ export const editStoreById = (id, data) =>
   API.put(`/stores/editStoreById/${id}`, data);
 
 // ── Items ────────────────────────────────────────────────────
-export const getItems = (params) => API.get("/items", { params });
+export const getItems = (params) => API.get("/items/", { params });
 export const getItemById = (id) => API.get(`/items/${id}`);
+export const editItemById = (id, data) => API.put(`/items/${id}`, data)
 export const createItem = (data) => API.post("/items", data);
 export const updateItem = (id, data) => API.patch(`/items/${id}`, data);
 export const deleteItem = (id) => API.delete(`/items/${id}`);
 export const rejectItemById = (id, rid) => API.delete(`/requests/${id}/item/${rid}`);
 export const getItemHistory = (store_id, item_no) => API.get(`/items/store/${store_id}/item/${item_no}`);
+export const getItemCategories = (store_id) => API.get("/categories/availableItemCategory", { params: { store_id }, });
+export const uploadImg = (data) => API.post("/upload", data, {
+  headers: { "Content-Type": "multipart/form-data" }
+})
 
 // ── Requests ─────────────────────────────────────────────────
 export const getRequests = (params) => API.get("/requests", { params });
 export const getRequestById = (id) => API.get(`/requests/${id}`);
+export const getRequestByRequestItemId = (id) => API.get(`/requests/getRequestByRequestItemId/${id}`);
 export const getItemSummary = (params) =>
   API.get("/requests/item-summary", { params });
 export const createRequest = (data) => API.post("/requests", data,);
@@ -114,6 +124,7 @@ export const approveRequest = (id, data) =>
 export const rejectRequest = (id, data) =>
   API.patch(`/requests/${id}/reject`, data);
 export const fulfillRequest = (id, data) => API.patch(`/requests/${id}/fulfill`, data);
+export const fulfillRequesForHOAndPCash = (id, data) => API.patch(`/requests/${id}/fulfillForHOAndPCash`, data);
 export const sendReturnToMain = (id, data) =>
   API.patch(`/requests/${id}/send-back`, data);
 export const acceptReturnFromSub = (id, accepted_by_name) =>

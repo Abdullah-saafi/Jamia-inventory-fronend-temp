@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { STORE_TYPE_LABELS } from "../../services/constants";
-import useErrorHandler from "../useErrorHandler";
-import { getStores, storeStatus } from "../../services/api";
+import { STORE_TYPE_LABELS, STORES } from "../../../services/constants";
+import useErrorHandler from "../../useErrorHandler";
+import { getStores, storeStatus } from "../../../services/api";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import Pagination from "../Pagination";
-import { useAuth } from "../../context/authContext";
+import Pagination from "../../Pagination";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import CheckLoadingAndError from "../../CheckLoadingAndError";
 
 export default function AllStoresTab() {
 
@@ -16,18 +17,28 @@ export default function AllStoresTab() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [emergency, setEmergency] = useState(false);
   const [pageSize, setPageSize] = useState(10);
+  const [showStoreDropdown, setShowStoreDropdown] = useState(false);
+  const [totalItems, setTotalItems] = useState(0);
 
   const handleError = useErrorHandler();
-  const { auth, setAuth } = useAuth()
   const navigate = useNavigate();
 
   const loadStores = async () => {
     try {
       setLoading(true);
-      const response = await getStores({ all: true });
+
+      const response = await getStores({
+        all: true,
+        search,
+        type: typeFilter,
+        page,
+        limit: pageSize,
+      });
+
       setStores(response.data.data || []);
+      setTotalItems(response.data.total || 0);
+
     } catch (error) {
       const msg = handleError(error, "Failed to load stores");
       setError(msg);
@@ -38,7 +49,11 @@ export default function AllStoresTab() {
 
   useEffect(() => {
     loadStores();
-  }, []);
+  }, [page, pageSize, search, typeFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, typeFilter]);
 
   const handleAction = async (id, currentStatus) => {
     try {
@@ -49,32 +64,17 @@ export default function AllStoresTab() {
       if (response.status === 200) {
         await loadStores();
         if (refreshAdminStores) refreshAdminStores();
-        showToast(`Store ${status ? "activated" : "deactivated"} successfully`, "success");
+        showToast(`اسٹور کامیابی سے ${status ? "بحال" : "غیر فعال"} کر دیا گیا ہے`, "success");
       }
     } catch (error) {
       const msg = handleError(error, "Failed to update store status");
-      showToast(msg,"error" );
+      showToast(msg, "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const displayed = stores.filter((s) => {
-    const q = search.toLowerCase();
-    const matchSearch =
-      !q ||
-      s.store_name.toLowerCase().includes(q) ||
-      s.store_code.toLowerCase().includes(q);
-    const matchType = !typeFilter || s.store_type === typeFilter;
-    return matchSearch && matchType;
-  });
-
   const hasFilters = search || typeFilter;
-
-  const paginatedRequests = displayed.slice(
-    (page - 1) * pageSize,
-    page * pageSize,
-  );
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -82,19 +82,62 @@ export default function AllStoresTab() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name or code..."
+          placeholder="نام یا کوڈ سے تلاش کریں..."
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400 w-56 shadow-sm"
         />
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm"
-        >
-          <option value="">تمام اسٹورز</option>
-          <option value="HEAD_OFFICE">ہیڈ آفس</option>
-          <option value="MAIN_STORE">مین اسٹور</option>
-          <option value="SUB_STORE">سب اسٹور</option>
-        </select>
+        {showStoreDropdown && (
+          <div className="absolute inset-0" onClick={() => setShowStoreDropdown((prev) => !prev)} />
+        )}
+
+        <div className="relative min-w-50">
+          <button
+            type="button"
+            onClick={() => {
+              setShowStoreDropdown((prev) => !prev)
+            }}
+            className=" w-full h-10 px-3 flex items-center justify-between bg-white border border-gray-300 rounded-lg shadow-sm hover:border-emerald-400 focus:border-emerald-500 transition-all text-sm text-gray-700">
+            <span>
+              {STORES.find((s) => s.value === typeFilter)?.label || "تمام اسٹورز"}
+            </span>
+
+            {showStoreDropdown ? (
+              <ChevronUp size={16} className="text-gray-400" />
+            ) : (
+              <ChevronDown size={16} className="text-gray-400" />
+            )}
+          </button>
+
+          {showStoreDropdown && (
+            <div
+              className=" absolute z-50 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden max-h-48 overflow-y-auto">
+              <button
+                className=" w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-sm"
+                onClick={() => {
+                  setTypeFilter("");
+                  setShowStoreDropdown(false);
+                }}
+              >
+                تمام اسٹورز
+              </button>
+              {STORES.map((n) => (
+                <button
+                  key={n.value}
+                  onClick={() => {
+                    setTypeFilter(n.value);
+                    setShowStoreDropdown(false);
+                  }}
+                  className={` w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${typeFilter === n.value
+                    ? "bg-emerald-100 text-emerald-700 font-semibold"
+                    : "text-gray-700"
+                    }
+          `}
+                >
+                  {n.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         {hasFilters && (
           <button
             onClick={() => {
@@ -114,22 +157,21 @@ export default function AllStoresTab() {
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-        <table className="w-full">
+      <div className="overflow-x-auto text-center rounded-lg border border-gray-200 shadow-sm">
+        <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-                "اسٹور کوڈ",
                 "اسٹور کا نام",
-                "قسم",
+                "شعبہ",
                 "پتہ",
-                "فون نمبر",
+                "زمرہ",
                 "حالت",
                 "عمل",
               ].map((h) => (
                 <th
                   key={h}
-                  className="text-left px-4 py-3 text-gray-500 font-bold text-xs uppercase tracking-wider font-sans"
+                  className="px-4 py-3 text-gray-500 font-bold text-xs uppercase tracking-wider font-sans"
                 >
                   {h}
                 </th>
@@ -137,40 +179,19 @@ export default function AllStoresTab() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12">
-                  <div className="flex justify-center">
-                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                  </div>
-                </td>
-              </tr>
-            ) : error ? (
-              <tr>
-                <td colSpan={9} className="text-center py-12">
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
-                    {error}
-                  </div>
-                </td>
-              </tr>
-            ) : displayed.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-400">
-                  No stores found.
-                </td>
-              </tr>
-            ) : (
-              paginatedRequests.map((s) => (
+            {(loading || error || stores.length === 0) ? (
+              <CheckLoadingAndError
+                loading={loading}
+                error={error}
+                requests={stores}
+              />
+            ): (
+              stores.map((s) => (
                 <tr
                   key={s.store_id}
                   className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${!s.is_active ? "opacity-60" : ""}`}
                 >
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-emerald-600 font-bold text-xs">
-                      {s.store_code}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-800 font-semibold text-xs">
+                  <td className="px-4 py-3 text-left text-gray-800 font-semibold text-xs">
                     {s.store_name}
                   </td>
                   <td className="px-4 py-3">
@@ -190,7 +211,7 @@ export default function AllStoresTab() {
                     {s.address || "—"}
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">
-                    {s.phone || "—"}
+                    {s.category || "—"}
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -224,15 +245,15 @@ export default function AllStoresTab() {
         </table>
         <Pagination
           currentPage={page}
-          totalItems={displayed.length}
+          totalItems={totalItems}
           pageSize={pageSize}
           onPageChange={setPage}
           pageSizeOptions={[10, 25, 50]}
-          onPageSizeChange={setPageSize}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
         />
-      </div>
-      <div className="mt-2 text-gray-400 text-[10px] uppercase font-bold px-1">
-        {displayed.length} store{displayed.length !== 1 ? "s" : ""} shown
       </div>
     </div>
   );

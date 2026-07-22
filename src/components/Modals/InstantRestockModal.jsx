@@ -108,21 +108,6 @@ const InstantRestockModal = ({
                         </div>
                     </div>
 
-                    {/* ── Notes ── */}
-                    <div>
-                        <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                            ہدایت یا نوٹس
-                        </label>
-                        <textarea
-                            value={itemForm.notes}
-                            onChange={(e) =>
-                                setItemForm((f) => ({ ...f, notes: e.target.value }))
-                            }
-                            rows={2}
-                            placeholder="اختیاری وجہ یا نوٹ"
-                            className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none"
-                        />
-                    </div>
                     <div>
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-gray-500 text-xs font-semibold uppercase">
@@ -132,7 +117,7 @@ const InstantRestockModal = ({
 
                         {!itemForm.to_store_id ? (
                             <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">
-                                دستیاب اشیاء دیکھنے کے لیے پہلے سورس کا انتخاب کریں
+                                 اشیاء دیکھنے کے لیے پہلے سورس کا انتخاب کریں
                             </div>
                         ) : (
                             <div className="space-y-3">
@@ -241,7 +226,7 @@ const InstantRestockModal = ({
                                                         تصویر منتخب کرنے کے لیے یہاں کلک کریں
                                                     </p>
                                                     <p className="text-[10px] text-gray-400 mt-0.5">
-                                                        PNG, JPG (زیادہ سے زیادہ 3 تصاویر)
+                                                        (زیادہ سے زیادہ 1 تصاویر)
                                                     </p>
                                                 </div>
 
@@ -266,8 +251,8 @@ const InstantRestockModal = ({
 
                                                         const total = currentImages.length + newFiles.length;
 
-                                                        if (total > 3) {
-                                                            showToast("Maximum 3 images allowed per item", "warn");
+                                                        if (total > 1) {
+                                                            showToast("ہر آئٹم کے لیے صرف ایک تصویر کی اجازت ہے۔", "warn");
                                                             e.target.value = null;
                                                             return;
                                                         }
@@ -327,6 +312,21 @@ const InstantRestockModal = ({
                                         </div>
                                     </div>
                                 ))}
+                                {/* ── Notes ── */}
+                                <div>
+                                    <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+                                        ہدایت یا نوٹس
+                                    </label>
+                                    <textarea
+                                        value={itemForm.notes}
+                                        onChange={(e) =>
+                                            setItemForm((f) => ({ ...f, notes: e.target.value }))
+                                        }
+                                        rows={2}
+                                        placeholder="اختیاری وجہ یا نوٹ"
+                                        className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none"
+                                    />
+                                </div>
                             </div>
                         )}
                     </div>

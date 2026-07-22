@@ -1,24 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  getStores,
-  getItems,
-  createRequest,
-  getRequests,
-  getRequestById,
-  submitGRN,
-  uploadImg,
-} from "../../services/api";
+import { uploadImg, getItems, createRequest, getRequests, getRequestById, submitGRN } from "../../services/api";
 import { useAuth } from "../../context/authContext";
+import { useToast } from "../../context/ToastContext";
+import { useStores } from "../../hooks/useStores";
 import useErrorHandler from "../useErrorHandler";
+import GRNModal from "../Modals/GRNModal";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
-import Pagination from "../Pagination";
 import StoreFilters from "../StoreFilters";
-import RequestDashboard from "../RequestDashboard";
+import Pagination from "../Pagination";
+import CreateRequestModal from "../Modals/CreateRequestModal";
+import RequestRow from "../RequestRow";
 import TableHead from "../TableHead";
 import CheckLoadingAndError from "../CheckLoadingAndError";
-import RequestRow from "../RequestRow";
-import GRNModal from "../Modals/GRNModal"
-import CreateRequestModal from "../Modals/CreateRequestModal";
+import RequestDashboard from "../RequestDashboard";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -28,6 +22,7 @@ const EMPTY_LINE = {
   item_name: "",
   item_name_urdu: "",
   item_uom: "",
+  images: [],
   requested_qty: 1,
 };
 
@@ -36,9 +31,9 @@ const EMPTY_FORM = {
   to_store_id: "",
   requested_by_name: "",
   notes: "",
-  is_emergency: false,
+  images: [],
   items: [{ ...EMPTY_LINE }],
-}
+};
 
 const mergeDuplicateLines = (lines) => {
   const map = new Map();
@@ -58,87 +53,77 @@ const mergeDuplicateLines = (lines) => {
   return order.map((key) => map.get(key));
 };
 
-export default function MainReqToHO({ showToast }) {
-  const [mainStores, setMainStores] = useState([]);
-  const [toStore, setToStore] = useState([]);
+export default function NewRequestList() {
+  const { auth } = useAuth();
+  const { showToast } = useToast();
+  const handleError = useErrorHandler();
+  const { subStores, mainStores } = useStores();
+  const pageType = "subStore";
+
   const [requests, setRequests] = useState([]);
+  const [allRequests, setAllRequests] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
-  const [isEmergency, setIsEmergency] = useState(false);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filterStore, setFilterStore] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [storeItems, setStoreItems] = useState([]);
+  const [reusableItems, setReusableItems] = useState([]);
+  const [usableItems, setUsableItems] = useState([]);
   const [creating, setCreating] = useState(false);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState(10);
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
+  const [itemsLoading, setItemsLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
-  const [reusableItems, setReusableItems] = useState([]);
-  const [usableItems, setUsableItems] = useState([]);
+  const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [pagination, setPagination] = useState({
     currentPage: 1,
-    totalItems: 0,
     pageLimit: 10,
+    totalItems: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
   });
-  const handleError = useErrorHandler();
-
-  const [form, setForm] = useState({ ...EMPTY_FORM });
-
-  const { auth } = useAuth();
-  const pageType = "mainReqToHO";
 
   const duplicateItemIds = useMemo(() => {
     const counts = {};
-    form.items.forEach((i) => {
+    itemForm.items.forEach((i) => {
       if (i.item_no) counts[i.item_no] = (counts[i.item_no] || 0) + 1;
     });
     return new Set(Object.keys(counts).filter((k) => counts[k] > 1));
-  }, [form.items]);
+  }, [itemForm.items]);
 
-  // ── Data loading ───────────────────────────────────────────────────────────
+  // ─── Load ─────────────────────────────────────────────────────────────────
   const load = async () => {
     setPageLoading(true);
     try {
       const params = {
-        direction: ["MAIN_TO_HO", "MAIN_TO_PCASH"],
+        direction: "SUB_TO_MAIN",
         page,
         limit: pageSize,
         search: debouncedSearch,
-        emergency: isEmergency || undefined,
-        priority_status: "FULFILLED"
+        priority_status: "FULFILLED",
       };
+
       if (filterStatus) params.status = filterStatus;
       if (auth.role !== "super admin") {
         params.store_id = auth.store_id;
+      } else if (filterStore) {
+        params.store_id = filterStore;
       }
-      //  else if (filterStore) {
-      //   params.store_id = filterStore;
-      // }
-      const [sRes, rRes, iRes] = await Promise.all([
-        getStores(),
-        getRequests(params),
-        getItems({ to_store_id: auth.store_id }),
-      ]);
-      const all = sRes.data.data;
-      const items = iRes.data.data || [];
-      setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
-      setToStore(all.filter((s) => s.store_type === "PETTY_CASH" || s.store_type === "HEAD_OFFICE"))
-      setRequests(rRes.data.data);
-      if (rRes.data.pagination) {
-        setPagination(rRes.data.pagination);
+
+      const rRes = await getRequests(params);
+      if (!filterStatus) {
+        setAllRequests(rRes.data.data);
       }
-      setStoreItems(items);
-      setReusableItems(
-        items.filter(i => i.item_type === "REUSABLE")
-      );
-      setUsableItems(
-        items.filter(i => i.item_type === "USABLE")
-      );
+      setRequests(rRes.data.data || []);
+      setPagination(rRes.data.pagination);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
       setError(msg);
@@ -147,42 +132,78 @@ export default function MainReqToHO({ showToast }) {
     }
   };
 
+  const fetchStoreData = async () => {
+    if (!itemForm.to_store_id) {
+      setStoreItems([]);
+      setReusableItems([]);
+      setUsableItems([]);
+      return;
+    }
+    setItemsLoading(true)
+    try {
+      const response = await getItems({ to_store_id: itemForm.to_store_id, store_id: auth.store_id });
+      if (response.data?.success) {
+        const items = response.data.data || [];
+        setStoreItems(items);
+        setReusableItems(items.filter((i) => i.item_type === "REUSABLE"));
+        setUsableItems(items.filter((i) => i.item_type === "USABLE"));
+      } else {
+        setStoreItems([]);
+        setReusableItems([]);
+        setUsableItems([]);
+      }
+    } catch (error) {
+      setStoreItems([]);
+      setUsableItems([]);
+      setReusableItems([]);
+      const msg = handleError(error, "Failed to fetch items");
+      showToast(msg, "error");
+    } finally{
+      setItemsLoading(false)
+    }
+  };
+
   useEffect(() => {
-    if (auth.store_id || auth.role === "super admin") load();
-  }, [
-    filterStatus,
-    // filterStore,
-    auth.store_id,
-    page,
-    pageSize,
-    debouncedSearch,
-    isEmergency,
-  ]);
+    if (auth.store_id || auth.role === "super admin") {
+      load();
+    }
+  }, [filterStatus, filterStore, auth.store_id, page, pageSize, debouncedSearch]);
+
+  useEffect(() => {
+    fetchStoreData();
+  }, [itemForm.to_store_id]);
+
+  useEffect(() => {
+    if (mainStores.length === 1 && !itemForm.to_store_id) {
+      setItemForm((f) => ({ ...f, to_store_id: mainStores[0].store_id }));
+    }
+  }, [mainStores]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 500);
     return () => clearTimeout(timer);
   }, [search]);
 
-  // ── Inline detail ──────────────────────────────────────────────────────────
+  // ─── Detail ───────────────────────────────────────────────────────────────
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
       return;
     }
     setDL(true);
-    setDetail({ ...r, items: [] });
+    setDetail({ ...r, items: [], assets: [] });
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
     } catch (error) {
-      const msg = handleError(error, "Failed to load request details");
+      const msg = handleError(error, "Failed to open detail");
       showToast(msg, "error");
     } finally {
       setDL(false);
     }
   };
 
+  // ─── GRN ──────────────────────────────────────────────────────────────────
   const openGRN = async (e, r) => {
     e.stopPropagation();
     setGrnLoading(true);
@@ -220,15 +241,18 @@ export default function MainReqToHO({ showToast }) {
         grn_note: payload.grn_note,
         received_items: itemsWithImageUrls,
       };
+
       await submitGRN(grnRequest.request_id, finalPayload);
+
       const label =
         payload.grn_status === "RECEIVED"
           ? "ڈیلیوری کی تصدیق ہو گئی ہے — موصول مارک کر دیا گیا ہے"
           : payload.grn_status === "DISPUTED"
             ? "مسائل کی اطلاع کر دی گئی ہے"
-            : payload.grn_status === "RETURN_BACK"
+            : payload.grn_status === "RETURN"
               ? "Deliver Returned"
               : "ڈیلیوری مسترد کر دی گئی ہے — مین اسٹور کو مطلع کر دیا گیا ہے";
+
       showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn");
       setGrnRequest(null);
       setDetail(null);
@@ -241,70 +265,58 @@ export default function MainReqToHO({ showToast }) {
     }
   };
 
-  // ── Form helpers ───────────────────────────────────────────────────────────
   const addLine = () =>
-    setForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_LINE }] }));
+    setItemForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_LINE }] }));
+
   const removeLine = (idx) =>
-    setForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
+    setItemForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
 
   const updateLine = (idx, field, value) => {
-    setForm((f) => {
+    setItemForm((f) => {
       const items = [...f.items];
       items[idx] = { ...items[idx], [field]: value };
       if (field === "selected_item_no") {
-        if (value) {
-          const found = storeItems.find((i) => i.item_no === value);
-          if (found) {
-            items[idx].item_id = found.item_id;
-            items[idx].item_no = found.item_no;
-            items[idx].item_name = found.item_name;
-            items[idx].item_name_urdu = found.item_name_urdu;
-            items[idx].item_uom = found.item_uom;
-            items[idx].item_type = found.item_type;
-          }
+        const found = storeItems.find((i) => i.item_no === value);
+        if (found) {
+          items[idx].item_id = found.item_id;
+          items[idx].item_no = found.item_no;
+          items[idx].item_name = found.item_name;
+          items[idx].item_name_urdu = found.item_name_urdu;
+          items[idx].item_uom = found.item_uom;
+          items[idx].item_type = found.item_type;
         } else {
+          items[idx].item_id = 0;
           items[idx].item_no = "";
           items[idx].item_name = "";
           items[idx].item_uom = "";
+          items[idx].item_type = "";
         }
       }
       return { ...f, items };
     });
   };
 
+  // ─── Submit ───────────────────────────────────────────────────────────────
   const handleCreate = async (e) => {
     e.preventDefault();
-    const { from_store_id, to_store_id, requested_by_name, items } = form;
+    const { from_store_id, to_store_id, requested_by_name, items } = itemForm;
+
     const itemLines = items.filter((i) => i.item_no);
     const hasItems = itemLines.length > 0;
 
-    const invalid = items.some(
-      (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
-    );
     const isUOMMissing = itemLines.some(
       (i) => i.item_type === "USABLE" && !i.item_uom,
     );
-    if (!from_store_id || !to_store_id || !requested_by_name || invalid)
-      return showToast("براہ کرم تمام لازمی خانے پُر کریں۔", "error");
+    if (!from_store_id || !to_store_id || !requested_by_name)
+      return showToast("برائے مہربانی تمام لازمی خانے پُر کریں۔", "error");
     if (!hasItems) return showToast("کم از کم ایک آئٹم شامل کریں۔", "error");
-    if (
-      itemLines.some((i) => !i.item_name || isUOMMissing || i.requested_qty < 1)
-    )
+    if (itemLines.some((i) => !i.item_name || isUOMMissing || i.requested_qty < 1))
       return showToast("آئٹم کی تفصیلات چیک کریں۔", "error");
 
-      const mergedLines = mergeDuplicateLines(itemLines);
+    const mergedLines = mergeDuplicateLines(itemLines);
 
     setCreating(true);
     try {
-      const selectedStore = toStore.find(
-        (s) => s.store_id === form.to_store_id
-      )
-
-      const direction =
-        selectedStore?.store_type === "PETTY_CASH"
-          ? "MAIN_TO_PCASH"
-          : "MAIN_TO_HO";
-
       const itemsWithImageUrls = [];
       for (const item of mergedLines) {
         const { selected_item_no, item_search, _showDropdown, images, ...rest } = item;
@@ -313,81 +325,70 @@ export default function MainReqToHO({ showToast }) {
         if (images && images.length > 0) {
           const formData = new FormData();
           formData.append("image", images[0]);
-          const uploadRes = await uploadImg(formData)
+          const uploadRes = await uploadImg(formData);
           payloadItem.image_url = uploadRes.data.image_url;
         }
 
         itemsWithImageUrls.push(payloadItem);
       }
       const payload = {
-        ...form,
-        direction,
+        from_store_id,
+        to_store_id,
+        requested_by_name,
+        notes: itemForm.notes,
+        is_emergency: itemForm.is_emergency,
+        direction: "SUB_TO_MAIN",
         items: itemsWithImageUrls,
       };
+
       await createRequest(payload);
       showToast("درخواست جمع کر دی گئی ہے", "success");
       setShowCreate(false);
-      setForm({
-        from_store_id: "",
-        to_store_id: "",
-        requested_by_name: "",
-        notes: "",
-        is_emergency: false,
-        items: [{ ...EMPTY_LINE }],
-      });
+      setItemForm({ ...EMPTY_FORM });
       load();
     } catch (e) {
-      const msg = handleError(e, "Failed to submit");
+      const msg = handleError(e, "Failed to load request details");
       showToast(msg, "error");
     } finally {
       setCreating(false);
     }
   };
 
-  const pendingGRN = requests.filter(
-    (r) => r.status === "FULFILLED" && !r.grn_at,
-  ).length;
-
-  const emergencyRequest = requests.filter((r) => r.is_emergency === true).length
+  // ─── Computed ─────────────────────────────────────────────────────────────
+  const pendingGRN = allRequests.filter((r) => r.status === "FULFILLED" && !r.grn_at).length;
 
   return (
     <div>
-      {/* ── Header ── */}
-      <RequestDashboard
-        pageType={pageType}
-        setFilterStatus={setFilterStatus}
-        filterStatus={filterStatus}
-        counts={{
-          pending: pendingGRN,
-          returnBack: 0,
-          emergency: emergencyRequest,
-          disputed: 0,
-        }}
-        setIsEmergency={setIsEmergency}
-        isEmergency={isEmergency}
-        setPage={setPage}
-      />
-
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex gap-2 my-4">
         <button
           onClick={() => {
-            setForm((prev) => ({
-              ...prev,
+            setItemForm({
               from_store_id: auth.store_id || "",
+              to_store_id: mainStores.length === 1 ? mainStores[0].store_id : "",
               requested_by_name: auth.username || "",
-            }));
-
+              notes: "",
+              images: [],
+              items: [{ ...EMPTY_LINE }],
+            });
             setShowCreate(true);
           }}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors ml-auto mt-2"
+          className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
         >
           نئی درخواست
         </button>
       </div>
 
+      <RequestDashboard
+        pageType={pageType}
+        setFilterStatus={setFilterStatus}
+        filterStatus={filterStatus}
+        counts={{ pending: pendingGRN, returnBack: 0, emergency: 0, disputed: 0 }}
+        setPage={setPage}
+      />
+
       {/* ── Filters ── */}
-      <div className="flex  py-2  items-end justify-between">
-        <div>
+      <div className="flex py-2 items-end justify-between">
+        <div className="Filter">
           <div className="flex gap-2">
             <input
               value={search}
@@ -406,15 +407,22 @@ export default function MainReqToHO({ showToast }) {
                 setPage(1);
               }}
               pageType={pageType}
+              filterStore={filterStore}
+              setFilterStore={(v) => {
+                setFilterStore(v);
+                setPage(1);
+              }}
+              role={auth.role}
+              subStores={subStores}
+              loading={pageLoading}
             />
-            {(search || filterStatus || isEmergency) && (
+            {(search || filterStatus) && (
               <button
                 onClick={() => {
                   setSearch("");
                   setFilterStatus("");
                   setPage(1);
-                  setDebouncedSearch("")
-                  setIsEmergency(false)
+                  setDebouncedSearch("");
                 }}
                 className="text-gray-500 hover:text-gray-800 text-sm px-3 h-7.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
               >
@@ -425,39 +433,28 @@ export default function MainReqToHO({ showToast }) {
           <button
             onClick={() => {
               load();
+              fetchStoreData();
               setPage(1);
             }}
-            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto hover:bg-gray-50 shadow-sm"
           >
             ↻ Refresh
           </button>
         </div>
 
-        <div className="Temp-downloader">
-          {/* Excel specific Date Downloader */}
-          <div className="downloader">
+        <div className="Temp-downloader flex justify-center items-center gap-4">
+          <div>
             <ExcelDownloaderWithDates
               data={requests}
               dateKey="created_at"
               fileName={auth.username}
               columns={[
                 { key: "request_no", label: "درخواست نمبر", format: (v) => (v ? v : "—") },
+                { key: "item_type", label: "نوع", format: (v) => (v ? v : "—") },
                 { key: "requested_by_name", label: "درخواست کنندہ", format: (v) => (v ? v : "—") },
-                {
-                  key: "created_at",
-                  label: "درخواست کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                {
-                  key: "approved_at",
-                  label: "منظوری کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                {
-                  key: "fulfilled_at",
-                  label: " تکمیل کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
+                { key: "created_at", label: "درخواست کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—") },
+                { key: "approved_at", label: "منظوری کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—") },
+                { key: "fulfilled_at", label: "تکمیل کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—") },
                 { key: "status", label: "حالت", format: (v) => (v ? v : "—") },
               ]}
               pageLoading={pageLoading}
@@ -466,67 +463,58 @@ export default function MainReqToHO({ showToast }) {
         </div>
       </div>
 
-      {/* ── Requests Table ── */}
-      <div className="overflow-x-aut text-center rounded-lg border border-gray-200 shadow-sm">
+      {/* ── Table ── */}
+      <div className="overflow-x-auto text-center rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <TableHead
-              pageType={pageType}
-            />
+            <TableHead pageType={pageType} />
           </thead>
           <tbody>
             {pageLoading || error || requests.length === 0 ? (
-              <CheckLoadingAndError
-                loading={pageLoading}
-                error={error}
-                requests={requests}
-              />
+              <CheckLoadingAndError loading={pageLoading} error={error} requests={requests} />
             ) : (
               requests.map((r) => (
                 <RequestRow
-                  key={r.request_id}
                   r={r}
                   detail={detail}
                   detailLoad={detailLoad}
                   openDetail={openDetail}
-                  pageType={pageType}
-                  showToast={showToast}
-                  EMPTY_LINE={EMPTY_LINE}
                   openGRN={openGRN}
                   grnLoading={grnLoading}
+                  pageType={pageType}
                 />
               ))
             )}
           </tbody>
         </table>
+
         <Pagination
           currentPage={pagination.currentPage}
           totalItems={pagination.totalItems}
           pageSize={pagination.pageLimit}
           onPageChange={setPage}
           pageSizeOptions={[10, 25, 50]}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
+          onPageSizeChange={(s) => {
+            setPageSize(s);
             setPage(1);
           }}
         />
       </div>
 
-      {/* ── GRN Modal ── */}
       {grnRequest && (
         <GRNModal
           request={grnRequest}
           onClose={() => setGrnRequest(null)}
           onSubmit={handleGRNSubmit}
           submitting={grnSubmitting}
+          showToast={showToast}
         />
       )}
 
-      {/* ── Create Request Modal ── */}
       {showCreate && (
         <CreateRequestModal
-          itemForm={form}
-          setItemForm={setForm}
+          itemForm={itemForm}
+          setItemForm={setItemForm}
           mainStores={mainStores}
           reusableItems={reusableItems}
           usableItems={usableItems}
@@ -538,7 +526,8 @@ export default function MainReqToHO({ showToast }) {
           creating={creating}
           EMPTY_FORM={EMPTY_FORM}
           pageType={pageType}
-          toStore={toStore}
+          showToast={showToast}
+          itemsLoading={itemsLoading}
           duplicateItemIds={duplicateItemIds}
         />
       )}

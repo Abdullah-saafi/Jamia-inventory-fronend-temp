@@ -17,7 +17,8 @@ const ApproveRejectModal = ({
     handleReject,
     rejectItem,
     rejectSpecificItem,
-    openHistory
+    openHistory,
+    historyLoading
 }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -27,7 +28,7 @@ const ApproveRejectModal = ({
                     action === "Approve" ? setApproveModal(null) : setRejectModal(null)
                 }}
             />
-            <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-[72vh] max-h-[90vh] overflow-y-auto shadow-2xl">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
                     <h2 className="text-gray-900 font-bold">
                         {action === "Approve" ? `Approve — ${approveModal.no}` : `Reject — ${rejectModal.request_no}`}
@@ -90,7 +91,7 @@ const ApproveRejectModal = ({
                                             >
                                                 <td className="py-2">
                                                     <div className="text-gray-800 text-sm">
-                                                        {i.item_name}
+                                                        {i.item_name} ( {i.item_name_urdu} )
                                                     </div>
                                                     <div className="text-gray-400 text-xs font-mono">
                                                         {i.item_no} {i.item_type === "REUSABLE" ? "—" : `· ${i.item_uom}`}
@@ -107,12 +108,16 @@ const ApproveRejectModal = ({
                                                         min="1"
                                                         value={Number(i.approved_qty)}
                                                         onChange={(e) => {
-                                                            const u = [...editedItems];
-                                                            u[idx] = {
-                                                                ...u[idx],
-                                                                approved_qty: +e.target.value,
+                                                            const quantity = Number(e.target.value);
+
+                                                            const updatedItems = [...editedItems];
+
+                                                            updatedItems[idx] = {
+                                                                ...updatedItems[idx],
+                                                                approved_qty: quantity,
                                                             };
-                                                            setEditedItems(u);
+
+                                                            setEditedItems(updatedItems);
                                                         }}
                                                         className="w-20 bg-gray-50 border border-gray-300 rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none focus:border-emerald-500"
                                                     />
@@ -122,10 +127,10 @@ const ApproveRejectModal = ({
                                                         onClick={() => {
                                                             openHistory(i.item_no)
                                                         }}
-                                                        // disabled={rejectSpecificItem === i.request_item_id}
-                                                        className="text-zinc-800 text-sm font-semibold px-2 py-1 rounded disabled:opacity-40 bg-gray-200 hover:bg-gray-300"
+                                                        disabled={rejectSpecificItem === i.request_item_id}
+                                                        className="text-zinc-800 bg-gray-200 text-sm font-semibold px-2 py-1 rounded disabled:opacity-40 hover:bg-gray-300"
                                                     >
-                                                        {rejectSpecificItem === i.request_item_id ? "..." : "History"}
+                                                        {historyLoading === i.item_no ? "..." : "ہسٹری"}
                                                     </button>
                                                 </td>
                                                 {editedItems.length > 1 && (

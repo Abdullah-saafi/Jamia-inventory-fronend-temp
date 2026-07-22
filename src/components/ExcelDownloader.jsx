@@ -1,5 +1,6 @@
 import { useState } from "react";
 import * as XLSX from "xlsx";
+import { useToast } from "../context/ToastContext";
 
 /**
  * ExcelDownloader — drop-in button that exports any data to .xlsx
@@ -27,6 +28,8 @@ export default function ExcelDownloader({
   onBeforeExport,
 }) {
   const [loading, setLoading] = useState(false);
+
+  const {showToast} = useToast()
 
   const handleExport = async () => {
     setLoading(true);
@@ -98,7 +101,7 @@ export default function ExcelDownloader({
       const ts = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
       XLSX.writeFile(wb, `${fileName}_${ts}.xlsx`);
     } catch (err) {
-      console.error("Excel export failed:", err);
+      showToast(err, "error");
       alert("Export failed. Please try again.");
     } finally {
       setLoading(false);
