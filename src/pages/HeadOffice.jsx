@@ -114,8 +114,8 @@ export default function HeadOffice() {
   const handleFulfill = async (id) => {
     setFulfilling(id);
     try {
-      if(fulfillForm.driver_no.length < 10){
-        return showToast("فون نمبر درست نہیں ہے۔","error")
+      if (fulfillForm.driver_no.length < 10) {
+        return showToast("فون نمبر درست نہیں ہے۔", "error")
       }
       setFulfillForm({ ...fulfillForm, fulfilled_by_name: auth.username })
       await fulfillRequesForHOAndPCash(id, fulfillForm);
@@ -183,7 +183,7 @@ export default function HeadOffice() {
               }}
               placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
               title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
-              className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+              className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-80 shadow-sm"
             />
             <StoreFilters
               filterStatus={filter}

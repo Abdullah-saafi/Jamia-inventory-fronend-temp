@@ -7,7 +7,7 @@ const pages = {
     store: true,
   },
 
-  returnRequestList:{
+  returnRequestList: {
     page: "returnRequestList",
     store: true,
   },
@@ -82,7 +82,7 @@ export default function StoreFilters({
               setShowDropdown((prev) => !prev)
               setShowStoreDropdown(false)
             }}
-            className="bg-white border w-full border-gray-300 rounded pl-3 py-1 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 cursor-pointer"
+            className="bg-white border w-full border-gray-300 rounded pr-10 py-1 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 cursor-pointer"
           />
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
             {showDropdown ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}

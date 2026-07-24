@@ -130,7 +130,6 @@ export default function Navbar() {
                 month: "short",
                 year: "numeric",
               })}
-              you bull shit
             </span>
 
             <span className="text-[11px] text-white font-medium">

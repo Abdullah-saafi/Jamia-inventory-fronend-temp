@@ -158,7 +158,7 @@ export default function NewRequestList() {
       setReusableItems([]);
       const msg = handleError(error, "Failed to fetch items");
       showToast(msg, "error");
-    } finally{
+    } finally {
       setItemsLoading(false)
     }
   };
@@ -398,7 +398,7 @@ export default function NewRequestList() {
               }}
               placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
               title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
-              className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+              className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-80 shadow-sm"
             />
             <StoreFilters
               filterStatus={filterStatus}
