@@ -31,21 +31,19 @@ export default function SubStore() {
       <div className="flex gap-2 my-4 border-b border-gray-200">
         <button
           onClick={() => setActiveTab("new")}
-          className={`text-sm font-semibold px-4 py-2 w-[50%] rounded-t transition-colors ${
-            activeTab === "new"
+          className={`text-sm font-semibold px-4 py-2 w-[50%] rounded-t transition-colors ${activeTab === "new"
               ? "bg-emerald-600 text-white"
               : "text-gray-600 hover:bg-gray-100"
-          }`}
+            }`}
         >
           نئی درخواستیں
         </button>
         <button
           onClick={() => setActiveTab("return")}
-          className={`text-sm font-semibold px-4 py-2 w-[50%] rounded-t transition-colors ${
-            activeTab === "return"
+          className={`text-sm font-semibold px-4 py-2 w-[50%] rounded-t transition-colors ${activeTab === "return"
               ? "bg-orange-500 text-white"
               : "text-gray-600 hover:bg-gray-100"
-          }`}
+            }`}
         >
           واپسی درخواستیں
         </button>

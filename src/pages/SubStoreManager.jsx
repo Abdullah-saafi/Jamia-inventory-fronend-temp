@@ -314,7 +314,7 @@ export default function SubStoreManager() {
               }}
               placeholder="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
               title="مکمل ریکویسٹ نمبر یا آخری 4 نمبر سے تلاش کریں..."
-              className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
+              className="bg-white border leading-none border-gray-300 rounded px-2  h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-80 shadow-sm"
             />
             <StoreFilters
               filterStatus={filterStatus}
