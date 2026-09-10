@@ -5,7 +5,9 @@ import ReturnRequestList from "../components/SubStore/ReturnRequestList";
 import BlockedUI from "../components/BlockedUI"
 import useErrorHandler from "../components/useErrorHandler";
 import { useToast } from "../context/ToastContext";
-import { getRequests } from "../services/api";
+import { getRequests, getReturnRequests } from "../services/api";
+import { newRequestListColumns, returnRequestListColumns } from "../services/columnsForExcel";
+import { buildAndDownloadExcel } from "../services/useExcelExport";
 
 export default function SubStore() {
   const [activeTab, setActiveTab] = useState("new");
@@ -17,40 +19,76 @@ export default function SubStore() {
   const { showToast } = useToast();
 
 
-  const buildBaseParams = () => {
-    const params = {
-      direction: "SUB_TO_MAIN",
-      priority_status: "FULFILLED",
-    };
-    if (filterStatusForSubStore) params.status = filterStatusForSubStore;
-    if (auth.role !== "super admin") {
-      params.store_id = auth.store_id;
-    } else if (filterStore) {
-      params.store_id = filterStore;
+  const buildBaseParams = (pageType) => {
+    if (pageType === "subStore") {
+      const params = {
+        direction: "SUB_TO_MAIN",
+        priority_status: "FULFILLED",
+      };
+      if (filterStatusForSubStore) params.status = filterStatusForSubStore;
+      if (auth.role !== "super admin") {
+        params.store_id = auth.store_id;
+      } else if (filterStore) {
+        params.store_id = filterStore;
+      }
+      return params;
+    } else if (pageType === "returnRequestList") {
+      const params = {
+        priority_status: "PENDING",
+      };
+      if (filterStatusForSubStore) params.status = filterStatusForSubStore;
+      if (auth.role !== "super admin") {
+        params.store_id = auth.store_id;
+      } else if (filterStore) {
+        params.store_id = filterStore;
+      }
+      return params;
     }
-    return params;
   };
 
-  const fetchRequestsForExport = async (fromDate, toDate) => {
-    const rRes = await getRequests({
-      ...buildBaseParams(),
-      from_date: fromDate,
-      to_date: toDate,
-    });
-    return rRes.data.data;
-  };
-
-  const handleExportAllRequests = async () => {
-    setExportLoading(true);
-    try {
-      const rRes = await getRequests(buildBaseParams());
+  const fetchRequestsForExport = async (fromDate, toDate, pageType) => {
+    if (pageType === "subStore") {
+      const rRes = await getRequests({
+        ...buildBaseParams(pageType),
+        from_date: fromDate,
+        to_date: toDate,
+      });
       return rRes.data.data;
-    } catch (err) {
-      const msg = handleError(err, "Failed to export all requests");
-      showToast(msg, "error");
-      return [];
-    } finally {
-      setExportLoading(false);
+    } else if (pageType === "returnRequestList") {
+      const rRes = await getReturnRequests({
+        ...buildBaseParams(pageType),
+        from_date: fromDate,
+        to_date: toDate,
+      });
+      return rRes.data.data;
+    }
+  };
+
+  const handleExportAllRequests = async (pageType) => {
+    if (pageType === "subStore") {
+      setExportLoading(true);
+      try {
+        const rRes = await getRequests(buildBaseParams(pageType));
+        buildAndDownloadExcel(rRes.data.data, newRequestListColumns, `${auth.username} All Requests`);
+      } catch (err) {
+        const msg = handleError(err, "Failed to export all requests");
+        showToast(msg, "error");
+        return [];
+      } finally {
+        setExportLoading(false);
+      }
+    } else if (pageType === "returnRequestList") {
+      setExportLoading(true);
+      try {
+        const rRes = await getReturnRequests(buildBaseParams(pageType));
+        buildAndDownloadExcel(rRes.data.data, returnRequestListColumns, `${auth.username} All Return Requests`);
+      } catch (err) {
+        const msg = handleError(err, "Failed to export all return requests");
+        showToast(msg, "error");
+        return [];
+      } finally {
+        setExportLoading(false);
+      }
     }
   };
 
@@ -103,7 +141,12 @@ export default function SubStore() {
           setFilterStatusForSubStore={setFilterStatusForSubStore}
         />
         :
-        <ReturnRequestList />}
+        <ReturnRequestList
+          fetchRequestsForExport={fetchRequestsForExport}
+          handleExportAllRequests={handleExportAllRequests}
+          exportLoading={exportLoading}
+          setFilterStatusForSubStore={setFilterStatusForSubStore}
+        />}
     </div>
   );
 }

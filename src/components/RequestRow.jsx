@@ -23,8 +23,8 @@ export default function RequestRow({
   username,
   setFulfillModal,
   setRequestNo,
-  setCustomDate,
-  customDate
+  setCustomDates,
+  customDates
 }) {
   const isExpanded = detail && detail.request_id === r.request_id;
   const needsGRN = r.status === "FULFILLED" && !r.grn_at;
@@ -40,7 +40,7 @@ export default function RequestRow({
     <>
       <tr
         key={r.request_no}
-        className={`border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-100 ${needsGRN
+        className={`border-b border-gray-100 cursor-pointer bg-white transition-colors hover:bg-gray-100 ${needsGRN
           ? "bg-blue-50/40 hover:bg-blue-50"
           : isDisputed
             ? "bg-amber-50/40 hover:bg-amber-50"
@@ -108,12 +108,17 @@ export default function RequestRow({
         <td className="px-4 py-3">
           <DateTimeCell ts={r.requested_at || r.created_at} />
         </td>
-        {pageType === "mainSubStoreReqs" && (
+        {(pageType === "mainSubStoreReqs") && (
           <>
             <td className="px-4 py-3">
-              {r.fulfilled_at ? <DateTimeCell ts={r.fulfilled_at} /> :
+              {r.fulfilled_at ? <DateTimeCell ts={r.fulfilled_at} /> : r.status === "APPROVED" ?
                 <input className="text-xs text-gray-700 bg-white border border-gray-300 rounded-md  px-2.5 py-1 shadow-sm transition-all outline-none cursor-pointer focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 hover:border-gray-400 scheme-light"
-                  onClick={(e) => e.stopPropagation()} value={customDate} onChange={(e) => setCustomDate(e.target.value)} type="datetime-local" />}
+                  onClick={(e) => e.stopPropagation()} value={customDates[r.request_id] || ""} onChange={(e) => {
+                    setCustomDates((prev) => ({
+                      ...prev,
+                      [r.request_id]: e.target.value
+                    }))
+                  }} type="datetime-local" /> : "—"}
             </td>
           </>
         )}
@@ -171,7 +176,7 @@ export default function RequestRow({
                   e.stopPropagation();
 
                   if (pageType === "mainSubStoreReqs") {
-                    handleFulfill(r.request_id);
+                    handleFulfill(r.request_id, customDates[r.request_id], r.status);
                   } else {
                     setFulfillModal(true);
                     setRequestNo({
@@ -214,7 +219,7 @@ export default function RequestRow({
 
       {isExpanded && (
         <tr
-          className={`border-b-2 ${isEmergency && r.status === "APPROVED"
+          className={`border-b-2 bg-white/50 ${isEmergency && r.status === "APPROVED"
             ? "bg-red-50/20 border-red-300"
             : isDisputed
               ? "bg-amber-50/20 border-amber-300"
@@ -295,7 +300,7 @@ export default function RequestRow({
 
                 <div>
                   {/* Title */}
-                  <div className="text-gray-400 text-[11px] uppercase font-bold tracking-wider mb-3">
+                  <div className="text-gray-400 text-right text-[11px] uppercase font-bold tracking-wider mb-3">
                     آئٹم کی تفصیلات
                   </div>
 
@@ -316,7 +321,7 @@ export default function RequestRow({
                         )}
 
                         {r.driver_no && (
-                          <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                          <div className="bg-gray-50 text-right rounded-lg px-3 py-2 border border-gray-100">
                             <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
                               ڈرائیور کا نمبر
                             </div>
@@ -327,7 +332,7 @@ export default function RequestRow({
                         )}
 
                         {r.vehicle_no && (
-                          <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                          <div className="bg-gray-50 text-right rounded-lg px-3 py-2 border border-gray-100">
                             <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
                               گاڑی کا نمبر
                             </div>
@@ -338,7 +343,7 @@ export default function RequestRow({
                         )}
 
                         {r.ref_no && (
-                          <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                          <div className="bg-gray-50 text-right rounded-lg px-3 py-2 border border-gray-100">
                             <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
                               پیٹی کیش ریفرنس نمبر
                             </div>
@@ -349,7 +354,7 @@ export default function RequestRow({
                         )}
 
                         {r.partial_request_no && (
-                          <div className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                          <div className="bg-gray-50 text-right rounded-lg px-3 py-2 border border-gray-100">
                             <div className="text-gray-400 text-xs uppercase font-semibold mb-1">
                               جزوی ریکویسٹ نمبر
                             </div>

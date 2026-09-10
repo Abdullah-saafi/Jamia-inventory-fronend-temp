@@ -83,9 +83,9 @@ const Login = () => {
     );
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-start font-sans">
+        <div className="bg-gray-50 flex h-full items-center justify-start font-sans">
             {/* Left Side: Login Form */}
-            <div id="container" className="w-full max-w-125 h-screen bg-white p-8 flex flex-col justify-center items-center shadow-2xl border-r border-gray-200">
+            <div id="container" className="w-full h-full max-w-125 bg-white p-8 flex flex-col justify-center items-center shadow-2xl border-r border-gray-200">
                 <h1 className="text-4xl font-black text-gray-900 uppercase tracking-tighter mb-2">Login</h1>
                 <p className="text-gray-500 mb-8 text-sm">خوش آمدید! براہ کرم اپنی تفصیلات درج کریں۔</p>
 
@@ -95,7 +95,7 @@ const Login = () => {
                     </div>
                 )}
 
-                <form className="w-full max-w-87.5 space-y-4" onSubmit={handleSubmit}>
+                <form dir="ltr" className="w-full max-w-87.5 space-y-4" onSubmit={handleSubmit}>
                     {/* Email Field */}
                     <div className={inputWrapperClass(hasError)}>
                         <label htmlFor="email" className={message || auth?.message ? "p-3 bg-red-300 text-gray-500" : "p-3 bg-gray-100 text-gray-500"}>
@@ -144,7 +144,7 @@ const Login = () => {
                         disabled={loading}
                     >
                         {loading ? (
-                            <span className="flex items-center justify-center gap-2">
+                            <span dir="ltr" className="flex items-center justify-center gap-2">
                                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                 Processing...
                             </span>
@@ -154,12 +154,12 @@ const Login = () => {
             </div>
 
             {/* Right Side: Visual Banner */}
-            <div className="hidden lg:flex grow h-screen bg-gray-50 items-center justify-center relative overflow-hidden">
+            <div className="hidden lg:flex grow  bg-gray-50 h-full items-center justify-center relative overflow-hidden">
                 {/* Decorative Blurs */}
                 <div className="absolute w-125 h-125 bg-emerald-500/10 rounded-full blur-[120px] -top-20 -right-20"></div>
                 <div className="absolute w-75 h-75 bg-blue-500/10 rounded-full blur-[100px] bottom-0 left-0"></div>
 
-                <div className="text-center z-10">
+                <div dir="ltr" className="text-center z-10">
                     <h2 className="text-gray-900 text-2xl font-light tracking-widest uppercase">Inventory Management System</h2>
                     <p className="text-gray-500 mt-2">Precision. Efficiency. Control.</p>
                 </div>

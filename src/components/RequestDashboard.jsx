@@ -13,11 +13,11 @@ const RequestDashboard = ({
   const handleFilter = (status) => {
     setPage(1)
     setFilterStatus((prev) => prev === status ? "" : status);
-    setFilterStatusForSubStore((prev) => prev === status ? "" : status)
+    pageType === "subStore" ? setFilterStatusForSubStore((prev) => prev === status ? "" : status) : null
   };
 
   return (
-    <div className="flex flex-wrap gap-4 mb-6 justify-evenly">
+    <div className="flex flex-wrap gap-5 mb-6 justify-evenly">
       {/* Fulfill Card */}
       {(pageType === "subStore" || pageType === "mainReqToHO") && (
         <StatusCard

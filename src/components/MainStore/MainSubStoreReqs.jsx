@@ -18,6 +18,7 @@ import TableHead from "../TableHead";
 import InstantRestockModal from "../Modals/InstantRestockModal";
 import InstantRequestPopup from "../InstantRequestPopup";
 import FulfillModal from "../Modals/FulfillModal";
+import { mainSubStoreReqsColumns } from "../../services/columnsForExcel";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -54,6 +55,9 @@ export default function MainSubStoreReqs({
   setSearch,
   search,
   setDebouncedSearch,
+  fetchRequestsForExport,
+  handleExportAllRequests,
+  exportLoading
 }) {
   const [reqFilter, setReqFilter] = useState("");
   const [detail, setDetail] = useState(null);
@@ -66,7 +70,7 @@ export default function MainSubStoreReqs({
   const [creating, setCreating] = useState(false);
   const [showInstantRequestPopup, setShowInstantRequestPopup] = useState(false);
   const [lowStockRequest, setLowStockRequest] = useState(null)
-  const [customDate, setCustomDate] = useState(Date)
+  const [customDates, setCustomDates] = useState({});
 
   const fulfillResolveRef = useRef(null);
   const { auth } = useAuth();
@@ -111,7 +115,7 @@ export default function MainSubStoreReqs({
     }
   };
 
-  const handleFulfill = async (requestId, status) => {
+  const handleFulfill = async (requestId, customDate, status) => {
     setFulfilling(requestId);
     try {
       if (status === "DISPUTED") {
@@ -121,7 +125,7 @@ export default function MainSubStoreReqs({
       await fulfillRequest(requestId, { fulfilled_by_name: auth.username, customDate: customDate });
       showToast("درخواست پوری کر دی گئی اور انوینٹری اپڈیٹ ہو گئی ہے", "success");
       setDetail(null);
-      setCustomDate(Date)
+      setCustomDates({})
       onRefresh();
     } catch (e) {
       const msg = handleError(e, "Failed to fulfill");
@@ -249,6 +253,7 @@ export default function MainSubStoreReqs({
         <div>
           <div className="flex gap-2">
             <input
+              dir="ltr"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -283,6 +288,7 @@ export default function MainSubStoreReqs({
             )}
           </div>
           <button
+            dir="ltr"
             onClick={() => {
               onRefresh();
               setCurrentPage(1);
@@ -296,20 +302,12 @@ export default function MainSubStoreReqs({
         <div className="Temp-downloader">
           <div className="downloader">
             <ExcelDownloaderWithDates
-              data={requests}
+              onFetch={fetchRequestsForExport}
+              handleExportAll={handleExportAllRequests}
+              exportLoading={exportLoading}
               dateKey="created_at"
               fileName={auth.username}
-              columns={[
-                { key: "request_no", label: "درخواست نمبر", format: (v) => (v ? v : "—") },
-                { key: "from_store_name", label: "اسٹور سے", format: (v) => (v ? v : "—") },
-                { key: "to_store_name", label: "مرکزی اسٹور کو", format: (v) => (v ? v : "—") },
-                { key: "requested_by_name", label: "درخواست کنندہ", format: (v) => (v ? v : "—") },
-                { key: "approved_by_name", label: "منظور کنندہ", format: (v) => (v ? v : "—") },
-                { key: "fulfilled_by_name", label: "مکمل کرنے والا", format: (v) => (v ? v : "—") },
-                { key: "created_at", label: "درخواست کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"), },
-                { key: "fulfilled_at", label: "تکمیل کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"), },
-                { key: "status", label: "حالت", format: (v) => (v ? v : "—") },
-              ]}
+              columns={mainSubStoreReqsColumns}
               pageLoading={loading}
             />
           </div>
@@ -321,7 +319,7 @@ export default function MainSubStoreReqs({
           <thead>
             <TableHead pageType={pageType} />
           </thead>
-          <tbody className="bg-white">
+          <tbody>
             {loading || mainStoreError || requests.length === 0 ? (
               <CheckLoadingAndError
                 loading={loading}
@@ -346,8 +344,8 @@ export default function MainSubStoreReqs({
                   username={auth.username}
                   setItemForm={setItemForm}
                   EMPTY_LINE={EMPTY_LINE}
-                  setCustomDate={setCustomDate}
-                  customDate={customDate}
+                  setCustomDates={setCustomDates}
+                  customDates={customDates}
                 />
               ))
             )}

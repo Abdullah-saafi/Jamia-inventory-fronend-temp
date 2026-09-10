@@ -21,13 +21,15 @@ import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import ApproveRejectModal from "../components/Modals/ApproveRejectModal";
 import RequestRow from "../components/RequestRow";
 import ItemHistoryModal from "../components/Modals/ItemHistoryModal";
+import { buildAndDownloadExcel } from "../services/useExcelExport";
+import { mainStoreApproverColumns } from "../services/columnsForExcel";
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MainStoreApprover() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filter, setFilter] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [detail, setDetail] = useState(null);
@@ -47,6 +49,7 @@ export default function MainStoreApprover() {
   const [historyLoading, setHistoryLoading] = useState(null);
   const [itemHistory, setItemHistory] = useState({ itemNo: null, rows: [] });
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
 
   const { auth } = useAuth();
   const { showToast } = useToast()
@@ -58,7 +61,7 @@ export default function MainStoreApprover() {
     setLoading(true);
     try {
       const params = { direction: ["MAIN_TO_PCASH", "MAIN_TO_HO"], search: debouncedSearch, emergency: isEmergency || undefined, priority_status: "PENDING" };
-      if (filter) params.status = filter;
+      if (filterStatus) params.status = filterStatus;
       const r = await getRequests(params);
       setRequests(r.data.data);
     } catch (error) {
@@ -71,7 +74,7 @@ export default function MainStoreApprover() {
 
   useEffect(() => {
     load();
-  }, [filter, debouncedSearch, isEmergency]);
+  }, [filterStatus, debouncedSearch, isEmergency]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 500);
@@ -247,6 +250,44 @@ export default function MainStoreApprover() {
     }
   }
 
+  const buildBaseParams = () => {
+    const params = {
+      direction: ["MAIN_TO_PCASH", "MAIN_TO_HO"],
+      priority_status: "PENDING",
+    };
+    if (filterStatus) params.status = filterStatus;
+    if (auth.role !== "super admin") {
+      params.store_id = auth.store_id;
+    } else if (filterStore) {
+      params.store_id = filterStore;
+    }
+    return params;
+  };
+
+  const fetchRequestsForExport = async (fromDate, toDate) => {
+    const rRes = await getRequests({
+      ...buildBaseParams(),
+      from_date: fromDate,
+      to_date: toDate,
+    });
+    return rRes.data.data;
+
+  };
+
+  const handleExportAllRequests = async () => {
+    setExportLoading(true);
+    try {
+      const rRes = await getRequests(buildBaseParams());
+      buildAndDownloadExcel(rRes.data.data, mainStoreApproverColumns, `${auth.username}'s All Requests`);
+    } catch (err) {
+      const msg = handleError(err, "Failed to export all requests");
+      showToast(msg, "error");
+      return [];
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
   const emergencyRequest = requests.filter((r) => r.is_emergency === true).length
 
@@ -270,8 +311,8 @@ export default function MainStoreApprover() {
       {/* ── Pending alert ── */}
       <RequestDashboard
         pageType={pageType}
-        setFilterStatus={setFilter}
-        filterStatus={filter}
+        setFilterStatus={setFilterStatus}
+        filterStatus={filterStatus}
         counts={{
           pending: pendingCount,
           returnBack: 0,
@@ -288,6 +329,7 @@ export default function MainStoreApprover() {
         <div>
           <div className="flex gap-2">
             <input
+              dir="ltr"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -298,15 +340,15 @@ export default function MainStoreApprover() {
               className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
             />
             <StoreFilters
-              filterStatus={filter}
-              setFilterStatus={setFilter}
+              filterStatus={filterStatus}
+              setFilterStatus={setFilterStatus}
               pageType={pageType}
             />
-            {(search || filter || isEmergency) && (
+            {(search || filterStatus || isEmergency) && (
               <button
                 onClick={() => {
                   setSearch("");
-                  setFilter("");
+                  setFilterStatus("");
                   setPage(1);
                   setDebouncedSearch("")
                   setIsEmergency(false)
@@ -319,6 +361,7 @@ export default function MainStoreApprover() {
           </div>
 
           <button
+            dir="ltr"
             onClick={() => {
               setPage(1)
               load()
@@ -333,29 +376,12 @@ export default function MainStoreApprover() {
           {/* Excel specific Date Downloader */}
           <div className="downloader">
             <ExcelDownloaderWithDates
-              data={requests}
+              onFetch={fetchRequestsForExport}
+              handleExportAll={handleExportAllRequests}
+              exportLoading={exportLoading}
               dateKey="created_at"
               fileName={auth.username}
-              columns={[
-                { key: "request_no", label: "درخواست نمبر" },
-                { key: "requested_by_name", label: "درخواست کنندہ" },
-                {
-                  key: "created_at",
-                  label: "درخواست کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                {
-                  key: "approved_at",
-                  label: "منظوری کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                {
-                  key: "fulfilled_at",
-                  label: "تکمیل کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                { key: "status", label: "حالت" },
-              ]}
+              columns={mainStoreApproverColumns}
               pageLoading={loading}
             />
           </div>

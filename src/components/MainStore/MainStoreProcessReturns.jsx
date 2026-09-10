@@ -13,6 +13,8 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates"
 import Pagination from "../Pagination";
 import StatusBadge from "../StatusBadge";
+import { buildAndDownloadExcel } from "../../services/useExcelExport";
+import { mainStoreProcessReturnsColumns } from "../../services/columnsForExcel";
 
 function clampQty(value, max) {
   return Math.min(max, Math.max(0, Number(value) || 0));
@@ -74,6 +76,7 @@ export default function MainStoreProcessReturns({ showToast }) {
   const [submitting, setSubmitting] = useState(false);
   const [itemActions, setItemActions] = useState({});
   const [showDropdown, setShowDropdown] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -228,6 +231,43 @@ export default function MainStoreProcessReturns({ showToast }) {
     }
   };
 
+  const buildBaseParams = () => {
+    const params = {
+      priority_status: "PENDING",
+    };
+    if (filterStatus) params.status = filterStatus;
+    if (auth.role !== "super admin") {
+      params.store_id = auth.store_id;
+    } else if (filterStore) {
+      params.store_id = filterStore;
+    }
+    return params;
+  };
+
+  const fetchRequestsForExport = async (fromDate, toDate) => {
+    const rRes = await getReturnRequests({
+      ...buildBaseParams(),
+      from_date: fromDate,
+      to_date: toDate,
+    });
+    return rRes.data.data;
+
+  };
+
+  const handleExportAllRequests = async () => {
+    setExportLoading(true);
+    try {
+      const rRes = await getReturnRequests(buildBaseParams());
+      buildAndDownloadExcel(rRes.data.data, mainStoreProcessReturnsColumns, `${auth.username} All Return Requests`);
+    } catch (err) {
+      const msg = handleError(err, "Failed to export all requests");
+      showToast(msg, "error");
+      return [];
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   const totalStockQty = Object.values(itemActions).reduce(
     (sum, v) => sum + Number(v.stock_qty || 0),
     0,
@@ -267,6 +307,7 @@ export default function MainStoreProcessReturns({ showToast }) {
           <div className="flex items-center gap-2">
             {/* Search */}
             <input
+            dir="ltr"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -347,6 +388,7 @@ export default function MainStoreProcessReturns({ showToast }) {
 
           {/* Refresh stays below */}
           <button
+          dir="ltr"
             onClick={() => {
               fetchReturns()
               setCurrentPage(1);
@@ -361,43 +403,13 @@ export default function MainStoreProcessReturns({ showToast }) {
         <div className="Temp-downloader">
           <div className="downloader">
             <ExcelDownloaderWithDates
-              data={returns}
+              onFetch={fetchRequestsForExport}
+              handleExportAll={handleExportAllRequests}
+              exportLoading={exportLoading}
               dateKey="created_at"
-              fileName={auth.username}
+              fileName={`${auth.username} Return Requests`}
               pageLoading={loading}
-              columns={[
-                {
-                  key: "return_no",
-                  label: "واپسی نمبر",
-                  format: (v) => (v ? v : "—"),
-                },
-                {
-                  key: "from_store_name",
-                  label: "بھیجنے والا اسٹور",
-                  format: (v) => (v ? v : "—"),
-                },
-                {
-                  key: "sent_by_name",
-                  label: "بھیجنے والا",
-                  format: (v) => (v ? v : "—"),
-                },
-                {
-                  key: "item_count",
-                  label: "آئٹمز",
-                  format: (v) => (v ? v : "—"),
-                },
-                {
-                  key: "created_at",
-                  label: "تاریخ",
-                  format: (v) =>
-                    v ? new Date(v).toLocaleDateString() : "—",
-                },
-                {
-                  key: "status",
-                  label: "اسٹیٹس",
-                  format: (v) => (v ? v : "—"),
-                },
-              ]}
+              columns={mainStoreProcessReturnsColumns}
             />
           </div>
         </div>
@@ -444,7 +456,7 @@ export default function MainStoreProcessReturns({ showToast }) {
                     {new Date(r.created_at).toLocaleDateString("en-PK")}
                   </td>
                   <td className="px-4 py-3">
-                  <StatusBadge status={r.status}/>
+                    <StatusBadge status={r.status} />
                   </td>
                   <td className="px-4 py-3">
                     {r.status === "PENDING" ? (
@@ -566,15 +578,15 @@ export default function MainStoreProcessReturns({ showToast }) {
                                   {item.item_type}
                                 </span>
                                 <span className="font-mono font-bold text-sm text-gray-700">
-                                  کل مقدار: <bdi className="text-emerald-600">{returnQty}</bdi> 
+                                  کل مقدار: <bdi className="text-emerald-600">{returnQty}</bdi>
                                 </span>
                                 <span className="font-mono font-bold text-sm text-gray-700">
-                                اکائی: <span className="text-emerald-600">{item.item_uom}</span>
+                                  اکائی: <span className="text-emerald-600">{item.item_uom}</span>
                                 </span>
                               </div>
                               {!isPending && item.action_type && (
                                 <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                  <StatusBadge status={item.action_type}/>
+                                  <StatusBadge status={item.action_type} />
                                   <span className="text-xs text-emerald-700 font-semibold">
                                     اسٹاک: {item.added_to_stock_qty}
                                   </span>

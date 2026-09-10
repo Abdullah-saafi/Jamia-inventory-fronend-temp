@@ -25,7 +25,7 @@ export default function CreateRequestModal({
         onClose()
         setItemForm({ ...EMPTY_FORM })
       }} />
-      <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-2xl max-h-[91h] overflow-y-auto shadow-2xl">
+      <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-2xl max-h-[91vh] overflow-y-auto shadow-2xl">
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
           <div className="flex items-center gap-2">

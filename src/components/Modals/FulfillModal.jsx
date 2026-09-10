@@ -50,6 +50,7 @@ const FulfillModal = ({
                                 حوالہ نمبر *
                             </label>
                             <input
+                                dir="ltr"
                                 type="text"
                                 value={referenceNo}
                                 onChange={(e) => {
@@ -114,7 +115,7 @@ const FulfillModal = ({
                         </button>
                     </div>
                     <div className="p-5 space-y-4">
-                        <div>
+                        <div dir="ltr">
                             <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                                 ڈرائیور کا نام
                             </label>
@@ -128,7 +129,7 @@ const FulfillModal = ({
                                 className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                             />
                         </div>
-                        <div>
+                        <div dir="ltr">
                             <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">فون</label>
                             <div className="relative flex items-center w-full">
 
@@ -155,7 +156,7 @@ const FulfillModal = ({
                                 />
                             </div>
                         </div>
-                        <div>
+                        <div dir="ltr">
                             <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                                 گاڑی کا نمبر
                             </label>

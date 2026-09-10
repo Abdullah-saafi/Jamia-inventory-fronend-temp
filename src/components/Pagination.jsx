@@ -63,7 +63,7 @@ export default function Pagination({
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-lg text-sm text-gray-500 select-none">
+    <div dir="ltr" className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-lg text-sm text-gray-500 select-none">
       {/* Left: count summary + optional page-size picker */}
       <div className="flex items-center gap-3">
         <span>

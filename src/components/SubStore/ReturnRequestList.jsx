@@ -16,6 +16,7 @@ import Pagination from "../Pagination";
 import ReturnModal from "../Modals/ReturnModal";
 import { RETURN_STATUSES } from "../../services/constants";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { returnRequestListColumns } from "../../services/columnsForExcel";
 
 const PRIORITY_STATUS = "PENDING";
 
@@ -27,7 +28,7 @@ const STATUS_COLORS = {
     "bg-orange-100 text-orange-700 border-orange-200",
 };
 
-export default function ReturnRequestList() {
+export default function ReturnRequestList({ fetchRequestsForExport, handleExportAllRequests, exportLoading, setFilterStatusForSubStore }) {
   const { auth } = useAuth();
   const { showToast } = useToast();
   const handleError = useErrorHandler();
@@ -321,6 +322,7 @@ export default function ReturnRequestList() {
         <div className="Filter">
           <div className="flex gap-2">
             <input
+            dir="ltr"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -365,6 +367,7 @@ export default function ReturnRequestList() {
                     className="w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-sm"
                     onClick={() => {
                       setFilterStatus("");
+                      setFilterStatusForSubStore("")
                       setPage(1);
                       setShowDropdown(false);
                     }}
@@ -378,13 +381,13 @@ export default function ReturnRequestList() {
                       onClick={() => {
                         setPage(1);
                         setFilterStatus(status.value);
+                        setFilterStatusForSubStore(status.value)
                         setShowDropdown(false);
                       }}
-                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${
-                        filterStatus === status.value
-                          ? "bg-emerald-100 text-emerald-700 font-semibold"
-                          : "text-gray-700"
-                      }`}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-emerald-50 transition-colors ${filterStatus === status.value
+                        ? "bg-emerald-100 text-emerald-700 font-semibold"
+                        : "text-gray-700"
+                        }`}
                     >
                       {status.label}
                     </button>
@@ -398,6 +401,7 @@ export default function ReturnRequestList() {
                 onClick={() => {
                   setSearch("");
                   setFilterStatus("");
+                  setFilterStatusForSubStore("")
                   setPage(1);
                   setDebouncedSearch("");
                 }}
@@ -409,6 +413,7 @@ export default function ReturnRequestList() {
           </div>
 
           <button
+          dir="ltr"
             onClick={() => {
               setPage(1);
               load();
@@ -420,44 +425,13 @@ export default function ReturnRequestList() {
         </div>
 
         <ExcelDownloaderWithDates
-          data={returns}
+          pageType={pageType}
+          onFetch={fetchRequestsForExport}
+          handleExportAll={handleExportAllRequests}
+          exportLoading={exportLoading}
           dateKey="created_at"
-          fileName={auth.username}
-          columns={[
-            {
-              key: "return_no",
-              label: "واپسی نمبر",
-              format: (value) => value || "—",
-            },
-            {
-              key: "to_store_name",
-              label: "وصول کنندہ اسٹور",
-              format: (value) => value || "—",
-            },
-            {
-              key: "sent_by_name",
-              label: "بھیجنے والا",
-              format: (value) => value || "—",
-            },
-            {
-              key: "item_count",
-              label: "آئٹمز",
-              format: (value) => value || "—",
-            },
-            {
-              key: "created_at",
-              label: "تاریخ",
-              format: (value) =>
-                value
-                  ? new Date(value).toLocaleDateString()
-                  : "—",
-            },
-            {
-              key: "status",
-              label: "اسٹیٹس",
-              format: (value) => value || "—",
-            },
-          ]}
+          fileName={`${auth.username} Return Requests`}
+          columns={returnRequestListColumns}
           pageLoading={pageLoading}
         />
       </div>
@@ -469,10 +443,10 @@ export default function ReturnRequestList() {
             <TableHead pageType={pageType} />
           </thead>
 
-          <tbody>
+          <tbody className="bg-white">
             {pageLoading ||
-            error ||
-            returns.length === 0 ? (
+              error ||
+              returns.length === 0 ? (
               <CheckLoadingAndError
                 loading={pageLoading}
                 error={error}
@@ -512,10 +486,9 @@ export default function ReturnRequestList() {
 
                   <td className="px-4 py-3">
                     <span
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
-                        STATUS_COLORS[request.status] ||
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[request.status] ||
                         "bg-gray-100 text-gray-600 border-gray-200"
-                      }`}
+                        }`}
                     >
                       {request.status}
                     </span>
@@ -596,10 +569,9 @@ export default function ReturnRequestList() {
 
                   <div className="flex items-center gap-2 mb-4">
                     <span
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
-                        STATUS_COLORS[selected?.status] ||
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[selected?.status] ||
                         "bg-gray-100 text-gray-600 border-gray-200"
-                      }`}
+                        }`}
                     >
                       {selected?.status}
                     </span>
@@ -646,12 +618,11 @@ export default function ReturnRequestList() {
 
                           {item.action_type && (
                             <span
-                              className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
-                                STATUS_COLORS[
-                                  item.action_type
-                                ] ||
+                              className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLORS[
+                                item.action_type
+                              ] ||
                                 "bg-gray-100 text-gray-600 border-gray-200"
-                              }`}
+                                }`}
                             >
                               {item.action_type}
                             </span>

@@ -21,6 +21,8 @@ import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import RequestDashboard from "../components/RequestDashboard";
 import { useToast } from "../context/ToastContext";
+import { buildAndDownloadExcel } from "../services/useExcelExport";
+import { subStoreManagerColumns } from "../services/columnsForExcel";
 
 export default function SubStoreManager() {
   const [requests, setRequests] = useState([]);
@@ -44,6 +46,7 @@ export default function SubStoreManager() {
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false)
   const [itemHistory, setItemHistory] = useState({ itemNo: null, rows: [] });
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -271,6 +274,44 @@ export default function SubStoreManager() {
     }
   }
 
+  const buildBaseParams = () => {
+    const params = {
+      direction: "SUB_TO_MAIN",
+      priority_status: "PENDING",
+    };
+    if (filterStatus) params.status = filterStatus;
+    if (auth.role !== "super admin") {
+      params.store_id = auth.store_id;
+    } else if (filterStore) {
+      params.store_id = filterStore;
+    }
+    return params;
+  };
+
+  const fetchRequestsForExport = async (fromDate, toDate) => {
+    const rRes = await getRequests({
+      ...buildBaseParams(),
+      from_date: fromDate,
+      to_date: toDate,
+    });
+    return rRes.data.data;
+
+  };
+
+  const handleExportAllRequests = async () => {
+    setExportLoading(true);
+    try {
+      const rRes = await getRequests(buildBaseParams());
+      buildAndDownloadExcel(rRes.data.data, subStoreManagerColumns, `${auth.username} All Requests`);
+    } catch (err) {
+      const msg = handleError(err, "Failed to export all requests");
+      showToast(msg, "error");
+      return [];
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
 
   if (auth.isBlocked) {
@@ -307,6 +348,7 @@ export default function SubStoreManager() {
         <div className="Filter">
           <div className="flex gap-2">
             <input
+              dir="ltr"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -340,6 +382,7 @@ export default function SubStoreManager() {
             )}
           </div>
           <button
+            dir="ltr"
             onClick={load}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto hover:bg-gray-50 shadow-sm"
           >
@@ -351,18 +394,12 @@ export default function SubStoreManager() {
           {/* Excel specific Date Downloader */}
           <div className="downloader">
             <ExcelDownloaderWithDates
-              data={requests}
+              onFetch={fetchRequestsForExport}
+              handleExportAll={handleExportAllRequests}
+              exportLoading={exportLoading}
               dateKey="created_at"
               fileName={auth.username}
-              columns={[
-                { key: "request_no", label: "درخواست نمبر", format: (v) => (v ? v : "—") },
-                { key: "item_type", label: "نوع", format: (v) => (v ? v : "—") },
-                { key: "requested_by_name", label: "درخواست کنندہ", format: (v) => (v ? v : "—") },
-                { key: "created_at", label: "درخواست کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"), },
-                { key: "approved_at", label: "منظوری کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"), },
-                { key: "fulfilled_at", label: "تکمیل کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—"), },
-                { key: "status", label: "حالت", format: (v) => (v ? v : "—") },
-              ]}
+              columns={subStoreManagerColumns}
               pageLoading={loading}
             />
           </div>

@@ -19,6 +19,8 @@ import CheckLoadingAndError from "../CheckLoadingAndError";
 import RequestRow from "../RequestRow";
 import GRNModal from "../Modals/GRNModal"
 import CreateRequestModal from "../Modals/CreateRequestModal";
+import { buildAndDownloadExcel } from "../../services/useExcelExport";
+import { mainReqToHOColumns } from "../../services/columnsForExcel";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -78,6 +80,7 @@ export default function MainReqToHO({ showToast }) {
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [reusableItems, setReusableItems] = useState([]);
   const [usableItems, setUsableItems] = useState([]);
   const [pagination, setPagination] = useState({
@@ -292,7 +295,7 @@ export default function MainReqToHO({ showToast }) {
     )
       return showToast("آئٹم کی تفصیلات چیک کریں۔", "error");
 
-      const mergedLines = mergeDuplicateLines(itemLines);
+    const mergedLines = mergeDuplicateLines(itemLines);
 
     setCreating(true);
     try {
@@ -344,6 +347,44 @@ export default function MainReqToHO({ showToast }) {
     }
   };
 
+  const buildBaseParams = () => {
+    const params = {
+      direction: ["MAIN_TO_HO", "MAIN_TO_PCASH"],
+      priority_status: "FULFILLED",
+    };
+    if (filterStatus) params.status = filterStatus;
+    if (auth.role !== "super admin") {
+      params.store_id = auth.store_id;
+    } else if (filterStore) {
+      params.store_id = filterStore;
+    }
+    return params;
+  };
+
+  const fetchRequestsForExport = async (fromDate, toDate) => {
+    const rRes = await getRequests({
+      ...buildBaseParams(),
+      from_date: fromDate,
+      to_date: toDate,
+    });
+    return rRes.data.data;
+
+  };
+
+  const handleExportAllRequests = async () => {
+    setExportLoading(true);
+    try {
+      const rRes = await getRequests(buildBaseParams());
+      buildAndDownloadExcel(rRes.data.data, mainReqToHOColumns, `${auth.username}'s All Requests`);
+    } catch (err) {
+      const msg = handleError(err, "Failed to export all requests");
+      showToast(msg, "error");
+      return [];
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   const pendingGRN = requests.filter(
     (r) => r.status === "FULFILLED" && !r.grn_at,
   ).length;
@@ -390,6 +431,7 @@ export default function MainReqToHO({ showToast }) {
         <div>
           <div className="flex gap-2">
             <input
+              dir="ltr"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -423,6 +465,7 @@ export default function MainReqToHO({ showToast }) {
             )}
           </div>
           <button
+            dir="ltr"
             onClick={() => {
               load();
               setPage(1);
@@ -437,29 +480,12 @@ export default function MainReqToHO({ showToast }) {
           {/* Excel specific Date Downloader */}
           <div className="downloader">
             <ExcelDownloaderWithDates
-              data={requests}
+              onFetch={fetchRequestsForExport}
+              handleExportAll={handleExportAllRequests}
+              exportLoading={exportLoading}
               dateKey="created_at"
-              fileName={auth.username}
-              columns={[
-                { key: "request_no", label: "درخواست نمبر", format: (v) => (v ? v : "—") },
-                { key: "requested_by_name", label: "درخواست کنندہ", format: (v) => (v ? v : "—") },
-                {
-                  key: "created_at",
-                  label: "درخواست کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                {
-                  key: "approved_at",
-                  label: "منظوری کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                {
-                  key: "fulfilled_at",
-                  label: " تکمیل کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                { key: "status", label: "حالت", format: (v) => (v ? v : "—") },
-              ]}
+              fileName={`${auth.username}'s Requests`}
+              columns={mainReqToHOColumns}
               pageLoading={pageLoading}
             />
           </div>

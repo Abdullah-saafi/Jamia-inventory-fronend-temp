@@ -7,7 +7,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import TableHead from "../TableHead";
 import { ITEM_CONDITIONS } from "../../services/constants";
 import { useNavigate } from "react-router-dom";
-import { mainAllItemsColumn } from "../../services/columnsForExcel";
+import { mainAllItemsColumns } from "../../services/columnsForExcel";
 
 export default function MainAllItems({
   allItems,
@@ -205,6 +205,7 @@ export default function MainAllItems({
             )}
           </div>
           <button
+          dir="ltr"
             onClick={() => {
               onRefresh();
               setCurrentPage(1);
@@ -221,7 +222,7 @@ export default function MainAllItems({
             handleExportAll={handleExportAll}
             dateKey="created_at"
             fileName={auth.username}
-            columns={mainAllItemsColumn}
+            columns={mainAllItemsColumns}
             pageLoading={loading}
             exportLoading={exportLoading}
           />

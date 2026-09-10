@@ -66,12 +66,10 @@ const ApproveRejectModal = ({
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b border-gray-200 text-gray-400 text-xs">
-                                        <th className="text-left pb-2">آئٹم</th>
+                                        <th className="text-right pb-2">آئٹم</th>
                                         <th className="text-center pb-2">درخواست کردہ</th>
                                         <th className="text-center pb-2">منظور شدہ مقدار</th>
-                                        {editedItems.length > 1 && (
-                                            <th className="text-center pb-2">عملیات</th>
-                                        )}
+                                        <th className="text-center pb-2">عملیات</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -122,7 +120,7 @@ const ApproveRejectModal = ({
                                                         className="w-20 bg-gray-50 border border-gray-300 rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none focus:border-emerald-500"
                                                     />
                                                 </td>
-                                                <td className="text-center">
+                                                <td className="text-center flex gap-2 items-center py-3 justify-center">
                                                     <button
                                                         onClick={() => {
                                                             openHistory(i.item_no)
@@ -132,9 +130,7 @@ const ApproveRejectModal = ({
                                                     >
                                                         {historyLoading === i.item_no ? "..." : "ہسٹری"}
                                                     </button>
-                                                </td>
-                                                {editedItems.length > 1 && (
-                                                    <td className="text-center">
+                                                    {editedItems.length > 1 && (
                                                         <button
                                                             onClick={() => rejectItem(i.request_id, i.request_item_id)}
                                                             disabled={rejectSpecificItem === i.request_item_id}
@@ -142,8 +138,8 @@ const ApproveRejectModal = ({
                                                         >
                                                             {rejectSpecificItem === i.request_item_id ? "..." : "مسترد"}
                                                         </button>
-                                                    </td>
-                                                )}
+                                                    )}
+                                                </td>
                                             </tr>
                                         ))
                                     )}

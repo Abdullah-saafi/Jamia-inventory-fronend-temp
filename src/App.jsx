@@ -21,6 +21,7 @@ import EditStore from "./components/Admin/Stores/EditStore";
 import AddItemsAndCategories from "./components/Admin/ItemsAndCategories/AddItemsAndCategories";
 import { ToastProvider } from "./context/ToastContext";
 import EditItems from "./components/Admin/ItemsAndCategories/EditItems";
+import PageFooter from "./components/Footer";
 
 export default function App() {
   return (
@@ -29,7 +30,7 @@ export default function App() {
         <ToastProvider>
           <div className="h-screen w-screen overflow-x-hidden bg-gray-50 text-gray-900 flex flex-col">
             <Navbar />
-            <main className="h-full w-full pt-6 px-30">
+            <main className="flex-1 w-full py-6 px-30">
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
@@ -117,7 +118,7 @@ export default function App() {
                     <Route path="all-users" element={<AllUsersTab />} />
                     <Route path="all-stores" element={<AllStoresTab />} />
                     <Route path="items-and-categories" element={<AddItemsAndCategories />} />
-                    <Route path="item/:id" element={<EditItems/>}/>
+                    <Route path="item/:id" element={<EditItems />} />
                   </Route>
                 </Route>
 
@@ -126,6 +127,7 @@ export default function App() {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
+            <PageFooter />
           </div>
         </ToastProvider>
       </ContextProvider>

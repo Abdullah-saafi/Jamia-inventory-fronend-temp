@@ -15,7 +15,7 @@ import useErrorHandler from "../components/useErrorHandler";
 import BlockedUI from "../components/BlockedUI";
 import { useToast } from "../context/ToastContext";
 import { buildAndDownloadExcel } from "../services/useExcelExport";
-import { mainAllItemsColumn } from "../services/columnsForExcel";
+import { mainAllItemsColumns, mainSubStoreReqsColumns } from "../services/columnsForExcel";
 
 const TABS = [
   { id: "items", label: "تمام اشیاء" },
@@ -167,10 +167,49 @@ export default function MainStore() {
     setExportLoading(true);
     try {
       const res = await getItems({ to_store_id: auth.store_id });
-      buildAndDownloadExcel(res.data.data, mainAllItemsColumn, `${auth.username} All Items`);
+      buildAndDownloadExcel(res.data.data, mainAllItemsColumns, `${auth.username} All Items`);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
       showToast(msg, "error");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const buildBaseParams = () => {
+    const params = {
+      direction: "SUB_TO_MAIN",
+      priority_status: "APPROVED"
+
+    };
+    if (requestStatusFilter) params.status = requestStatusFilter;
+    if (auth.role !== "super admin") {
+      params.store_id = auth.store_id;
+    } else if (filterStore) {
+      params.store_id = filterStore;
+    }
+    return params;
+  };
+
+  const fetchRequestsForExport = async (fromDate, toDate) => {
+    const rRes = await getRequests({
+      ...buildBaseParams(),
+      from_date: fromDate,
+      to_date: toDate,
+    });
+    return rRes.data.data;
+
+  };
+
+  const handleExportAllRequests = async () => {
+    setExportLoading(true);
+    try {
+      const rRes = await getRequests(buildBaseParams());
+      buildAndDownloadExcel(rRes.data.data, mainSubStoreReqsColumns, `${auth.username} All Requests`);
+    } catch (err) {
+      const msg = handleError(err, "Failed to export all requests");
+      showToast(msg, "error");
+      return [];
     } finally {
       setExportLoading(false);
     }
@@ -293,6 +332,9 @@ export default function MainStore() {
           setDebouncedSearch={setRequestDebouncedSearch}
           setSearch={setRequestSearch}
           search={requestSearch}
+          fetchRequestsForExport={fetchRequestsForExport}
+          handleExportAllRequests={handleExportAllRequests}
+          exportLoading={exportLoading}
         />
       )}
 

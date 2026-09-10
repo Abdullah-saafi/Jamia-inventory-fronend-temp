@@ -16,13 +16,15 @@ import RequestDashboard from "../components/RequestDashboard";
 import StoreFilters from "../components/StoreFilters";
 import TableHead from "../components/TableHead";
 import RequestRow from "../components/RequestRow";
+import { pettyCashColumns } from "../services/columnsForExcel";
+import { buildAndDownloadExcel } from "../services/useExcelExport";
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function PettyCash() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filter, setFilter] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [detail, setDetail] = useState(null);
@@ -34,6 +36,7 @@ export default function PettyCash() {
   const [referenceNo, setReferenceNo] = useState("");
   const [requestNo, setRequestNo] = useState(null);
   const [fulfilling, setFulfilling] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     pageLimit: 10,
@@ -53,12 +56,13 @@ export default function PettyCash() {
     try {
       const params = {
         direction: "MAIN_TO_PCASH",
+        priority_status: "APPROVED",
         page,
         limit: pageSize,
         search: debouncedSearch,
         emergency: isEmergency || undefined,
       };
-      if (filter) params.status = filter;
+      if (filterStatus) params.status = filterStatus;
       const r = await getRequests(params);
 
       setRequests(r.data.data);
@@ -79,7 +83,7 @@ export default function PettyCash() {
 
   useEffect(() => {
     load();
-  }, [filter, page, pageSize, debouncedSearch, isEmergency]);
+  }, [filterStatus, page, pageSize, debouncedSearch, isEmergency]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 500);
@@ -125,6 +129,44 @@ export default function PettyCash() {
     load();
   };
 
+  const buildBaseParams = () => {
+    const params = {
+      direction: "MAIN_TO_PCASH",
+      priority_status: "PENDING",
+    };
+    if (filterStatus) params.status = filterStatus;
+    if (auth.role !== "super admin") {
+      params.store_id = auth.store_id;
+    } else if (filterStore) {
+      params.store_id = filterStore;
+    }
+    return params;
+  };
+
+  const fetchRequestsForExport = async (fromDate, toDate) => {
+    const rRes = await getRequests({
+      ...buildBaseParams(),
+      from_date: fromDate,
+      to_date: toDate,
+    });
+    return rRes.data.data;
+
+  };
+
+  const handleExportAllRequests = async () => {
+    setExportLoading(true);
+    try {
+      const rRes = await getRequests(buildBaseParams());
+      buildAndDownloadExcel(rRes.data.data, pettyCashColumns, `${auth.username} All Requests`);
+    } catch (err) {
+      const msg = handleError(err, "Failed to export all requests");
+      showToast(msg, "error");
+      return [];
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   const pendingFulfill = requests.filter((r) => r.status === "APPROVED").length;
   const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
   const emergencyRequest = requests.filter((r) => r.is_emergency === true && r.status === "APPROVED").length
@@ -148,8 +190,8 @@ export default function PettyCash() {
       {/* ── Alert banners ── */}
       <RequestDashboard
         pageType={pageType}
-        setFilterStatus={setFilter}
-        filterStatus={filter}
+        setFilterStatus={setFilterStatus}
+        filterStatus={filterStatus}
         counts={{
           pending: pendingFulfill,
           returnBack: 0,
@@ -166,6 +208,7 @@ export default function PettyCash() {
         <div>
           <div className="flex gap-2">
             <input
+              dir="ltr"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -176,18 +219,18 @@ export default function PettyCash() {
               className="bg-white border leading-none border-gray-300 rounded px-3 h-7.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-52 shadow-sm"
             />
             <StoreFilters
-              filterStatus={filter}
+              filterStatus={filterStatus}
               setFilterStatus={(v) => {
-                setFilter(v)
+                setFilterStatus(v)
                 setPage(1)
               }}
               pageType={pageType}
             />
-            {(search || filter || isEmergency) && (
+            {(search || filterStatus || isEmergency) && (
               <button
                 onClick={() => {
                   setSearch("");
-                  setFilter("");
+                  setFilterStatus("");
                   setPage(1);
                   setDebouncedSearch("")
                   setIsEmergency(false)
@@ -199,6 +242,7 @@ export default function PettyCash() {
             )}
           </div>
           <button
+          dir="ltr"
             onClick={() => {
               setPage(1);
               load();
@@ -213,30 +257,12 @@ export default function PettyCash() {
           {/* Excel specific Date Downloader */}
           <div className="downloader">
             <ExcelDownloaderWithDates
-              data={requests}
+              onFetch={fetchRequestsForExport}
+              handleExportAll={handleExportAllRequests}
+              exportLoading={exportLoading}
               dateKey="created_at"
               fileName={auth.username}
-              columns={[
-                { key: "request_no", label: "درخواست نمبر", format: (v) => (v ? v : "—") },
-                { key: "requested_by_name", label: "درخواست کنندہ", format: (v) => (v ? v : "—") },
-                { key: "fulfilled_by_name", label: "مکمل کرنے والا", format: (v) => (v ? v : "—") },
-                {
-                  key: "created_at",
-                  label: "درخواست کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                {
-                  key: "approved_at",
-                  label: "منظوری کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                {
-                  key: "fulfilled_at",
-                  label: "تکمیل کی تاریخ",
-                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                },
-                { key: "status", label: "حالت", format: (v) => (v ? v : "—") },
-              ]}
+              columns={pettyCashColumns}
               pageLoading={loading}
             />
           </div>

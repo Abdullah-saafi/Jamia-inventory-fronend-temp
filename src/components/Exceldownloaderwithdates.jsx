@@ -27,6 +27,7 @@ export default function c({
   pageLoading,
   exportLoading,
   handleExportAll,
+  pageType,
 }) {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -53,7 +54,7 @@ export default function c({
 
       if (typeof onFetch === "function") {
         // Let the parent fetch from API with date params
-        rows = await onFetch(fromDate, toDate);
+        rows = await onFetch(fromDate, toDate, pageType);
       } else {
         // Filter local data by date range
         const [fy, fm, fd] = fromDate.split("-").map(Number);
@@ -205,7 +206,7 @@ export default function c({
 
         <button
           dir="ltr"
-          onClick={handleExportAll}
+          onClick={() => handleExportAll(pageType)}
           disabled={loading || pageLoading || exportLoading}
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold
                    rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white

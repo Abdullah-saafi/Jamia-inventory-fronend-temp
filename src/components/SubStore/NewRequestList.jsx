@@ -13,7 +13,7 @@ import RequestRow from "../RequestRow";
 import TableHead from "../TableHead";
 import CheckLoadingAndError from "../CheckLoadingAndError";
 import RequestDashboard from "../RequestDashboard";
-import { newRequestListColumn } from "../../services/columnsForExcel";
+import { newRequestListColumns } from "../../services/columnsForExcel";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -56,11 +56,6 @@ const mergeDuplicateLines = (lines) => {
 };
 
 export default function NewRequestList({ fetchRequestsForExport, handleExportAllRequests, exportLoading, setFilterStatusForSubStore }) {
-  const { auth } = useAuth();
-  const { showToast } = useToast();
-  const handleError = useErrorHandler();
-  const { subStores, mainStores } = useStores();
-  const pageType = "subStore";
 
   const [requests, setRequests] = useState([]);
   const [allRequests, setAllRequests] = useState([]);
@@ -92,6 +87,12 @@ export default function NewRequestList({ fetchRequestsForExport, handleExportAll
     hasNextPage: false,
     hasPrevPage: false,
   });
+
+  const { auth } = useAuth();
+  const { showToast } = useToast();
+  const handleError = useErrorHandler();
+  const { subStores, mainStores } = useStores();
+  const pageType = "subStore";
 
   const duplicateItemIds = useMemo(() => {
     const counts = {};
@@ -395,6 +396,7 @@ export default function NewRequestList({ fetchRequestsForExport, handleExportAll
         <div className="Filter">
           <div className="flex gap-2">
             <input
+              dir="ltr"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -437,6 +439,7 @@ export default function NewRequestList({ fetchRequestsForExport, handleExportAll
             )}
           </div>
           <button
+            dir="ltr"
             onClick={() => {
               load();
               fetchStoreData();
@@ -451,13 +454,13 @@ export default function NewRequestList({ fetchRequestsForExport, handleExportAll
         <div className="Temp-downloader flex justify-center items-center gap-4">
           <div>
             <ExcelDownloaderWithDates
+              pageType={pageType}
               onFetch={fetchRequestsForExport}
               handleExportAll={handleExportAllRequests}
               exportLoading={exportLoading}
-              data={requests}
               dateKey="created_at"
               fileName={auth.username}
-              columns={newRequestListColumn}
+              columns={newRequestListColumns}
               pageLoading={pageLoading}
             />
           </div>
