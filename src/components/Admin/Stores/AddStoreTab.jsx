@@ -76,8 +76,9 @@ export default function AddStoreTab() {
           <div className="grid grid-cols-2 gap-3 items-end">
             {/* Store Name Field */}
             <div>
-              <label className={labelClass}>اسٹور کا نام *</label>
+              <label className={labelClass}>اسٹور کا نام</label>
               <input
+                dir="ltr"
                 name="store_name"
                 value={form.store_name}
                 onChange={handleChange}
@@ -167,10 +168,11 @@ export default function AddStoreTab() {
           <div>
             <label className={labelClass}>پتہ</label>
             <input
+              dir="ltr"
               name="address"
               value={form.address}
               onChange={handleChange}
-              placeholder="e.g. Block 5, Karachi"
+              placeholder=""
               className={inputClass}
             />
           </div>

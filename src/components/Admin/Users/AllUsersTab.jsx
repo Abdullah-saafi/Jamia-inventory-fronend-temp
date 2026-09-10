@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
-import { getUsers, userStatus } from "../../../services/api";
+import { useState, useEffect, useRef } from "react";
+import { deleteUser, getUsers, userStatus } from "../../../services/api";
 import { ROLES, ROLE_LABELS } from "../../../services/constants";
 import useErrorHandler from "../../useErrorHandler";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import Pagination from "../../Pagination";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import CheckLoadingAndError from "../../CheckLoadingAndError";
+import ConfirmDeleteModal from "../../Modals/ConfirmDeleteModal";
 
 export default function AllUsersTab() {
   const [users, setUsers] = useState([]);
@@ -19,19 +20,23 @@ export default function AllUsersTab() {
   const [showStoreTypeDropdown, setShowStoreTypeDropdown] = useState(false);
   const [showStoreDropdown, setShowStoreDropdown] = useState(false);
   const [pageSize, setPageSize] = useState(10);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [deleteUserLoading, setDeleteUserLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  const deleteResolveRef = useRef(null);
   const handleError = useErrorHandler();
   const navigate = useNavigate();
 
   const { showToast } = useOutletContext();
-  
+
   const loadUsers = async () => {
     try {
       setLoading(true);
       const response = await getUsers({
         page,
         limit: pageSize,
-        search,
+        search: debouncedSearch,
         role: roleFilter,
         store: storeFilter,
       });
@@ -47,11 +52,16 @@ export default function AllUsersTab() {
 
   useEffect(() => {
     loadUsers();
-  }, [page, pageSize, search, roleFilter, storeFilter]);
+  }, [page, pageSize, debouncedSearch, roleFilter, storeFilter]);
 
   useEffect(() => {
     setPage(1);
-  }, [search, roleFilter, storeFilter]);
+  }, [debouncedSearch, roleFilter, storeFilter]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const handleAction = async (id, currentStatus) => {
     try {
@@ -70,17 +80,42 @@ export default function AllUsersTab() {
     }
   };
 
+  const handleDeleteUser = async (id) => {
+    setDeleteUserLoading(true)
+    setShowDeleteModal(true)
+    const confirmed = await new Promise((resolve) => {
+      deleteResolveRef.current = resolve
+    })
+    if (!confirmed) {
+      setDeleteUserLoading(false)
+      deleteResolveRef.current = null
+      return
+    }
+    try {
+      const res = await deleteUser({ id })
+      loadUsers()
+      showToast(res.data.message, "success")
+    } catch (error) {
+      const msg = handleError(error, "صارف ڈیلیٹ نہیں ہو سکا۔");
+      showToast(msg, "error");
+    } finally {
+      setDeleteUserLoading(false)
+      deleteResolveRef.current = null
+    }
+  }
+
   const uniqueStoreNames = [
     ...new Set(users.map((u) => u.store_name).filter(Boolean)),
   ].sort();
 
-  const hasFilters = search || roleFilter || storeFilter;
+  const hasFilters = debouncedSearch || roleFilter || storeFilter;
 
   return (
     <div>
       {/* Filter Bar */}
       <div className="flex flex-wrap gap-2 mb-4">
         <input
+          dir="ltr"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="نام یا ای میل سے تلاش کریں..."
@@ -213,6 +248,7 @@ export default function AllUsersTab() {
               setSearch("");
               setRoleFilter("");
               setStoreFilter("");
+              setDebouncedSearch("");
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50"
           >
@@ -251,7 +287,7 @@ export default function AllUsersTab() {
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white">
             {(loading || error || users.length === 0) ? (
               <CheckLoadingAndError
                 loading={loading}
@@ -276,7 +312,7 @@ export default function AllUsersTab() {
                   <td className="px-4 py-3 text-gray-700 text-xs">
                     {u.store_name || "—"}
                   </td>
-                  <td className="px-4 py-3 text-gray-700 text-xs">
+                  <td dir="ltr" className="px-4 py-3 text-gray-700 text-xs">
                     {u.phone_no ? `+92-${u.phone_no}` : "—"}
                   </td>
                   <td className="px-4 py-3">
@@ -289,7 +325,7 @@ export default function AllUsersTab() {
                   <td className="px-4 py-3 text-gray-700 text-[10px]">
                     {new Date(u.created_at).toLocaleDateString()}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="py-3 flex justify-center items-center">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleAction(u.id, u.is_active)}
@@ -310,6 +346,15 @@ export default function AllUsersTab() {
                       >
                         ترمیم کریں
                       </button>
+                      <button
+                        className="text-[10px] uppercase font-bold text-black/80  border border-red-300 bg-red-500/80 rounded px-3 py-1 hover:bg-red-500"
+                        onClick={() => {
+                          handleDeleteUser(u.id)
+                        }}
+                        disabled={deleteUserLoading}
+                      >
+                        ڈیلیٹ
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -325,6 +370,12 @@ export default function AllUsersTab() {
           pageSizeOptions={[10, 25, 50]}
           onPageSizeChange={setPageSize}
         />
+        {deleteUserLoading && (
+          <ConfirmDeleteModal
+            onConfirm={() => deleteResolveRef.current?.(true)}
+            onCancel={() => deleteResolveRef.current?.(false)}
+          />
+        )}
       </div>
     </div>
   );

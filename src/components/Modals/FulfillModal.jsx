@@ -1,3 +1,5 @@
+import TableHead from "../TableHead"
+
 const FulfillModal = ({
     pageType,
     setFulfillForm,
@@ -9,7 +11,8 @@ const FulfillModal = ({
     handleFulfill,
     fulfilling,
     EMPTY_FULFILL_FORM,
-
+    onCancel,
+    onConfirm,
 }) => {
 
     {/* ══════════════════════════════════════════════════════════
@@ -186,6 +189,164 @@ const FulfillModal = ({
                                     ? "جاری ہے..."
                                     : "تکمیل کی تصدیق کریں"}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+
+    {/* ══════════════════════════════════════════════════════════
+              Main Store Fulfill Modal
+        ══════════════════════════════════════════════════════════ */}
+
+    if (pageType === "mainSubStoreReqs")
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div
+                    className="absolute inset-0 bg-black/30"
+                    onClick={
+                        onCancel
+                        // setFulfillForm({ ...EMPTY_FULFILL_FORM })
+                    }
+                />
+                <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
+                    <div
+                        className="fixed inset-0 bg-black/30 cursor-pointer"
+                        onClick={onCancel}
+                    />
+
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col relative z-10">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
+                            <div>
+                                <h3 className="font-bold text-gray-800">
+                                    آئٹم واپس کریں
+                                </h3>
+
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                    مرکزی اسٹور کو واپس بھیجنے کے لیے مقدار درج کریں
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={onCancel}
+                                className="text-gray-400 hover:text-gray-700 text-2xl leading-none cursor-pointer"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        {/* Table */}
+                        <div className="flex-1 overflow-y-auto text-center">
+                            <table className="w-full text-sm">
+                                [
+                                "درخواست کنندہ",
+                                "منظور کنندہ",
+                                "مکمل کرنے والا",
+                                "حالت",
+                                "عملیات",
+                                ],
+                                <thead>
+                                    <tr className="bg-gray-50 border-b border-gray-200">
+                                        <th className="px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider">
+                                            درخواست نمبر
+                                        </th>
+                                        <th className="px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider">
+                                            اسٹور سے
+                                        </th>
+                                        <th className="px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider">
+                                            مرکزی اسٹور کو
+
+                                        </th>
+                                        <th className="px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider">
+                                            درخواست کی تاریخ
+                                        </th>
+                                        <th className="px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider">
+                                            تکمیل کی تاریخ
+                                        </th>
+                                        <th className="px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider">
+                                        </th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {!pageType ? (
+                                        // <CheckLoadingAndError
+                                        //     loading={itemLoading}
+                                        //     requests={allItems}
+                                        //     pageType={pageType}
+                                        // />
+                                        <h1>wait bradar</h1>
+                                    ) : (
+                                        // allItems.map((item) => (
+                                        <tr
+                                            // key={item.item_id}
+                                            className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                                        >
+                                            <td className="px-4 py-3 whitespace-nowrap">
+                                                <span className="font-mono text-emerald-600 text-xs">
+                                                    {/* {item.item_no} */}
+                                                    123
+                                                </span>
+                                            </td>
+
+                                            <td className="px-4 py-3">
+                                                <div className="font-semibold text-gray-800 whitespace-nowrap">
+                                                    {/* {item.item_name} */}
+                                                    biscuit
+                                                </div>
+
+                                                <div
+                                                    className="font-semibold text-xs text-gray-800 whitespace-nowrap"
+                                                    dir="rtl"
+                                                >
+                                                    {/* ({item.item_name_urdu}) */}
+                                                    buscuit
+                                                </div>
+                                            </td>
+
+                                            <td className="px-4 py-3 text-xs text-gray-500">
+                                                {/* {item.item_type || "—"} */}
+                                                khane wali
+                                            </td>
+
+                                            <td className="px-4 py-3 text-xs text-gray-500">
+                                                {/* {item.item_uom || "—"} */}
+                                                packt
+                                            </td>
+
+                                            <td className="px-4 py-3 font-mono font-bold text-emerald-600">
+                                                {/* {Number(item.item_quantity)} */}
+                                                10
+                                            </td>
+                                        </tr>
+                                        // ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="border-t border-zinc-200 px-6 py-4 space-y-3">
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={onCancel}
+                                    className="flex-1 text-gray-500 text-sm py-2 border border-gray-300 rounded hover:bg-gray-50"
+                                >
+                                    منسوخ کریں
+                                </button>
+
+                                <button
+                                    onClick={onConfirm}
+                                    // disabled={returnBackSubmitting}
+                                    className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-sm font-semibold py-2 rounded transition-colors"
+                                >
+                                    {/* {returnBackSubmitting
+                                ? "بھیج رہے ہیں..."
+                                : "واپس بھیجیں"} */}
+                                    aaaa
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -23,6 +23,8 @@ export default function RequestRow({
   username,
   setFulfillModal,
   setRequestNo,
+  setCustomDate,
+  customDate
 }) {
   const isExpanded = detail && detail.request_id === r.request_id;
   const needsGRN = r.status === "FULFILLED" && !r.grn_at;
@@ -37,6 +39,7 @@ export default function RequestRow({
   return (
     <>
       <tr
+        key={r.request_no}
         className={`border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-100 ${needsGRN
           ? "bg-blue-50/40 hover:bg-blue-50"
           : isDisputed
@@ -108,7 +111,9 @@ export default function RequestRow({
         {pageType === "mainSubStoreReqs" && (
           <>
             <td className="px-4 py-3">
-              <DateTimeCell ts={r.fulfilled_at} />
+              {r.fulfilled_at ? <DateTimeCell ts={r.fulfilled_at} /> :
+                <input className="text-xs text-gray-700 bg-white border border-gray-300 rounded-md  px-2.5 py-1 shadow-sm transition-all outline-none cursor-pointer focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 hover:border-gray-400 scheme-light"
+                  onClick={(e) => e.stopPropagation()} value={customDate} onChange={(e) => setCustomDate(e.target.value)} type="datetime-local" />}
             </td>
           </>
         )}

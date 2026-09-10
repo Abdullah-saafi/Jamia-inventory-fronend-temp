@@ -74,3 +74,21 @@ export function useExcelExport() {
 
   return { exportToExcel, exporting };
 }
+
+export function buildAndDownloadExcel(rows, columns, fileName, sheetName = "Sheet1") {
+  const headers = columns.map((c) => c.label ?? c.key);
+  const body = rows.map((row) =>
+    columns.map((c) => {
+      const val = c.key in row ? row[c.key] : "";
+      return typeof c.format === "function" ? c.format(val, row) : (val ?? "");
+    })
+  );
+  const sheetData = [headers, ...body];
+  const ws = XLSX.utils.aoa_to_sheet(sheetData);
+  ws["!cols"] = sheetData[0].map((_, ci) => ({
+    wch: Math.min(40, Math.max(12, ...sheetData.map((r) => String(r[ci] ?? "").length))),
+  }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.writeFile(wb, `${fileName}.xlsx`);
+}

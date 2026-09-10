@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { STORE_TYPE_LABELS, STORES } from "../../../services/constants";
 import useErrorHandler from "../../useErrorHandler";
-import { getStores, storeStatus } from "../../../services/api";
+import { deleteStore, getStores, storeStatus } from "../../../services/api";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import Pagination from "../../Pagination";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import CheckLoadingAndError from "../../CheckLoadingAndError";
+import ConfirmDeleteModal from "../../Modals/ConfirmDeleteModal";
 
 export default function AllStoresTab() {
 
@@ -20,7 +21,11 @@ export default function AllStoresTab() {
   const [pageSize, setPageSize] = useState(10);
   const [showStoreDropdown, setShowStoreDropdown] = useState(false);
   const [totalItems, setTotalItems] = useState(0);
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [deleteStoreLoading, setDeleteStoreLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  const deleteResolveRef = useRef(null);
   const handleError = useErrorHandler();
   const navigate = useNavigate();
 
@@ -30,7 +35,7 @@ export default function AllStoresTab() {
 
       const response = await getStores({
         all: true,
-        search,
+        search: debouncedSearch,
         type: typeFilter,
         page,
         limit: pageSize,
@@ -40,20 +45,52 @@ export default function AllStoresTab() {
       setTotalItems(response.data.total || 0);
 
     } catch (error) {
-      const msg = handleError(error, "Failed to load stores");
+      const msg = handleError(error, "اسٹورز لوڈ نہیں ہو سکے۔");
       setError(msg);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDeleteStore = async (id) => {
+    setDeleteStoreLoading(true)
+    setShowDeleteModal(true)
+    const confirmed = await new Promise((resolve) => {
+      deleteResolveRef.current = resolve
+    })
+    setShowDeleteModal(false)
+    if (!confirmed) {
+      setDeleteStoreLoading(false)
+      deleteResolveRef.current = null
+      return
+    }
+    try {
+      const res = await deleteStore({ store_id: id })
+      showToast(res.data.message, "success")
+      loadStores()
+    } catch (error) {
+      const msg = handleError(error, "اسٹور ڈیلیٹ نہیں ہو سکا۔");
+      showToast(msg, "error");
+    } finally {
+      setDeleteStoreLoading(false)
+      deleteResolveRef.current = null
+
+    }
+  }
+
   useEffect(() => {
     loadStores();
-  }, [page, pageSize, search, typeFilter]);
+  }, [page, pageSize, debouncedSearch, typeFilter]);
 
   useEffect(() => {
     setPage(1);
-  }, [search, typeFilter]);
+  }, [debouncedSearch, typeFilter]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
 
   const handleAction = async (id, currentStatus) => {
     try {
@@ -80,6 +117,7 @@ export default function AllStoresTab() {
     <div className="animate-in fade-in duration-500">
       <div className="flex flex-wrap gap-2 mb-4">
         <input
+          dir="ltr"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="نام یا کوڈ سے تلاش کریں..."
@@ -143,6 +181,7 @@ export default function AllStoresTab() {
             onClick={() => {
               setSearch("");
               setTypeFilter("");
+              setDebouncedSearch("");
             }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50"
           >
@@ -178,14 +217,14 @@ export default function AllStoresTab() {
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white">
             {(loading || error || stores.length === 0) ? (
               <CheckLoadingAndError
                 loading={loading}
                 error={error}
                 requests={stores}
               />
-            ): (
+            ) : (
               stores.map((s) => (
                 <tr
                   key={s.store_id}
@@ -220,7 +259,7 @@ export default function AllStoresTab() {
                       {s.is_active ? "فعال" : "غیر فعال"}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 flex justify-center items-center gap-2">
                     <button
                       onClick={() => handleAction(s.store_id, s.is_active)}
                       disabled={loading}
@@ -236,6 +275,15 @@ export default function AllStoresTab() {
                       }}
                     >
                       ترمیم کریں
+                    </button>
+                    <button
+                      className="text-[10px] uppercase font-bold text-black/80  border border-red-300 bg-red-500/80 rounded px-3 py-1 hover:bg-red-500"
+                      onClick={() => {
+                        handleDeleteStore(s.store_id)
+                      }}
+                      disabled={deleteStoreLoading}
+                    >
+                      ڈیلیٹ
                     </button>
                   </td>
                 </tr>
@@ -254,6 +302,12 @@ export default function AllStoresTab() {
             setPage(1);
           }}
         />
+        {showDeleteModal && (
+          <ConfirmDeleteModal
+            onConfirm={() => deleteResolveRef.current?.(true)}
+            onCancel={() => deleteResolveRef.current?.(false)}
+          />
+        )}
       </div>
     </div>
   );

@@ -24,14 +24,16 @@ export default function c({
   columns,
   buttonLabel = "Export Excel",
   onFetch,
-  pageLoading
+  pageLoading,
+  exportLoading,
+  handleExportAll,
 }) {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const {showToast} = useToast()
+  const { showToast } = useToast()
 
   const handleExport = async () => {
     setError("");
@@ -117,92 +119,115 @@ export default function c({
     }
   };
 
+  
+
   return (
-    <div className="flex flex-wrap items-end gap-3 p-3 ml-1 bg-gray-50 border border-gray-200 rounded-xl">
-      {/* From Date */}
-      <div className="flex flex-col gap-1">
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          From
-        </label>
-        <input
-          type="date"
-          value={fromDate}
-          onChange={(e) => {
-            setFromDate(e.target.value);
-            setError("");
-          }}
-          className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white
+    <div className="flex flex-col flex-wrap items-end gap-3 p-3 ml-1 bg-gray-50 border border-gray-200 rounded-xl">
+      <div className="flex gap-4">
+        {/* From Date */}
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            From
+          </label>
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => {
+              setFromDate(e.target.value);
+              setError("");
+            }}
+            className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white
                      focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent
                      cursor-pointer"
-        />
-      </div>
+          />
+        </div>
 
-      {/* To Date */}
-      <div className="flex flex-col gap-1">
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          To
-        </label>
-        <input
-          type="date"
-          value={toDate}
-          onChange={(e) => {
-            setToDate(e.target.value);
-            setError("");
-          }}
-          className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white
+        {/* To Date */}
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            To
+          </label>
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => {
+              setToDate(e.target.value);
+              setError("");
+            }}
+            className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white
                      focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent
                      cursor-pointer"
-        />
-      </div>
+          />
+        </div>
 
-      {/* Quick range shortcuts */}
-      <div className="flex flex-col gap-1">
-        <div className="flex gap-1">
-          {[{ label: "30 days", days: 30 }].map(({ label, days }) => (
-            <button
-              key={label}
-              onClick={() => {
-                const to = new Date();
-                const from = new Date();
-                from.setDate(from.getDate() - days);
-                setFromDate(from.toISOString().slice(0, 10));
-                setToDate(to.toISOString().slice(0, 10));
-                setError("");
-              }}
-              className="px-2 py-2 text-xs bg-white border border-gray-300 rounded-lg
+        {/* Quick range shortcuts */}
+        <div className="flex flex-col justify-end gap-1">
+          <div dir="ltr" className="flex gap-1">
+            {[{ label: "30 days", days: 30 }].map(({ label, days }) => (
+              <button
+                key={label}
+                onClick={() => {
+                  const to = new Date();
+                  const from = new Date();
+                  from.setDate(from.getDate() - days);
+                  setFromDate(from.toISOString().slice(0, 10));
+                  setToDate(to.toISOString().slice(0, 10));
+                  setError("");
+                }}
+                className="px-2 py-2 text-xs bg-white border border-gray-300 rounded-lg
                          hover:bg-emerald-50 hover:border-emerald-400 hover:text-emerald-700
                          transition-colors font-medium"
-            >
-              {label}
-            </button>
-          ))}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Export button */}
-      <button
-        onClick={handleExport}
-        disabled={loading || pageLoading}
-        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold
+        {/* Export button */}
+        <button
+          dir="ltr"
+          onClick={handleExport}
+          disabled={loading || pageLoading || exportLoading}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold
+                   rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white
+                   transition-colors disabled:opacity-60 disabled:cursor-not-allo wed self-end"
+        >
+          {loading ? (
+            <>
+              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Exporting…
+            </>
+          ) : (
+            <>{buttonLabel}</>
+          )}
+        </button>
+
+        <button
+          dir="ltr"
+          onClick={handleExportAll}
+          disabled={loading || pageLoading || exportLoading}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold
                    rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white
                    transition-colors disabled:opacity-60 disabled:cursor-not-allowed self-end"
-      >
-        {loading ? (
-          <>
-            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Exporting…
-          </>
-        ) : (
-          <>{buttonLabel}</>
-        )}
-      </button>
+        >
+          {exportLoading ? (
+            <>
+              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Exporting…
+            </>
+          ) : (
+            <>Export All</>
+          )}
+        </button>
+      </div>
 
       {/* Error message */}
       {error && (
-  <p className="basis-full text-xs text-red-500 font-medium mt-1">
-    {error}
-  </p>
-)}
+        <p dir="ltr" className="basis-full text-xs text-red-500 font-medium mt-1">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

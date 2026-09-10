@@ -14,6 +14,8 @@ import { useAuth } from "../context/authContext";
 import useErrorHandler from "../components/useErrorHandler";
 import BlockedUI from "../components/BlockedUI";
 import { useToast } from "../context/ToastContext";
+import { buildAndDownloadExcel } from "../services/useExcelExport";
+import { mainAllItemsColumn } from "../services/columnsForExcel";
 
 const TABS = [
   { id: "items", label: "تمام اشیاء" },
@@ -34,7 +36,8 @@ export default function MainStore() {
   const [categories, setCategories] = useState([]);
 
   // ── UI ────────────────────────────────────────────────────────────────────
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   // ── Pagination ────────────────────────────────────────────────────────────
   const [currentPage, setCurrentPage] = useState(1);
   const [pageLimit, setPageLimit] = useState(10);
@@ -141,6 +144,39 @@ export default function MainStore() {
 
   const refresh = useCallback(() => fetchData(false), [fetchData]);
 
+  const fetchItemsForExport = async (fromDate, toDate) => {
+    try {
+      setExportLoading(true)
+      const res = await getItems({
+        to_store_id: auth.store_id,
+        category: filterCategory || undefined,
+        item_type: filterType || undefined,
+        from_date: fromDate,
+        to_date: toDate,
+      });
+      return res.data.data;
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data");
+      showToast(msg, "error");
+    } finally {
+      setExportLoading(false)
+    }
+  };
+
+  const handleExportAll = async () => {
+    setExportLoading(true);
+    try {
+      const res = await getItems({ to_store_id: auth.store_id });
+      buildAndDownloadExcel(res.data.data, mainAllItemsColumn, `${auth.username} All Items`);
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data");
+      showToast(msg, "error");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+
   // ── Badge counts ──────────────────────────────────────────────────────────
   const pendingApproved = requests.filter(
     (r) => r.status === "APPROVED",
@@ -236,6 +272,9 @@ export default function MainStore() {
           categories={categories}
           setFilterType={setFilterType}
           setDebouncedSearch={setDebouncedSearch}
+          exportLoading={exportLoading}
+          fetchItemsForExport={fetchItemsForExport}
+          handleExportAll={handleExportAll}
         />
       )}
 

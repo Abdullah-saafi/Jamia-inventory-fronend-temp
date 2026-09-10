@@ -2,6 +2,7 @@ import StatusCard from "./StatusCard"
 const RequestDashboard = ({
   counts,
   setFilterStatus,
+  setFilterStatusForSubStore,
   filterStatus,
   pageType,
   isEmergency,
@@ -12,6 +13,7 @@ const RequestDashboard = ({
   const handleFilter = (status) => {
     setPage(1)
     setFilterStatus((prev) => prev === status ? "" : status);
+    setFilterStatusForSubStore((prev) => prev === status ? "" : status)
   };
 
   return (

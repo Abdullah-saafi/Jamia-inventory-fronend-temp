@@ -19,7 +19,7 @@ const EditStore = () => {
   });
 
   const { id } = useParams();
-  const {auth} = useAuth()
+  const { auth } = useAuth()
   const navigate = useNavigate();
   const { loading: authLoading } = useAuth();
   const { showToast } = useToast()
@@ -97,8 +97,9 @@ const EditStore = () => {
         {/* Store Identifiers */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelClass}>اسٹور کا نام *</label>
+            <label className={labelClass}>اسٹور کا نام</label>
             <input
+              dir="ltr"
               name="store_name"
               value={form.store_name}
               onChange={handleChange}
@@ -186,8 +187,9 @@ const EditStore = () => {
 
         {/* Location & Contact */}
         <div>
-          <label className={labelClass}>پتہ *</label>
+          <label className={labelClass}>پتہ</label>
           <input
+            dir="ltr"
             name="address"
             value={form.address}
             onChange={handleChange}

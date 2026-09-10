@@ -113,6 +113,16 @@ const TableHead = ({ pageType, pageTypeProp }) => {
       "تکمیل کی تاریخ",
       "حالت",
       "عملیات",
+    ],
+    AddItemsAndCategories: [
+      "آئٹم نمبر",
+      "نام",
+      "زمرہ",
+      "اکائی",
+      "آئٹم کی قسم",
+      "اسٹاک",
+      "کم از کم اسٹاک",
+      "حالت",
     ]
   }
   const headers = headerMap[pageType] || []

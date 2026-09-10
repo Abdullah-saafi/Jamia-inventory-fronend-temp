@@ -25,7 +25,7 @@ export default function CreateRequestModal({
         onClose()
         setItemForm({ ...EMPTY_FORM })
       }} />
-      <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-2xl max-h-[91h] overflow-y-auto shadow-2xl">
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
@@ -42,24 +42,41 @@ export default function CreateRequestModal({
             ×
           </button>
         </div>
-        {itemForm.is_emergency && (
-          <div className="bg-red-50 border-b border-red-200 px-5 py-3 flex items-center gap-2 justify-end">
-            <span className="text-red-600 text-sm font-semibold text-left">یہ درخواست براہ راست مرکزی اسٹور کو بھیجی جائے گی</span>
-          </div>
-        )}
         <form onSubmit={onSubmit} className="p-5 space-y-4">
           {pageType === "mainReqToHO" && (
-            <div onClick={() => setItemForm((f) => ({ ...f, is_emergency: !f.is_emergency }))}
+            <div onClick={() => setItemForm((f) => ({ ...f, auto_approve: false, is_emergency: !f.is_emergency }))}
               className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none ${itemForm.is_emergency ? "bg-red-50 border-red-400" : "bg-gray-50 border-gray-200 hover:border-red-300"}`}>
               <div>
                 <p className={`text-sm font-bold ${itemForm.is_emergency ? "text-red-700" : "text-gray-700"}`}>ہنگامی درخواست (Emergency Request)</p>
                 <p className="text-xs text-gray-400 mt-0.5">سب اسٹور منیجر کی منظوری کے بغیر مرکزی اسٹور کو بھیجیں</p>
               </div>
               <div className={`relative w-11 h-6 rounded-full transition-colors ${itemForm.is_emergency ? "bg-red-500" : "bg-gray-300"}`}>
-                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${itemForm.is_emergency ? "translate-x-5" : "translate-x-0.5"}`} />
+                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${itemForm.is_emergency ? "-translate-x-5" : "translate-x-0.5"}`} />
               </div>
             </div>
           )}
+          <div
+            onClick={() => setItemForm((f) => ({ ...f, is_emergency: false, auto_approve: !f.auto_approve }))}
+            className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none ${itemForm.auto_approve
+              ? "bg-emerald-50 border-emerald-500"
+              : "bg-gray-50 border-gray-200 hover:border-emerald-300"
+              }`}
+          >
+            <div>
+              <p className={`text-sm font-bold ${itemForm.auto_approve ? "text-emerald-800" : "text-gray-700"}`}>
+                درخواست کی منظوری
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                یہ ریکویسٹ "Approved" کے طور پر بنائے گی اور براہ راست مین اسٹور کو بھیج دی جائے گی۔
+              </p>
+            </div>
+
+            <div className={`relative w-11 h-6 rounded-full transition-colors ${itemForm.auto_approve ? "bg-emerald-600" : "bg-gray-300"
+              }`}>
+              <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${itemForm.auto_approve ? "-translate-x-5" : "translate-x-0.5"
+                }`} />
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">درخواست کنندہ</label>
@@ -167,6 +184,7 @@ export default function CreateRequestModal({
                         </label>
                         <div className="relative mt-1.5">
                           <input
+                            dir="ltr"
                             value={item.item_search}
                             onChange={(e) => {
                               updateLine(idx, "item_search", e.target.value);
@@ -190,7 +208,7 @@ export default function CreateRequestModal({
                             </div>
                           )}
                           {item._showDropdown && (
-                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                            <div dir="ltr" className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                               {usableItems
                                 .filter((si) => {
                                   const q = (
@@ -288,6 +306,7 @@ export default function CreateRequestModal({
                             مقدار
                           </label>
                           <input
+                            dir="ltr"
                             type="number"
                             min={1}
                             value={item.requested_qty}
@@ -468,6 +487,7 @@ export default function CreateRequestModal({
                         </label>
                         <div className="relative mt-1.5">
                           <input
+                            dir="ltr"
                             value={item.item_search}
                             onChange={(e) => {
                               updateLine(idx, "item_search", e.target.value);
@@ -491,7 +511,7 @@ export default function CreateRequestModal({
                             </div>
                           )}
                           {item._showDropdown && (
-                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                            <div dir="ltr" className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                               {reusableItems
                                 .filter((si) => {
                                   const q = (
@@ -570,6 +590,7 @@ export default function CreateRequestModal({
                             مقدار
                           </label>
                           <input
+                            dir="ltr"
                             type="number"
                             min={1}
                             value={item.requested_qty}

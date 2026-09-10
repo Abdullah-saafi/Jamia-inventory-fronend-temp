@@ -7,6 +7,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import TableHead from "../TableHead";
 import { ITEM_CONDITIONS } from "../../services/constants";
 import { useNavigate } from "react-router-dom";
+import { mainAllItemsColumn } from "../../services/columnsForExcel";
 
 export default function MainAllItems({
   allItems,
@@ -24,6 +25,11 @@ export default function MainAllItems({
   setFilterType,
   categories,
   setDebouncedSearch,
+  exportLoading,
+  fetchItemsForExport,
+  handleExportAll,
+  handledeleteItem, // Prop from admin
+  deleteItemLoading, // Prop from admin
   pageTypeProp // Prop from admin
 }) {
   const [showCategory, setShowCategory] = useState(false);
@@ -34,13 +40,13 @@ export default function MainAllItems({
 
   const pageType = "mainAllItems"
 
-
   return (
     <div>
       <div className="flex items-end justify-between py-2">
         <div>
           <div className="flex gap-2">
             <input
+              dir="ltr"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -211,39 +217,20 @@ export default function MainAllItems({
 
         <div className="downloader">
           <ExcelDownloaderWithDates
-            data={allItems}
+            onFetch={fetchItemsForExport}
+            handleExportAll={handleExportAll}
             dateKey="created_at"
             fileName={auth.username}
-            columns={[
-              { key: "item_no", label: "آئٹم نمبر", format: (v) => (v ? v : "—") },
-              { key: "item_name", label: "نام", format: (v) => (v ? v : "—") },
-              { key: "category", label: "زمرہ", format: (v) => (v ? v : "—") },
-              { key: "item_uom", label: "اکائی / UOM", format: (v) => (v ? v : "—") },
-              { key: "item_quantity", label: "مرکزی اسٹور کا اسٹاک", format: (v) => (v ? v : "—") },
-              { key: "sub_qty", label: "ذیلی اسٹورز کو بھیجا گیا", format: (v) => (v ? v : "—") },
-              { key: "transit_qty", label: "ذیلی اسٹورزکوبھیجی جارہی", format: (v) => (v ? v : "—") },
-              { key: "mainstore_transit_qty", label: "مین اسٹور کو بھیجی جارہی", format: (v) => (v ? v : "—") },
-              { key: "total_qty", label: "باقی اسٹاک", format: (v) => (v ? v : "—") },
-              { key: "min_quantity", label: "کم از کم اسٹاک", format: (v) => (v ? v : "—") },
-              { key: "returned_qty", label: "واپس آئٹمز", format: (v) => (v ? v : "—") },
-              { key: "scrapped_qty", label: "اسکریپ", format: (v) => (v ? v : "—") },
-              {
-                key: "condition",
-                label: "حالت",
-                format: (_, row) =>
-                  row.current_quantity <= row.minimum_quantity
-                    ? "Low"
-                    : "OK",
-              },
-            ]}
+            columns={mainAllItemsColumn}
             pageLoading={loading}
+            exportLoading={exportLoading}
           />
         </div>
       </div>
 
       {/* Table Section */}
       <div className="overflow-x-auto text-center rounded-lg border border-gray-200 shadow-sm mt-1">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm bg-white">
           <thead>
             <TableHead
               pageType={pageType}
@@ -338,7 +325,7 @@ export default function MainAllItems({
                       </span>
                     </td>
                     {pageTypeProp && (
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-4 gap-2 flex items-center">
                         <button
                           className="text-[10px] uppercase font-bold text-gray-600 border border-gray-300 bg-gray-200 rounded px-3 py-1 hover:bg-gray-300"
                           onClick={() => {
@@ -346,6 +333,15 @@ export default function MainAllItems({
                           }}
                         >
                           ترمیم کریں
+                        </button>
+                        <button
+                          className="text-[10px] uppercase font-bold text-black/80  border border-red-300 bg-red-500/80 rounded px-3 py-1 hover:bg-red-500"
+                          disabled={deleteItemLoading}
+                          onClick={() => {
+                            handledeleteItem(i.item_id);
+                          }}
+                        >
+                          ڈیلیٹ
                         </button>
                       </td>
                     )}

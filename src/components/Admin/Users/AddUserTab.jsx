@@ -222,8 +222,9 @@ export default function AddUserTab() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelClass}>پورا نام *</label>
+              <label className={labelClass}>پورا نام</label>
               <input
+                dir="ltr"
                 name="name"
                 value={form.name}
                 onChange={handleChange}
@@ -233,8 +234,9 @@ export default function AddUserTab() {
               />
             </div>
             <div>
-              <label className={labelClass}>ای میل ایڈریس *</label>
+              <label className={labelClass}>ای میل ایڈریس</label>
               <input
+                dir="ltr"
                 type="email"
                 name="email"
                 autoComplete="new-password"
@@ -251,6 +253,7 @@ export default function AddUserTab() {
               <label className={labelClass}>فون</label>
               <div className="relative flex items-center w-full">
                 <span
+                  dir="ltr"
                   className="absolute left-3 flex items-center gap-1 text-emerald-500 font-semibold text-sm select-none pointer-events-none"
                 >
                   <span>+</span>
@@ -260,6 +263,7 @@ export default function AddUserTab() {
 
                 {/* Input Field */}
                 <input
+                  dir="ltr"
                   name="phone_no"
                   inputMode="numeric"
                   maxLength={10}
@@ -277,8 +281,9 @@ export default function AddUserTab() {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="relative">
-              <label className={labelClass}>پاس ورڈ *</label>
+              <label className={labelClass}>پاس ورڈ</label>
               <input
+                dir="ltr"
                 type={showPass ? "text" : "password"}
                 name="password"
                 autoComplete="new-password"
@@ -295,8 +300,9 @@ export default function AddUserTab() {
               </button>
             </div>
             <div className="relative">
-              <label className={labelClass}>پاس ورڈ کی تصدیق *</label>
+              <label className={labelClass}>پاس ورڈ کی تصدیق</label>
               <input
+                dir="ltr"
                 type={showConfirm ? "text" : "password"}
                 name="confirmPassword"
                 autoComplete="new-password"

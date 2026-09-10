@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { editUserById, getStores, getUserById } from "../../../services/api";
-import { EyeOpen, EyeClosed } from "../../EyeIcons"; 
+import { EyeOpen, EyeClosed } from "../../EyeIcons";
 import { ROLES, ROLE_STORE_MAP, inputClass, labelClass } from "../../../services/constants";
 import useErrorHandler from "../../useErrorHandler";
 import { useAuth } from "../../../context/authContext";
@@ -69,8 +69,8 @@ const EditUser = () => {
     if (form.password && form.password !== form.confirmPassword) {
       return showToast("پاس ورڈ میچ نہیں کر رہے", "error");
     }
-    if(form.phone_no.length < 10){
-      return showToast("فون نمبر درست نہیں ہے۔","error")
+    if (form.phone_no.length < 10) {
+      return showToast("فون نمبر درست نہیں ہے۔", "error")
     }
 
     try {
@@ -244,8 +244,9 @@ const EditUser = () => {
         {/* Name & Email */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelClass}>مکمل نام *</label>
+            <label className={labelClass}>مکمل نام</label>
             <input
+              dir="ltr"
               name="username"
               value={form.username}
               onChange={handleChange}
@@ -254,8 +255,9 @@ const EditUser = () => {
             />
           </div>
           <div>
-            <label className={labelClass}>ای میل ایڈریس *</label>
+            <label className={labelClass}>ای میل ایڈریس</label>
             <input
+              dir="ltr"
               type="email"
               name="email"
               value={form.email}
@@ -271,6 +273,7 @@ const EditUser = () => {
             <label className={labelClass}>فون</label>
             <div className="relative flex items-center w-full">
               <span
+                dir="ltr"
                 className="absolute left-3 flex items-center gap-1 text-emerald-500 font-semibold text-sm select-none pointer-events-none"
               >
                 <span>+</span>
@@ -280,6 +283,7 @@ const EditUser = () => {
 
               {/* Input Field */}
               <input
+                dir="ltr"
                 name="phone"
                 inputMode="numeric"
                 maxLength={10}
@@ -300,6 +304,7 @@ const EditUser = () => {
           <div className="relative">
             <label className={labelClass}>نیا پاس ورڈ (اختیاری)</label>
             <input
+              dir="ltr"
               type={showPass ? "text" : "password"}
               name="password"
               autoComplete="new-password"
@@ -318,6 +323,7 @@ const EditUser = () => {
           <div className="relative">
             <label className={labelClass}>نئے پاس ورڈ کی تصدیق </label>
             <input
+              dir="ltr"
               type={showConfirmPass ? "text" : "password"}
               name="confirmPassword"
               autoComplete="new-password"

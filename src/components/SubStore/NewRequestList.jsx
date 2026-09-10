@@ -13,6 +13,7 @@ import RequestRow from "../RequestRow";
 import TableHead from "../TableHead";
 import CheckLoadingAndError from "../CheckLoadingAndError";
 import RequestDashboard from "../RequestDashboard";
+import { newRequestListColumn } from "../../services/columnsForExcel";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -30,6 +31,7 @@ const EMPTY_FORM = {
   from_store_id: "",
   to_store_id: "",
   requested_by_name: "",
+  auto_approve: false,
   notes: "",
   images: [],
   items: [{ ...EMPTY_LINE }],
@@ -53,7 +55,7 @@ const mergeDuplicateLines = (lines) => {
   return order.map((key) => map.get(key));
 };
 
-export default function NewRequestList() {
+export default function NewRequestList({ fetchRequestsForExport, handleExportAllRequests, exportLoading, setFilterStatusForSubStore }) {
   const { auth } = useAuth();
   const { showToast } = useToast();
   const handleError = useErrorHandler();
@@ -299,7 +301,7 @@ export default function NewRequestList() {
   // ─── Submit ───────────────────────────────────────────────────────────────
   const handleCreate = async (e) => {
     e.preventDefault();
-    const { from_store_id, to_store_id, requested_by_name, items } = itemForm;
+    const { from_store_id, to_store_id, auto_approve, requested_by_name, items } = itemForm;
 
     const itemLines = items.filter((i) => i.item_no);
     const hasItems = itemLines.length > 0;
@@ -334,6 +336,7 @@ export default function NewRequestList() {
       const payload = {
         from_store_id,
         to_store_id,
+        auto_approve,
         requested_by_name,
         notes: itemForm.notes,
         is_emergency: itemForm.is_emergency,
@@ -381,6 +384,7 @@ export default function NewRequestList() {
       <RequestDashboard
         pageType={pageType}
         setFilterStatus={setFilterStatus}
+        setFilterStatusForSubStore={setFilterStatusForSubStore}
         filterStatus={filterStatus}
         counts={{ pending: pendingGRN, returnBack: 0, emergency: 0, disputed: 0 }}
         setPage={setPage}
@@ -404,6 +408,7 @@ export default function NewRequestList() {
               filterStatus={filterStatus}
               setFilterStatus={(v) => {
                 setFilterStatus(v);
+                setFilterStatusForSubStore(v)
                 setPage(1);
               }}
               pageType={pageType}
@@ -421,6 +426,7 @@ export default function NewRequestList() {
                 onClick={() => {
                   setSearch("");
                   setFilterStatus("");
+                  setFilterStatusForSubStore("")
                   setPage(1);
                   setDebouncedSearch("");
                 }}
@@ -445,18 +451,13 @@ export default function NewRequestList() {
         <div className="Temp-downloader flex justify-center items-center gap-4">
           <div>
             <ExcelDownloaderWithDates
+              onFetch={fetchRequestsForExport}
+              handleExportAll={handleExportAllRequests}
+              exportLoading={exportLoading}
               data={requests}
               dateKey="created_at"
               fileName={auth.username}
-              columns={[
-                { key: "request_no", label: "درخواست نمبر", format: (v) => (v ? v : "—") },
-                { key: "item_type", label: "نوع", format: (v) => (v ? v : "—") },
-                { key: "requested_by_name", label: "درخواست کنندہ", format: (v) => (v ? v : "—") },
-                { key: "created_at", label: "درخواست کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—") },
-                { key: "approved_at", label: "منظوری کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—") },
-                { key: "fulfilled_at", label: "تکمیل کی تاریخ", format: (v) => (v ? new Date(v).toLocaleDateString() : "—") },
-                { key: "status", label: "حالت", format: (v) => (v ? v : "—") },
-              ]}
+              columns={newRequestListColumn}
               pageLoading={pageLoading}
             />
           </div>

@@ -72,9 +72,7 @@ API.interceptors.response.use(
 
         return API(originalRequest);
       } catch (refreshErr) {
-        console.log("API ERROR");
         setAccessTokenInApi("");
-
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;
@@ -90,6 +88,7 @@ export const getStoreById = (id) => API.get(`/stores/${id}`);
 export const createStore = (data) => API.post("/stores", data);
 export const storeStatus = (id, data) => API.put(`/stores/${id}/toggle`, data);
 export const addStore = (data) => API.post("/stores", data);
+export const deleteStore = (param) => API.patch("/stores/deleteStore", param)
 export const editStoreById = (id, data) =>
   API.put(`/stores/editStoreById/${id}`, data);
 
@@ -99,14 +98,21 @@ export const getItemById = (id) => API.get(`/items/${id}`);
 export const editItemById = (id, data) => API.put(`/items/${id}`, data)
 export const createItem = (data) => API.post("/items", data);
 export const updateItem = (id, data) => API.patch(`/items/${id}`, data);
-export const deleteItem = (id) => API.delete(`/items/${id}`);
 export const rejectItemById = (id, rid) => API.delete(`/requests/${id}/item/${rid}`);
 export const getItemHistory = (store_id, item_no) => API.get(`/items/store/${store_id}/item/${item_no}`);
-export const getItemCategories = (store_id) => API.get("/categories/availableItemCategory", { params: { store_id }, });
+export const searchExistingItems = (params) => API.get("/items/searchExistingItems", { params })
+export const deleteItem = (params) => API.patch("/items/deleteItem", params)
 export const uploadImg = (data) => API.post("/upload", data, {
   headers: { "Content-Type": "multipart/form-data" }
 })
 
+// ── Categories ────────────────────────────────────────────────────
+export const getItemCategories = (store_id) => API.get("/categories/availableItemCategory", { params: { store_id }, });
+export const getCategories = () => API.get("/categories");
+export const createCategory = (data) => API.post("/categories", data);
+export const deleteCategory = (id) => API.delete(`/categories/${id}`);
+export const getdefaultCategories = () => API.get("/categories/getdefaultCategories")
+export const updateDefaultCategories = (data) => API.patch("/categories/updateDefaultCategories", data)
 // ── Requests ─────────────────────────────────────────────────
 export const getRequests = (params) => API.get("/requests", { params });
 export const getRequestById = (id) => API.get(`/requests/${id}`);
@@ -147,9 +153,9 @@ export const userStatus = (data) => API.put("/users/action", data);
 
 export const getUserById = (id) => API.get(`/users/getUserById/${id}`);
 
-export const editUserById = (id, data) =>
-  API.put(`/users/editUserById/${id}`, data);
+export const editUserById = (id, data) => API.put(`/users/editUserById/${id}`, data);
 
+export const deleteUser = (params) => API.patch("/users/deleteUser", params)
 // ── Main Store ────────────────────────────────────────────────
 
 export const getStoreManager = (params) =>
@@ -159,12 +165,7 @@ export const getStoreManager = (params) =>
 
 export const generateRandomNumber = (params) =>
   API.get("/items/randomNumber", { params });
-
 export const reusableItems = (params) => API.get("/items", { params });
-
-export const getCategories = () => API.get("/categories");
-export const createCategory = (data) => API.post("/categories", data);
-export const deleteCategory = (id) => API.delete(`/categories/${id}`);
 
 // ── UOM ────────────────────────────────────────────────
 

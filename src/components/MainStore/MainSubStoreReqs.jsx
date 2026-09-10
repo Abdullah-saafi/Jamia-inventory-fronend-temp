@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   getRequestById,
   fulfillRequest,
@@ -17,6 +17,7 @@ import RequestRow from "../RequestRow";
 import TableHead from "../TableHead";
 import InstantRestockModal from "../Modals/InstantRestockModal";
 import InstantRequestPopup from "../InstantRequestPopup";
+import FulfillModal from "../Modals/FulfillModal";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -60,11 +61,14 @@ export default function MainSubStoreReqs({
   const [fulfilling, setFulfilling] = useState(null);
   const [returnLoading, setReturnLoading] = useState(false);
   const [showInstantRequestModal, setShowInstantRequestModal] = useState(false);
+  const [fulfillModal, setFulfillModal] = useState(false);
   const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
   const [creating, setCreating] = useState(false);
   const [showInstantRequestPopup, setShowInstantRequestPopup] = useState(false);
   const [lowStockRequest, setLowStockRequest] = useState(null)
+  const [customDate, setCustomDate] = useState(Date)
 
+  const fulfillResolveRef = useRef(null);
   const { auth } = useAuth();
   const handleError = useErrorHandler();
   const pageType = "mainSubStoreReqs";
@@ -107,16 +111,17 @@ export default function MainSubStoreReqs({
     }
   };
 
-  const handleFulfill = async (requestId, status,) => {
+  const handleFulfill = async (requestId, status) => {
     setFulfilling(requestId);
     try {
       if (status === "DISPUTED") {
         showToast("Cannot fulfill — dispute resolution required", "error");
         return;
       }
-      await fulfillRequest(requestId, { fulfilled_by_name: auth.username });
+      await fulfillRequest(requestId, { fulfilled_by_name: auth.username, customDate: customDate });
       showToast("درخواست پوری کر دی گئی اور انوینٹری اپڈیٹ ہو گئی ہے", "success");
       setDetail(null);
+      setCustomDate(Date)
       onRefresh();
     } catch (e) {
       const msg = handleError(e, "Failed to fulfill");
@@ -127,6 +132,7 @@ export default function MainSubStoreReqs({
       }
       showToast(msg, "error");
     } finally {
+      fulfillResolveRef.current = null
       setFulfilling(null);
     }
   };
@@ -315,7 +321,7 @@ export default function MainSubStoreReqs({
           <thead>
             <TableHead pageType={pageType} />
           </thead>
-          <tbody>
+          <tbody className="bg-white">
             {loading || mainStoreError || requests.length === 0 ? (
               <CheckLoadingAndError
                 loading={loading}
@@ -340,6 +346,8 @@ export default function MainSubStoreReqs({
                   username={auth.username}
                   setItemForm={setItemForm}
                   EMPTY_LINE={EMPTY_LINE}
+                  setCustomDate={setCustomDate}
+                  customDate={customDate}
                 />
               ))
             )}
@@ -381,6 +389,14 @@ export default function MainSubStoreReqs({
           EMPTY_LINE={EMPTY_LINE}
           getDetail={getDetail}
           requestId={lowStockRequest}
+        />
+      )}
+
+      {fulfillModal && (
+        <FulfillModal
+          pageType={pageType}
+          onCancel={() => fulfillResolveRef.current?.(false)}
+          onConfirm={() => fulfillResolveRef.current?.(true)}
         />
       )}
     </div>

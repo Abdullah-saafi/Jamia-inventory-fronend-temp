@@ -140,6 +140,7 @@ const EditItems = () => {
                                     (English) اشیاء کا نام
                                 </label>
                                 <input
+                                    dir="ltr"
                                     value={itemForm.item_name}
                                     onChange={(e) => {
                                         const value = e.target.value;
@@ -259,9 +260,10 @@ const EditItems = () => {
                         <div className="grid grid-cols-2 gap-3">
                             <div id="uom-dropdown-wrapper" className="relative">
                                 <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
-                                    اکائی *
+                                    اکائی
                                 </label>
                                 <input
+                                    dir="ltr"
                                     value={itemForm.item_uom}
                                     id="UOM"
                                     disabled={itemForm.item_type === "REUSABLE"}
@@ -289,6 +291,7 @@ const EditItems = () => {
                                     زمرہ
                                 </label>
                                 <input
+                                    dir="ltr"
                                     value={
                                         categories.find((c) => c.category_id === itemForm.category)?.category_name ||
                                         itemForm.category ||
@@ -360,6 +363,7 @@ const EditItems = () => {
                                     ابتدائی مقدار
                                 </label>
                                 <input
+                                    dir="ltr"
                                     type="number"
                                     min="0"
                                     value={itemForm.item_quantity}
@@ -379,6 +383,7 @@ const EditItems = () => {
                                     کم از کم اسٹاک
                                 </label>
                                 <input
+                                    dir="ltr"
                                     type="number"
                                     min="0"
                                     value={itemForm.min_quantity}
@@ -398,7 +403,7 @@ const EditItems = () => {
                         <div>
                             <div>
                                 <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
-                                    اسٹور*
+                                    اسٹور
                                 </label>
 
                                 {showStoreDropdown && (
@@ -408,7 +413,7 @@ const EditItems = () => {
                                     />
                                 )}
 
-                                <div className="relative">
+                                <div className="relative" dir="ltr">
                                     <button
                                         type="button"
                                         onClick={() => {

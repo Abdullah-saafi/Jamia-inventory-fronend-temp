@@ -32,7 +32,7 @@ export default function Admin() {
   }
 
   return (
-    <div>
+    <div className="h-full w-full flex flex-col">
       <div className="mb-4">
         <h1 className="text-xl font-black text-gray-900">Admin Panel</h1>
         <p className="text-gray-500 text-sm mt-0.5">صارفین، اسٹورز اور برانچز کا انتظام کریں</p>
@@ -53,7 +53,7 @@ export default function Admin() {
           </button>
         ))}
       </nav>
-      <div className="mt-4">
+      <div className="mt-4 h-full w-full">
         <Outlet context={{ stores, loadStores, showToast }} />
       </div>
     </div>

@@ -27,9 +27,9 @@ export default function App() {
     <BrowserRouter>
       <ContextProvider>
         <ToastProvider>
-          <div className="min-h-screen bg-gray-50 text-gray-900">
+          <div className="h-screen w-screen overflow-x-hidden bg-gray-50 text-gray-900 flex flex-col">
             <Navbar />
-            <main className="max-w-7xl mx-auto px-4 py-6">
+            <main className="h-full w-full pt-6 px-30">
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
