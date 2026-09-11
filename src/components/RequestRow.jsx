@@ -70,6 +70,11 @@ export default function RequestRow({
                 </div>
               </span>
             )}
+            {r.request_source === "physical" && (
+              <span className="bg-emerald-100 text-emerald-600 text-xs font-bold rounded px-1.5 py-0.5 border border-emerald-200 uppercase">
+                {r.request_source}
+              </span>
+            )}
           </div>
         </td>
 
@@ -176,7 +181,7 @@ export default function RequestRow({
                   e.stopPropagation();
 
                   if (pageType === "mainSubStoreReqs") {
-                    handleFulfill(r.request_id, customDates[r.request_id], r.status);
+                    handleFulfill(r.request_id, customDates[r.request_id], r.status, r.auto_approve);
                   } else {
                     setFulfillModal(true);
                     setRequestNo({

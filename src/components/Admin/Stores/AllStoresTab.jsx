@@ -277,7 +277,7 @@ export default function AllStoresTab() {
                       ترمیم کریں
                     </button>
                     <button
-                      className="text-[10px] uppercase font-bold text-black/80  border border-red-300 bg-red-500/80 rounded px-3 py-1 hover:bg-red-500"
+                      className="text-[10px] uppercase font-bold text-white  border border-red-300 bg-red-500/80 rounded px-3 py-1 hover:bg-red-500"
                       onClick={() => {
                         handleDeleteStore(s.store_id)
                       }}

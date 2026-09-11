@@ -336,7 +336,7 @@ export default function MainAllItems({
                           ترمیم کریں
                         </button>
                         <button
-                          className="text-[10px] uppercase font-bold text-black/80  border border-red-300 bg-red-500/80 rounded px-3 py-1 hover:bg-red-500"
+                          className="text-[10px] uppercase font-black text-white border border-red-300 bg-red-500/80 rounded px-3 py-1 hover:bg-red-500"
                           disabled={deleteItemLoading}
                           onClick={() => {
                             handledeleteItem(i.item_id);

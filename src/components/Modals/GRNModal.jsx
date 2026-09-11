@@ -167,6 +167,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting, showT
                       </td>
                       <td className="px-4 py-3">
                         <input
+                          dir="ltr"
                           type="number"
                           min="0"
                           max={Number(item.fulfilled_qty)}
@@ -190,8 +191,9 @@ export default function GRNModal({ request, onClose, onSubmit, submitting, showT
                           className="w-20 border rounded px-2 py-1 text-sm font-mono focus:outline-none border-gray-300 text-gray-800"
                         />
                       </td>
-                      <td className="px-4 py-3">
+                      <td dir="ltr" className="px-4 py-3">
                         <select
+                        dir="ltr"
                           value={item.item_condition}
                           onChange={(e) => {
                             updateItem(idx, "item_condition", e.target.value);
@@ -326,8 +328,8 @@ export default function GRNModal({ request, onClose, onSubmit, submitting, showT
                       className={`${hasAnyIssue ? "text-amber-700" : ""} text-xs flex items-center gap-2`}
                     >
                       <span className="font-mono font-bold">{i.item_no}</span>
-                        <span>{i.item_name}</span>
-                        <span>( {i.item_name_urdu} )</span>
+                      <span>{i.item_name}</span>
+                      <span>( {i.item_name_urdu} )</span>
                       {Number(i.received_qty) < Number(i.fulfilled_qty) && (
                         <span className={hasAnyIssue ? "text-amber-600" : ""}>
                           — میں سے{" "} <bdi>{i.received_qty}</bdi> موصول ہوئے

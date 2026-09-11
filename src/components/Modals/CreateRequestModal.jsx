@@ -29,7 +29,7 @@ export default function CreateRequestModal({
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
-            <h2 className="text-gray-900 font-bold">نئی اشیاء کی درخواست</h2>
+            <h2 className="text-gray-900 font-bold">{pageType === "mainSubStoreReqs" ? "Send items to sub store" : "نئی اشیاء کی درخواست"}</h2>
             {itemForm.is_emergency && <span className="inline-flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">Urgent</span>}
           </div>
           <button
@@ -55,28 +55,30 @@ export default function CreateRequestModal({
               </div>
             </div>
           )}
-          <div
-            onClick={() => setItemForm((f) => ({ ...f, is_emergency: false, auto_approve: !f.auto_approve }))}
-            className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none ${itemForm.auto_approve
-              ? "bg-emerald-50 border-emerald-500"
-              : "bg-gray-50 border-gray-200 hover:border-emerald-300"
-              }`}
-          >
-            <div>
-              <p className={`text-sm font-bold ${itemForm.auto_approve ? "text-emerald-800" : "text-gray-700"}`}>
-                درخواست کی منظوری
-              </p>
-              <p className="text-xs text-gray-400 mt-0.5">
-                یہ ریکویسٹ "Approved" کے طور پر بنائے گی اور براہ راست مین اسٹور کو بھیج دی جائے گی۔
-              </p>
-            </div>
+          {(pageType === "subStore" || pageType === "MainReqToHO") && (
+            <div
+              onClick={() => setItemForm((f) => ({ ...f, is_emergency: false, auto_approve: !f.auto_approve }))}
+              className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none ${itemForm.auto_approve
+                ? "bg-emerald-50 border-emerald-500"
+                : "bg-gray-50 border-gray-200 hover:border-emerald-300"
+                }`}
+            >
+              <div>
+                <p className={`text-sm font-bold ${itemForm.auto_approve ? "text-emerald-800" : "text-gray-700"}`}>
+                  درخواست کی منظوری
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  یہ ریکویسٹ "Approved" کے طور پر بنائے گی اور براہ راست مین اسٹور کو بھیج دی جائے گی۔
+                </p>
+              </div>
 
-            <div className={`relative w-11 h-6 rounded-full transition-colors ${itemForm.auto_approve ? "bg-emerald-600" : "bg-gray-300"
-              }`}>
-              <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${itemForm.auto_approve ? "-translate-x-5" : "translate-x-0.5"
-                }`} />
+              <div className={`relative w-11 h-6 rounded-full transition-colors ${itemForm.auto_approve ? "bg-emerald-600" : "bg-gray-300"
+                }`}>
+                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${itemForm.auto_approve ? "-translate-x-5" : "translate-x-0.5"
+                  }`} />
+              </div>
             </div>
-          </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">درخواست کنندہ</label>
@@ -95,10 +97,10 @@ export default function CreateRequestModal({
                 )}
               </div>
             )}
-            {pageType === "mainReqToHO" && (
+            {(pageType === "mainReqToHO" || pageType === "mainSubStoreReqs") && (
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  کے لیے ( پٹی کیش / ہیڈ آفس)
+                  {pageType === "mainReqtoHO" ? "( پٹی کیش / ہیڈ آفس) کے لیے" : "Sub store k liye"}
                 </label>
                 <select
                   value={itemForm.to_store_id}
@@ -107,7 +109,7 @@ export default function CreateRequestModal({
                   }
                   className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                 >
-                  <option value="">مرکزی اسٹور منتخب کریں</option>
+                  <option value="">{pageType === "mainReqToHO" ? "مرکزی اسٹور منتخب کریں" : "اسٹور منتخب کریں"}</option>
                   {toStore.map((s) => <option key={s.store_id} value={s.store_id}>{s.store_name}</option>)}
                 </select>
               </div>
@@ -182,6 +184,11 @@ export default function CreateRequestModal({
                         <label className="text-gray-500 text-xs mb-1 block">
                           کیٹلاگ سے منتخب کریں ({usableItems.length} آئٹم دستیاب ہے)
                         </label>
+                        <button onClick={(e) => {
+                          e.preventDefault()
+                          console.log("usableItems",usableItems)
+                          console.log("reusableItems",reusableItems)
+                        }}>Helo</button>
                         <div className="relative mt-1.5">
                           <input
                             dir="ltr"

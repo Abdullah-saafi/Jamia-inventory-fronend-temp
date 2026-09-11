@@ -14,6 +14,7 @@ import TableHead from "../TableHead";
 import CheckLoadingAndError from "../CheckLoadingAndError";
 import RequestDashboard from "../RequestDashboard";
 import { newRequestListColumns } from "../../services/columnsForExcel";
+import { mergeDuplicateLines } from "../../services/mergeLines";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -35,24 +36,6 @@ const EMPTY_FORM = {
   notes: "",
   images: [],
   items: [{ ...EMPTY_LINE }],
-};
-
-const mergeDuplicateLines = (lines) => {
-  const map = new Map();
-  const order = [];
-  for (const item of lines) {
-    const key = item.item_no;
-    if (map.has(key)) {
-      const existing = map.get(key);
-      existing.requested_qty =
-        (Number(existing.requested_qty) || 0) + (Number(item.requested_qty) || 0);
-      existing.images = [...(existing.images || []), ...(item.images || [])];
-    } else {
-      map.set(key, { ...item, images: [...(item.images || [])] });
-      order.push(key);
-    }
-  }
-  return order.map((key) => map.get(key));
 };
 
 export default function NewRequestList({ fetchRequestsForExport, handleExportAllRequests, exportLoading, setFilterStatusForSubStore }) {
@@ -371,6 +354,7 @@ export default function NewRequestList({ fetchRequestsForExport, handleExportAll
               to_store_id: mainStores.length === 1 ? mainStores[0].store_id : "",
               requested_by_name: auth.username || "",
               notes: "",
+              auto_approve: false,
               images: [],
               items: [{ ...EMPTY_LINE }],
             });
