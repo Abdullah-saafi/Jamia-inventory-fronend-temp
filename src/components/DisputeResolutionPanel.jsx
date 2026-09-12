@@ -1,7 +1,7 @@
 import { useState } from "react";
 import useErrorHandler from "./useErrorHandler";
 import StatusBadge from "./StatusBadge";
-import {resolveDispute } from "../services/api";
+import { resolveDispute } from "../services/api";
 import { useAuth } from "../context/authContext";
 
 const DisputeResolutionPanel = ({
@@ -49,7 +49,7 @@ const DisputeResolutionPanel = ({
       setProcessing(false);
     }
   };
-  
+
   return (
     <div className="border border-amber-200 rounded-xl overflow-hidden">
       <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 flex items-center gap-2">
@@ -62,11 +62,11 @@ const DisputeResolutionPanel = ({
       <div className="p-4 space-y-4 bg-white">
         {disputedItems.length > 0 && (
           <div>
-            <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2 flex">
+            <div className="text-gray-500 text-xs justify-between font-semibold uppercase tracking-wider mb-2 flex">
               <p>
                 متاثرہ اشیاء
               </p>
-              <p className="ml-auto mr-6">
+              <p className="ml-3">
                 کارروائی
               </p>
             </div>
@@ -78,26 +78,29 @@ const DisputeResolutionPanel = ({
                 return (
                   <div
                     key={i.request_item_id}
-                    className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100"
+                    className="flex items-center justify-between gap-3 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100"
                   >
-                    <span className="font-mono text-emerald-600 text-xs font-bold  shrink-0">
-                      {i.item_no}
-                    </span>
-                    <span className="font-mono text-emerald-600 text-xs font-bold  shrink-0">
-                      {i.item_name}
-                    </span>
-                    <span className="text-gray-700 font-mono text-xs flex-1">
-                      ( {i.item_name_urdu} )
-                    </span>
-                    {shortfall > 0 && (
-                      <span className="text-xs text-amber-600 font-semibold whitespace-nowrap">
-                        {shortfall} — {i.item_uom} short
+                    <div className="flex gap-3">
+                      <span className="font-mono text-emerald-600 text-xs font-bold  shrink-0">
+                        {i.item_no}
                       </span>
-                    )}
-                    {i.item_condition && i.item_condition !== "OK" && (
-                      <StatusBadge status={i.item_condition} />
-                    )}
-                    <div className="flex gap-2">
+                      <span className="font-mono text-emerald-600 text-xs font-bold  shrink-0">
+                        {i.item_name}
+                      </span>
+                      <span className="text-gray-700 font-mono text-xs">
+                        ( {i.item_name_urdu} )
+                      </span>
+                      {shortfall > 0 && (
+                        <span className="text-xs text-amber-600 font-semibold whitespace-nowrap">
+                          {shortfall} — {i.item_uom} short
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-3 justify-center items-center">
+                      {i.item_condition && i.item_condition !== "OK" && (
+                        <StatusBadge status={i.item_condition} />
+                      )}
+                      {/* <div className="flex gap-2"> */}
                       {/* Accept Return */}
                       <label
                         className={`px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all
@@ -157,6 +160,7 @@ const DisputeResolutionPanel = ({
                           دوبارہ بھیجیں
                         </label>
                       )}
+                      {/* </div> */}
                     </div>
 
                   </div>

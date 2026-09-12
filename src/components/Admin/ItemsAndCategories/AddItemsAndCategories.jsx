@@ -79,7 +79,6 @@ const AddItemsAndCategories = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [showItemTypeDropdown, setShowItemTypeDropdown] = useState(false);
   const [showStoreDropdown, setShowStoreDropdown] = useState(false);
-  const [defaultCategories, setDefaultCategories] = useState([]);
   const [selectedDefaultCategories, setSelectedDefaultCategories] = useState([]);
   const [showDefaultCategoryDropdown, setShowDefaultCategoryDropdown] = useState(false);
   const [defaultCategorySearch, setDefaultCategorySearch] = useState("");

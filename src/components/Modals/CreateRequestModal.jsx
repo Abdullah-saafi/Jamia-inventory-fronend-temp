@@ -184,11 +184,6 @@ export default function CreateRequestModal({
                         <label className="text-gray-500 text-xs mb-1 block">
                           کیٹلاگ سے منتخب کریں ({usableItems.length} آئٹم دستیاب ہے)
                         </label>
-                        <button onClick={(e) => {
-                          e.preventDefault()
-                          console.log("usableItems",usableItems)
-                          console.log("reusableItems",reusableItems)
-                        }}>Helo</button>
                         <div className="relative mt-1.5">
                           <input
                             dir="ltr"

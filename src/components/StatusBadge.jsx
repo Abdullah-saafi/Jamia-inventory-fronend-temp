@@ -19,7 +19,7 @@ export default function StatusBadge({ status }) {
   };
   return (
     <span
-      className={`px-2 py-0.5 rounded text-xs font-bold font-mono border ${s[status] || ""}`}
+      className={`px-2 py-0.5  rounded text-xs font-bold font-mono border ${s[status] || ""}`}
     >
       {status}
     </span>
