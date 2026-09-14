@@ -157,10 +157,6 @@ export const getUserById = (id) => API.get(`/users/getUserById/${id}`);
 export const editUserById = (id, data) => API.put(`/users/editUserById/${id}`, data);
 
 export const deleteUser = (params) => API.patch("/users/deleteUser", params)
-// ── Main Store ────────────────────────────────────────────────
-
-export const getStoreManager = (params) =>
-  API.get("/users/getManager", { params });
 
 // ── Random Number ────────────────────────────────────────────────
 

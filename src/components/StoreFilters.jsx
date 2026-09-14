@@ -107,7 +107,7 @@ export default function StoreFilters({
         </div>
 
 
-        {currentPage.store && role === "super admin" && (
+        {currentPage.store && role === "super-admin" && (
           <>
             {showStoreDropdown && (
               <div className="absolute inset-0" onClick={() => setShowStoreDropdown((prev) => !prev)} />

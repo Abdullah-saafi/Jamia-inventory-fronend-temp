@@ -156,8 +156,8 @@ export default function GRNModal({ request, onClose, onSubmit, submitting, showT
                         {item.item_no}
                       </td>
                       <div className="flex flex-col">
-                        <td className="px-4 pt-3 text-gray-800">{item.item_name}</td>
-                        <td className="px-4 pb-3 text-gray-800">( {item.item_name_urdu} )</td>
+                        <td className="px-4 pt-3 whitespace-nowrap text-gray-800">{item.item_name}</td>
+                        <td className="px-4 pb-3 whitespace-nowrap text-gray-800">( {item.item_name_urdu} )</td>
                       </div>
                       <td className="px-4 py-3 text-gray-400 text-xs">{item.item_uom}</td>
                       <td className="px-4 py-3">

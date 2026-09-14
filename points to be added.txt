@@ -11,5 +11,5 @@ Minor Fixes ■ Main Branch
 
 5.(already DONE) when refresh page not found when i refresh any particular page
 
-6.(rafay) Super admin shouldn't have rights to edit any item fields
+6.(rafay) super-admin shouldn't have rights to edit any item fields
 7.(saafi) (DONE) available stock is not updating now ( sent to sub store does update)

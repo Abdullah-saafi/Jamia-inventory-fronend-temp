@@ -98,7 +98,7 @@ export default function NewRequestList({ fetchRequestsForExport, handleExportAll
       };
 
       if (filterStatus) params.status = filterStatus;
-      if (auth.role !== "super admin") {
+      if (auth.role !== "super-admin") {
         params.store_id = auth.store_id;
       } else if (filterStore) {
         params.store_id = filterStore;
@@ -150,7 +150,7 @@ export default function NewRequestList({ fetchRequestsForExport, handleExportAll
   };
 
   useEffect(() => {
-    if (auth.store_id || auth.role === "super admin") {
+    if (auth.store_id || auth.role === "super-admin") {
       load();
     }
   }, [filterStatus, filterStore, auth.store_id, page, pageSize, debouncedSearch]);

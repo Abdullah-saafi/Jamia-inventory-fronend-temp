@@ -295,7 +295,9 @@ export default function AllUsersTab() {
                 requests={users}
               />
             ) : (
-              users.map((u) => (
+              users
+              .filter((u) => u.role !== "super-admin")
+              .map((u) => (
                 <tr
                   key={u.id}
                   className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${!u.is_active ? "opacity-60" : ""}`}

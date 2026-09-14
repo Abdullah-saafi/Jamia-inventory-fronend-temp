@@ -40,7 +40,7 @@ const Login = () => {
                     "main-store-manager": "/mainstore-manager",
                     "headoffice": "/headoffice",
                     "admin": "/admin",
-                    "super admin": "/substore-staff",
+                    "super-admin": "/substore-staff",
                     "pettycash": "/pettycash",
                 }
                 navigate(routes[data.role] || "/unauthorized")

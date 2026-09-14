@@ -38,7 +38,7 @@ export default function App() {
                 {/* Sub Store User — creates requests */}
                 <Route
                   element={
-                    <ProtectedRoute allowedRoles={["sub-store", "super admin"]} />
+                    <ProtectedRoute allowedRoles={["sub-store", "super-admin"]} />
                   }
                 >
                   <Route path="/substore-staff" element={<SubStoreStaff />} />
@@ -48,7 +48,7 @@ export default function App() {
                 <Route
                   element={
                     <ProtectedRoute
-                      allowedRoles={["sub-store-manager", "super admin"]}
+                      allowedRoles={["sub-store-manager", "super-admin"]}
                     />
                   }
                 >
@@ -59,7 +59,7 @@ export default function App() {
                 <Route
                   element={
                     <ProtectedRoute
-                      allowedRoles={["main-store", "super admin"]}
+                      allowedRoles={["main-store", "super-admin"]}
                     />
                   }
                 >
@@ -70,7 +70,7 @@ export default function App() {
                 <Route
                   element={
                     <ProtectedRoute
-                      allowedRoles={["main-store-manager", "super admin"]}
+                      allowedRoles={["main-store-manager", "super-admin"]}
                     />
                   }
                 >
@@ -84,7 +84,7 @@ export default function App() {
                 <Route
                   element={
                     <ProtectedRoute
-                      allowedRoles={["headoffice", "super admin"]}
+                      allowedRoles={["headoffice", "super-admin"]}
                     />
                   }
                 >
@@ -96,7 +96,7 @@ export default function App() {
                 <Route
                   element={
                     <ProtectedRoute
-                      allowedRoles={["pettycash", "super admin"]}
+                      allowedRoles={["pettycash", "super-admin"]}
                     />
                   }
                 >
@@ -107,7 +107,7 @@ export default function App() {
 
                 <Route
                   element={
-                    <ProtectedRoute allowedRoles={["admin", "super admin"]} />
+                    <ProtectedRoute allowedRoles={["admin", "super-admin"]} />
                   }
                 >
                   <Route path="/admin" element={<Admin />}>

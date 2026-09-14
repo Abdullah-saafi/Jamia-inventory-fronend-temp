@@ -147,7 +147,7 @@ export default function ReturnRequestList({ fetchRequestsForExport, handleExport
   };
 
   useEffect(() => {
-    if (auth.store_id || auth.role === "super admin") {
+    if (auth.store_id || auth.role === "super-admin") {
       load();
     }
   }, [

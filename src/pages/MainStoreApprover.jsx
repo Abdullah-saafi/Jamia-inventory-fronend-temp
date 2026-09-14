@@ -256,7 +256,7 @@ export default function MainStoreApprover() {
       priority_status: "PENDING",
     };
     if (filterStatus) params.status = filterStatus;
-    if (auth.role !== "super admin") {
+    if (auth.role !== "super-admin") {
       params.store_id = auth.store_id;
     } else if (filterStore) {
       params.store_id = filterStore;

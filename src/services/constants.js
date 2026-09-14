@@ -25,7 +25,7 @@ export const ROLE_LABELS = {
   headoffice: "مرکزی دفتر",
   "pettycash": "پٹی کیش",
   admin: "انتظامی دفتر",
-  "super admin": "سپر ایڈمن",
+  "super-admin": "سپر ایڈمن",
 }
 
 export const TABS = [

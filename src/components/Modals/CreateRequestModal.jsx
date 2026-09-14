@@ -29,7 +29,7 @@ export default function CreateRequestModal({
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
-            <h2 className="text-gray-900 font-bold">{pageType === "mainSubStoreReqs" ? "Send items to sub store" : "نئی اشیاء کی درخواست"}</h2>
+            <h2 className="text-gray-900 font-bold">{pageType === "mainSubStoreReqs" ? "سب اسٹور کو آئٹمز بھیجیں" : "نئی اشیاء کی درخواست"}</h2>
             {itemForm.is_emergency && <span className="inline-flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full">Urgent</span>}
           </div>
           <button
@@ -55,7 +55,7 @@ export default function CreateRequestModal({
               </div>
             </div>
           )}
-          {(pageType === "subStore" || pageType === "MainReqToHO") && (
+          {(pageType === "subStore" || pageType === "mainReqToHO") && (
             <div
               onClick={() => setItemForm((f) => ({ ...f, is_emergency: false, auto_approve: !f.auto_approve }))}
               className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none ${itemForm.auto_approve
@@ -100,7 +100,7 @@ export default function CreateRequestModal({
             {(pageType === "mainReqToHO" || pageType === "mainSubStoreReqs") && (
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  {pageType === "mainReqtoHO" ? "( پٹی کیش / ہیڈ آفس) کے لیے" : "Sub store k liye"}
+                  {pageType === "mainReqtoHO" ? "( پٹی کیش / ہیڈ آفس) کے لیے" : "سب اسٹور کے لیے"}
                 </label>
                 <select
                   value={itemForm.to_store_id}

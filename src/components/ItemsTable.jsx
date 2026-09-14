@@ -24,12 +24,7 @@ export default function ItemsTable({
             <th className="text-left pb-2 pr-4">اشیاء نمبر</th>
             <th className="text-left pb-2 pr-4">اشیاء کا نام</th>
             <th className="text-left pb-2 pr-4">اکائی</th>
-            {(pageType === "subStore" || pageType === "subStoreManager") && (
-              <th className="text-center pb-2 pr-4">درخواست شدہ</th>
-            )}
-            {(pageType === "mainSubStoreReqs" || pageType === "headOffice" || pageType === "pettyCash") && (
-              <th className="text-center pb-2 pr-4">درخواست کردہ</th>
-            )}
+            <th className="text-center pb-2 pr-4">درخواست شدہ</th>
             <th className="text-center pb-2 pr-4">منظور شدہ</th>
             <th className="text-center pb-2 pr-4">مکمل شدہ</th>
             {(isDisputed || isReceived || isReturned || isClosed) && (
@@ -53,11 +48,11 @@ export default function ItemsTable({
               <tr key={i.request_item_id} className={`border-b border-gray-100 ${hasItemIssue ? "bg-amber-50/50" : ""}`}>
                 <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
                   {i.item_no}
-                </td> 
+                </td>
 
                 <td className="py-2 pr-4 text-gray-800 whitespace-nowrap">
-                    <span>{i.item_name}</span>
-                    {i.item_name_urdu && (<span className="ml-1">( {i.item_name_urdu} )</span>)}
+                  <span>{i.item_name}</span>
+                  {i.item_name_urdu && (<span className="ml-1">( {i.item_name_urdu} )</span>)}
                 </td>
 
                 <td className="py-2 pr-4 text-gray-700 text-sm">

@@ -91,7 +91,7 @@ const DisputeResolutionPanel = ({
                         ( {i.item_name_urdu} )
                       </span>
                       {shortfall > 0 && (
-                        <span className="text-xs text-amber-600 font-semibold whitespace-nowrap">
+                        <span dir="ltr" className="text-xs text-amber-600 font-semibold whitespace-nowrap">
                           {shortfall} — {i.item_uom} short
                         </span>
                       )}

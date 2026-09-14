@@ -37,6 +37,7 @@ const EMPTY_FORM = {
   from_store_id: "",
   to_store_id: "",
   requested_by_name: "",
+  auto_approve: false,
   notes: "",
   is_emergency: false,
   items: [{ ...EMPTY_LINE }],
@@ -116,7 +117,7 @@ export default function MainReqToHO({ showToast }) {
         priority_status: "FULFILLED"
       };
       if (filterStatus) params.status = filterStatus;
-      if (auth.role !== "super admin") {
+      if (auth.role !== "super-admin") {
         params.store_id = auth.store_id;
       }
       //  else if (filterStore) {
@@ -151,7 +152,7 @@ export default function MainReqToHO({ showToast }) {
   };
 
   useEffect(() => {
-    if (auth.store_id || auth.role === "super admin") load();
+    if (auth.store_id || auth.role === "super-admin") load();
   }, [
     filterStatus,
     // filterStore,
@@ -277,7 +278,7 @@ export default function MainReqToHO({ showToast }) {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    const { from_store_id, to_store_id, requested_by_name, items } = form;
+    const { from_store_id, to_store_id, requested_by_name, auto_approve, items } = form;
     const itemLines = items.filter((i) => i.item_no);
     const hasItems = itemLines.length > 0;
 
@@ -353,7 +354,7 @@ export default function MainReqToHO({ showToast }) {
       priority_status: "FULFILLED",
     };
     if (filterStatus) params.status = filterStatus;
-    if (auth.role !== "super admin") {
+    if (auth.role !== "super-admin") {
       params.store_id = auth.store_id;
     } else if (filterStore) {
       params.store_id = filterStore;

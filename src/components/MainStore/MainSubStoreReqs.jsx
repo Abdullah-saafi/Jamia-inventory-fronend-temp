@@ -39,6 +39,7 @@ const EMPTY_FORM = {
   from_store_id: "",
   to_store_id: "",
   requested_by_name: "",
+  auto_approve: false,
   notes: "",
   is_emergency: false,
   items: [{ ...EMPTY_LINE }],
@@ -195,6 +196,7 @@ export default function MainSubStoreReqs({
       from_store_id,
       to_store_id,
       requested_by_name,
+      auto_approve,
       items,
     } = itemForm;
 
@@ -230,6 +232,7 @@ export default function MainSubStoreReqs({
         from_store_id,
         to_store_id,
         requested_by_name,
+        auto_approve,
         notes: itemForm.notes,
         is_emergency: itemForm.is_emergency,
         direction,
@@ -365,13 +368,14 @@ export default function MainSubStoreReqs({
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => {
-            setItemForm({
+            setItemForm((prev) => ({
+              ...prev,
               from_store_id: auth.store_id || "",
               requested_by_name: auth.username || "",
               notes: "",
               images: [],
               items: [{ ...EMPTY_LINE }],
-            });
+            }));
             setShowCreate(true);
           }}
           className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors ml-auto mt-2"

@@ -26,7 +26,7 @@ export default function SubStore() {
         priority_status: "FULFILLED",
       };
       if (filterStatusForSubStore) params.status = filterStatusForSubStore;
-      if (auth.role !== "super admin") {
+      if (auth.role !== "super-admin") {
         params.store_id = auth.store_id;
       } else if (filterStore) {
         params.store_id = filterStore;
@@ -37,7 +37,7 @@ export default function SubStore() {
         priority_status: "PENDING",
       };
       if (filterStatusForSubStore) params.status = filterStatusForSubStore;
-      if (auth.role !== "super admin") {
+      if (auth.role !== "super-admin") {
         params.store_id = auth.store_id;
       } else if (filterStore) {
         params.store_id = filterStore;
@@ -103,7 +103,7 @@ export default function SubStore() {
         <div>
           <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
           <span className="text-gray-500 text-xs mt-0.5 bg-gray-200 rounded p-1">
-            {auth.storeName || "loading..."}
+            {auth.role === "super-admin" ? "Select Store" : auth.storeName ? auth.storeName : "loading..."}
           </span>
           <p className="text-gray-500 text-sm mt-0.5">
             درخواست بنائیں اور اپنی ڈیلیوری کی تصدیق کریں

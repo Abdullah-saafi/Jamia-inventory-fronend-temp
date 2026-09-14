@@ -36,23 +36,15 @@ const InstantRestockModal = ({
                     </button>
                 </div>
 
-                {/* ── Emergency banner ── */}
-                {itemForm.is_emergency && (
-                    <div className="bg-red-50 border-b border-red-200 px-5 py-3 flex items-center gap-2 justify-end">
-                        <span className="text-red-600 text-sm font-semibold text-left">
-                            یہ درخواست براہ راست مرکزی اسٹور کو بھیجی جائے گی
-                        </span>
-                    </div>
-                )}
-
                 <form onSubmit={handleSubmit} className="p-5 space-y-4">
+
                     {/* ── Emergency toggle ── */}
                     <div
                         onClick={() =>
-                            setItemForm((f) => ({ ...f, is_emergency: !f.is_emergency }))
+                            setItemForm((f) => ({ ...f, auto_approve: false, is_emergency: !f.is_emergency }))
                         }
                         className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none
-              ${itemForm.is_emergency ? "bg-red-50 border-red-400" : "bg-gray-50 border-gray-200 hover:border-red-300"}`}
+                        ${itemForm.is_emergency ? "bg-red-50 border-red-400" : "bg-gray-50 border-gray-200 hover:border-red-300"}`}
                     >
                         <div className="flex items-center gap-3">
                             <div>
@@ -70,8 +62,31 @@ const InstantRestockModal = ({
                             className={`relative w-11 h-6 rounded-full transition-colors ${itemForm.is_emergency ? "bg-red-500" : "bg-gray-300"}`}
                         >
                             <div
-                                className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${itemForm.is_emergency ? "translate-x-5" : "translate-x-0.5"}`}
+                                className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${itemForm.is_emergency ? "-translate-x-5" : "translate-x-0.5"}`}
                             />
+                        </div>
+                    </div>
+
+                    <div
+                        onClick={() => setItemForm((f) => ({ ...f, is_emergency: false, auto_approve: !f.auto_approve }))}
+                        className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none ${itemForm.auto_approve
+                            ? "bg-emerald-50 border-emerald-500"
+                            : "bg-gray-50 border-gray-200 hover:border-emerald-300"
+                            }`}
+                    >
+                        <div>
+                            <p className={`text-sm font-bold ${itemForm.auto_approve ? "text-emerald-800" : "text-gray-700"}`}>
+                                درخواست کی منظوری
+                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                                یہ ریکویسٹ "Approved" کے طور پر بنائے گی اور براہ راست مین اسٹور کو بھیج دی جائے گی۔
+                            </p>
+                        </div>
+
+                        <div className={`relative w-11 h-6 rounded-full transition-colors ${itemForm.auto_approve ? "bg-emerald-600" : "bg-gray-300"
+                            }`}>
+                            <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${itemForm.auto_approve ? "-translate-x-5" : "translate-x-0.5"
+                                }`} />
                         </div>
                     </div>
 
@@ -117,7 +132,7 @@ const InstantRestockModal = ({
 
                         {!itemForm.to_store_id ? (
                             <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">
-                                 اشیاء دیکھنے کے لیے پہلے سورس کا انتخاب کریں
+                                اشیاء دیکھنے کے لیے پہلے سورس کا انتخاب کریں
                             </div>
                         ) : (
                             <div className="space-y-3">
@@ -186,6 +201,7 @@ const InstantRestockModal = ({
                                                     مقدار
                                                 </label>
                                                 <input
+                                                    dir="ltr"
                                                     type="number"
                                                     min={1}
                                                     value={Number(item.requested_qty) || itemForm.requested_qty}

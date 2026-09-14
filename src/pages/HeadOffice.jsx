@@ -146,7 +146,7 @@ export default function HeadOffice() {
       priority_status: "APPROVED",
     };
     if (filterStatus) params.status = filterStatus;
-    if (auth.role !== "super admin") {
+    if (auth.role !== "super-admin") {
       params.store_id = auth.store_id;
     } else if (filterStore) {
       params.store_id = filterStore;

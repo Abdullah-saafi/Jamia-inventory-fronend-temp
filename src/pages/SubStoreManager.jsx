@@ -77,9 +77,9 @@ export default function SubStoreManager() {
         priority_status: "PENDING"
       };
       if (filterStatus) params.status = filterStatus;
-      if (auth.role !== "super admin" && auth.store_id)
+      if (auth.role !== "super-admin" && auth.store_id)
         params.store_id = auth.store_id;
-      if (auth.role === "super admin" && filterStore)
+      if (auth.role === "super-admin" && filterStore)
         params.store_id = filterStore;
       const r = await getRequests(params);
       setRequests(r.data.data || []);
@@ -280,7 +280,7 @@ export default function SubStoreManager() {
       priority_status: "PENDING",
     };
     if (filterStatus) params.status = filterStatus;
-    if (auth.role !== "super admin") {
+    if (auth.role !== "super-admin") {
       params.store_id = auth.store_id;
     } else if (filterStore) {
       params.store_id = filterStore;

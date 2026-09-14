@@ -97,7 +97,7 @@ export default function Navbar() {
             links
               .filter(
                 (link) =>
-                  auth.role === "super admin" ||
+                  auth.role === "super-admin" ||
                   link.roles.includes(auth.role)
               )
               .map(({ to, label }) => (
