@@ -23,6 +23,7 @@ import { mainSubStoreReqsColumns } from "../../services/columnsForExcel";
 import { useStores } from "../../hooks/useStores";
 import CreateRequestModal from "../Modals/CreateRequestModal";
 import { mergeDuplicateLines } from "../../services/mergeLines";
+import { pakistanDateTimeToISO } from "../../services/dateAndTimeHelper";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -42,6 +43,7 @@ const EMPTY_FORM = {
   auto_approve: false,
   notes: "",
   is_emergency: false,
+  createdAt: "",
   items: [{ ...EMPTY_LINE }],
 };
 
@@ -147,7 +149,6 @@ export default function MainSubStoreReqs({
       setDL(false);
     }
   };
-
   const handleFulfill = async (requestId, customDate, status, auto_approve) => {
     setFulfilling(requestId);
     try {
@@ -155,7 +156,7 @@ export default function MainSubStoreReqs({
         showToast("Cannot fulfill — dispute resolution required", "error");
         return;
       }
-      await fulfillRequest(requestId, { fulfilled_by_name: auth.username, customDate: customDate, auto_approve });
+      await fulfillRequest(requestId, { fulfilled_by_name: auth.username, customDate: pakistanDateTimeToISO(customDate), auto_approve });
       showToast("درخواست پوری کر دی گئی اور انوینٹری اپڈیٹ ہو گئی ہے", "success");
       setDetail(null);
       setCustomDates({})
@@ -240,7 +241,6 @@ export default function MainSubStoreReqs({
           ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
         ),
       };
-
       await createRequest(payload);
       showToast("درخواست کامیابی سے جمع کر دی گئی۔", "success");
       setShowInstantRequestModal(false)
@@ -256,7 +256,7 @@ export default function MainSubStoreReqs({
 
   const sendToSubStore = async (e) => {
     e.preventDefault()
-    const { from_store_id, to_store_id, requested_by_name, items } = itemForm;
+    const { from_store_id, to_store_id, requested_by_name, items, createdAt } = itemForm;
 
     const itemLines = items.filter((i) => i.item_no);
     const hasItems = itemLines.length > 0;
@@ -271,6 +271,8 @@ export default function MainSubStoreReqs({
       return showToast("آئٹم کی تفصیلات چیک کریں۔", "error");
 
     const mergedLines = mergeDuplicateLines(itemLines);
+
+    const fixedDate = pakistanDateTimeToISO(createdAt)
 
     try {
       setCreating(true)
@@ -295,6 +297,7 @@ export default function MainSubStoreReqs({
         notes: itemForm.notes,
         direction: "SUB_TO_MAIN",
         items: itemsWithImageUrls,
+        createdAt: fixedDate
       };
       await sendItemsToSubStore(payload)
       showToast("درخواست جمع کر دی گئی ہے", "success");

@@ -1,11 +1,12 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { editItemById, getItemById, getCategories } from "../../../services/api";
+import { editItemById, getItemById, getCategories, updateItem } from "../../../services/api";
 import { useState, useEffect, useCallback } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { ITEM_CONDITIONS } from "../../../services/constants";
 import { useStores } from "../../../hooks/useStores";
 import { useToast } from "../../../context/ToastContext";
 import useErrorHandler from "../../useErrorHandler";
+import { pakistanDateTimeToISO } from "../../../services/dateAndTimeHelper";
 
 const EMPTY_NEW_ITEM = {
     item_name: "",
@@ -16,6 +17,7 @@ const EMPTY_NEW_ITEM = {
     min_quantity: "",
     store_id: "",
     item_type: "",
+    updatedAt: ""
 };
 
 const EditItems = () => {
@@ -110,6 +112,7 @@ const EditItems = () => {
                 min_quantity: itemForm.min_quantity,
                 store_id: itemForm.store_id,
                 item_type: itemForm.item_type,
+                updatedAt: pakistanDateTimeToISO(itemForm.updatedAt)
             });
             showToast("آئٹم میں ترمیم ہو گئی۔", "success");
             navigate(-1);
@@ -187,11 +190,14 @@ const EditItems = () => {
                             </div>
                         </div>
 
-                        <div>
+                        <div className="flex gap-3">
                             {showItemTypeDropdown && (
                                 <div className="fixed inset-0 z-40" onClick={() => setShowItemTypeDropdown(false)} />
                             )}
-                            <div className="relative min-w-45">
+                            <div className="relative w-1/2">
+                                <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
+                                    آئٹم کی قسم
+                                </label>
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -255,6 +261,19 @@ const EditItems = () => {
                                     </div>
                                 )}
                                 {fieldError("item_type")}
+                            </div>
+
+                            <div className="w-1/2">
+                                <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
+                                    ترمیم کی تاریخ
+                                </label>
+                                <input className="text-xs text-gray-700 bg-white border border-gray-300 rounded-md  px-2.5 py-1 h-9 w-full shadow-sm transition-all outline-none cursor-pointer focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 hover:border-gray-400 scheme-light"
+                                    onClick={(e) => e.stopPropagation()} value={itemForm.updatedAt || ""} onChange={(e) => {
+                                        setItemForm((prev) => ({
+                                            ...prev,
+                                            updatedAt: e.target.value
+                                        }))
+                                    }} type="datetime-local" />
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">

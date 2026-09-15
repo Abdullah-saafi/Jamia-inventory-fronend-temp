@@ -57,7 +57,7 @@ const Login = () => {
         if (message) {
             setMessage(null)
         }
-        setForm({ ...form, [e.target.name]: e.target.value })
+         setForm({ ...form, [e.target.name]: e.target.value })
     }
 
     const inputWrapperClass = (fieldError) => `

@@ -8,6 +8,7 @@ import TableHead from "../TableHead";
 import { ITEM_CONDITIONS } from "../../services/constants";
 import { useNavigate } from "react-router-dom";
 import { mainAllItemsColumns } from "../../services/columnsForExcel";
+import DateTimeCell from "../DateTimeCell";
 
 export default function MainAllItems({
   allItems,
@@ -205,7 +206,7 @@ export default function MainAllItems({
             )}
           </div>
           <button
-          dir="ltr"
+            dir="ltr"
             onClick={() => {
               onRefresh();
               setCurrentPage(1);
@@ -273,6 +274,12 @@ export default function MainAllItems({
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-600">
                       {i.item_type || "―"}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-600">
+                      {<DateTimeCell ts={i.created_at} /> || "―"}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-600">
+                      {<DateTimeCell ts={i.updated_at} /> || "―"}
                     </td>
                     <td className="px-4 py-3">
                       <span

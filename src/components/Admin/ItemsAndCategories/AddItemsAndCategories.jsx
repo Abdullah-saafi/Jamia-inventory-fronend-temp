@@ -14,11 +14,13 @@ import {
 import useErrorHandler from "../../useErrorHandler";
 import { useOutletContext } from "react-router-dom";
 import { ITEM_CONDITIONS } from "../../../services/constants";
-import { ChevronDown, ChevronUp, Heading1 } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import MainAllItems from "../../MainStore/MainAllItems";
 import TableHead from "../../TableHead";
 import CheckLoadingAndError from "../../CheckLoadingAndError";
 import ConfirmDeleteModal from "../../Modals/ConfirmDeleteModal";
+import { pakistanDateTimeToISO } from "../../../services/dateAndTimeHelper";
+import DateTimeCell from "../../DateTimeCell";
 
 const EMPTY_NEW_ITEM = {
   item_name: "",
@@ -29,6 +31,7 @@ const EMPTY_NEW_ITEM = {
   min_quantity: "",
   store_id: "",
   item_type: "",
+  createdDate: ""
 };
 
 const EMPTY_NEW_CATEGORY = {
@@ -170,7 +173,10 @@ const AddItemsAndCategories = () => {
     setItemErrors({});
     setSubmitLoading(true);
     try {
-      await createItem(newItem);
+      await createItem({
+        ...newItem,
+        createdDate: pakistanDateTimeToISO(newItem.createdDate)
+      });
       setNewItem(EMPTY_NEW_ITEM);
       showToast("آئٹم شامل کر دیا گیا ہے", "success");
       fetchData();
@@ -449,11 +455,11 @@ const AddItemsAndCategories = () => {
                       </div>
                     </div>
 
-                    <div>
+                    <div className="flex gap-3">
                       {showItemTypeDropdown && (
                         <div className="fixed inset-0 z-40" onClick={() => setShowItemTypeDropdown((prev) => !prev)} />
                       )}
-                      <div className="relative min-w-45">
+                      <div className="relative w-1/2">
                         <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                           آئٹم کی قسم
                         </label>
@@ -521,6 +527,19 @@ const AddItemsAndCategories = () => {
                           </div>
                         )}
                         {fieldError("item_type")}
+                      </div>
+
+                      <div className="w-1/2">
+                        <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
+                          تخلیق کی تاریخ
+                        </label>
+                        <input className="text-xs text-gray-700 bg-white border border-gray-300 rounded-md  px-2.5 py-1 h-9 w-full shadow-sm transition-all outline-none cursor-pointer focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 hover:border-gray-400 scheme-light"
+                          onClick={(e) => e.stopPropagation()} value={newItem.createdDate || ""} onChange={(e) => {
+                            setNewItem((prev) => ({
+                              ...prev,
+                              createdDate: e.target.value
+                            }))
+                          }} type="datetime-local" />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -823,6 +842,9 @@ const AddItemsAndCategories = () => {
                               </td>
                               <td className="px-4 py-3 font-mono text-xs text-gray-600">
                                 {i.item_type || "―"}
+                              </td>
+                              <td className="px-4 py-3 font-mono text-xs text-gray-600">
+                                {<DateTimeCell ts={i.created_at} /> || "―"}
                               </td>
                               <td className="px-4 py-3">
                                 <span

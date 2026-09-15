@@ -115,6 +115,18 @@ export default function CreateRequestModal({
               </div>
             )}
           </div>
+          <div>
+            <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+              تخلیق کی تاریخ
+            </label>
+            <input className="text-xs mt-1 text-gray-700 bg-white border border-gray-300 rounded-md  px-2.5 py-1 h-9 w-1/2 shadow-sm transition-all outline-none cursor-pointer focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 hover:border-gray-400 scheme-light"
+              onClick={(e) => e.stopPropagation()} value={itemForm.createdAt || ""} onChange={(e) => {
+                setItemForm((prev) => ({
+                  ...prev,
+                  createdAt: e.target.value
+                }))}}
+              type="datetime-local" />
+          </div>
           <div className="flex rounded-lg border border-gray-200 overflow-hidden">
             <button
               type="button"
