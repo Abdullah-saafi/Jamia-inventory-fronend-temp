@@ -285,7 +285,7 @@ export default function MainAllItems({
                       <span
                         className="font-mono font-bold text-emerald-600"
                       >
-                        {Number(i.item_quantity) || "―"}
+                        {Number(i.item_quantity) || 0}
                       </span>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">
